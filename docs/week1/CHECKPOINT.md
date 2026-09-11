@@ -66,7 +66,7 @@
 | [api-contract.md](api-contract.md) | 입력·식별·성공/오류 계약·예시 기록. 실제 통화·금액 자료형·소수 처리·허용 범위 등 미확인 유지 |
 | [design-decisions.md](design-decisions.md) | 책임별 보장·세 결정·대안 비교·내부 변경 검토 기록 |
 | [observations.md](observations.md) | 이번 범위 제외·추후 진행. 기존 양식만 유지 |
-| [week1-retrospective.md](week1-retrospective.md) | 이번 범위 제외·추후 진행. 기존 양식만 유지 |
+| 기술 글 | 사용자가 추후 직접 작성한다. 기존 양식 파일은 사용자 요청으로 삭제했다. |
 
 ## 앞으로의 순서와 문서 완료 기준
 
