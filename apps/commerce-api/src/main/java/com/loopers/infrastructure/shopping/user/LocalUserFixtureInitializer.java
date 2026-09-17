@@ -1,0 +1,33 @@
+package com.loopers.infrastructure.shopping.user;
+
+import com.loopers.domain.shopping.user.User;
+import com.loopers.domain.shopping.user.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+@Profile("local")
+@RequiredArgsConstructor
+public class LocalUserFixtureInitializer implements ApplicationRunner {
+    static final long FIRST_USER_ID = 1L;
+    static final long SECOND_USER_ID = 2L;
+
+    private final UserRepository userRepository;
+
+    @Override
+    @Transactional
+    public void run(ApplicationArguments args) {
+        saveIfMissing(FIRST_USER_ID);
+        saveIfMissing(SECOND_USER_ID);
+    }
+
+    private void saveIfMissing(long userId) {
+        if (!userRepository.existsById(userId)) {
+            userRepository.save(User.create(userId));
+        }
+    }
+}
