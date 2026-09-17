@@ -1,0 +1,93 @@
+# PR 01 구현 계획: 공통 개발 기반과 사용자 입력
+
+## 목표
+
+`volume-2/pr-01-foundation`에서 이후 기능 PR이 공유할 테스트 실행 기반, 정적 검사, 오류 모델,
+fixture 사용자와 입력 검증을 완성한다. 공개 HTTP API는 추가하지 않는다.
+
+## 구현 범위
+
+### 테스트 실행 기반
+
+- Gradle daemon은 플랫폼 경로 인코딩을 사용하고 Java 컴파일·테스트 내용은 UTF-8로 고정한다.
+- Docker 29에서 Testcontainers 1.20.6이 API 1.44를 사용하도록 테스트 설정을 추가한다.
+- 환경 변수를 별도로 지정하지 않고 기존 테스트가 통과해야 한다.
+
+### 정적 검사
+
+- Checkstyle 10.26.1을 commerce-api main/test에 적용한다.
+- `AvoidStarImport`, `UnusedImports`와 경고 0만 우선 강제한다.
+- ArchUnit 1.5.0으로 계층 의존 방향과 신규 domain의 Spring·JPA·HTTP 독립성을 검사한다.
+- 기존 Example은 계층 검사에 포함하되 신규 domain 순수성 검사에서는 제외한다.
+
+### 오류 모델
+
+- 신규 domain과 application은 각각 HTTP를 모르는 오류 코드와 예외를 사용한다.
+- PR 01에서는 `INVALID_USER_ID`, `USER_NOT_FOUND`만 추가한다.
+- interfaces가 두 오류를 기존 `ApiResponse`의 400·404 응답으로 변환한다.
+- 기존 Example과 `CoreException`은 변경하지 않는다.
+
+### User와 fixture
+
+- Shopping의 User는 ID만 가진 순수 domain 모델이다.
+- `users` 테이블은 할당된 ID를 저장하며 local 프로필에서 사용자 `1`, `2`를 없을 때만 생성한다.
+- 테스트 fixture는 User 객체를 제공하고 테스트가 저장 시점을 명시한다.
+- application의 `UserValidator`가 사용자 존재 여부를 공통으로 검사한다.
+- Point와 초기 잔액은 PR 04에서 연결한다.
+
+### 공통 API 입력
+
+- `@XUserId`와 argument resolver가 헤더 누락·형식·양수·long 범위를 검사한다.
+- resolver는 사용자 존재 여부를 조회하지 않는다.
+- PR 01에서는 resolver 단위 테스트까지만 수행한다. 실제 HTTP 응답과 저장 상태는 첫 사용자 API부터 검증한다.
+- commerce-api의 JSON 정수 입력은 문자열·빈 문자열·소수·null 보정을 허용하지 않는다.
+
+## 테스트와 완료 조건
+
+- 기존 테스트 전체 통과
+- Checkstyle·ArchUnit·commerce-api `check` 통과
+- domain/application 오류의 기본·사용자 지정 메시지와 400·404 매핑 검증
+- User 생성·복원·Mapper·repository·local 초기화·UserValidator 검증
+- X-USER-ID 정상·누락·빈 값·문자·소수·공백·0·음수·long 초과 검증
+- JSON 정수의 정상값과 문자열·빈 문자열·소수·null·long 초과 검증
+- `git diff --check` 통과
+
+## 커밋 순서
+
+`docs: PR 단위 2주차 개발 계획 정리`
+
+- 7개 PR의 범위·순서와 PR 01 상세 계획 반영
+- 동시성 제외와 fixture·선행 저장 구조 도입 시점 동기화
+
+`build: 테스트 실행 환경 호환성 보완`
+
+- 한글 경로의 Gradle worker classpath 인코딩 보완
+- Docker 29와 Testcontainers의 API 버전 호환
+
+`build: Checkstyle과 ArchUnit 검사 연결`
+
+- import 검사와 계층·domain 순수성 검사 연결
+- commerce-api `check`에서 실제 검사 실행
+
+`feat: 계층별 공통 오류 모델 구성`
+
+- domain/application 내부 오류와 interfaces 매핑 추가
+- 오류 코드·메시지 변환 테스트 추가
+
+`feat: 학습용 사용자 fixture 구성`
+
+- User domain·저장·local/test fixture 구성
+- 공통 UserValidator와 관련 테스트 추가
+
+`feat: 공통 API 입력 검증 구성`
+
+- X-USER-ID resolver와 단위 테스트 추가
+- JSON 정수 coercion 제한과 단위 테스트 추가
+
+## 제외 범위
+
+- 회원가입·사용자 조회·인증·인가 API
+- Point 생성과 초기 잔액
+- 테스트 전용 HTTP Controller
+- 동시성 제어와 동시 요청 테스트
+- 원격 PR 생성·게시·병합

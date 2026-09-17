@@ -44,6 +44,11 @@
 결제 기록은 OrderBill에서 조합한다. DRAFT의 paymentAmount·paymentStatus는 null이다.
 CONFIRMED는 paymentAmount = totalAmount, paymentStatus = PAID다.
 
+PR 02에서 Like 저장 구조·유일성 제약과 실제 COUNT 조회를 준비하고 관계 fixture로 상품 집계를 검증한다.
+PR 03에서 좋아요 등록·취소·목록 유스케이스를 연결한다. likeCount를 임시 상수로 반환하지 않는다.
+PR 05에서 OrderBill 저장·조회 구조를 준비하고 결제 결과 조합은 저장 fixture로 검증한다.
+PR 06에서 실제 결제 기록 생성과 확정을 연결한 뒤 기존 주문 조회 API의 결제 결과도 검증한다.
+
 ## 조회 조합
 
 ```mermaid

@@ -57,8 +57,9 @@ OrderBill은 성공 시에만 생성하며 이번 범위의 상태는 PAID다. D
 | OrderBill | 양수 결제액, orderId별 성공 기록 하나 | 주문 합계와 결제액 일치 |
 
 관계·결제의 중복은 DB의 `(userId, productId)`, `orderId` 유일성으로도 보호한다.
-주문 상태 검사와 차감은 같은 트랜잭션에서 수행한다. 동시 요청에서도 중복 차감·갱신 유실이 없도록
-Order·Product·Point의 잠금 또는 버전 검증을 구현 시 함께 적용해야 한다.
+주문 상태 검사와 차감은 같은 트랜잭션에서 수행하며 순차 재확정은 거절한다.
+동시 요청의 중복 차감·갱신 유실 방지를 위한 잠금·버전 검증·재시도와 동시성 테스트는 다음 학습으로 미룬다.
+이번 범위에서는 DB 유일성 제약과 단일 요청의 전체 롤백을 검증하며 동시 요청 안전성을 보장한다고 해석하지 않는다.
 
 ## 주문 상태
 
@@ -86,6 +87,6 @@ CONFIRMED는 결제를 마친 상태다. 취소·환불·결제 대기 상태는
 부분 차감 후 보상 데이터를 추가하는 대신 요청 전 상태로 롤백한다.
 트랜잭션은 application의 UseCase 구현 Service가 소유하고, 변경된 도메인은 repository의 `save`로 저장한다.
 RepositoryImpl은 저장을 조율하고 EntityMapper는 도메인 복원·신규 Entity 변환·기존 Entity 반영을 담당한다.
-기존 Entity의 ID·생성 시각·잠금 버전 등은 변환 중 보존한다. domain은 JPA 변경 감지에 의존하지 않는다.
+기존 Entity의 ID·생성 시각 등 저장 메타데이터는 변환 중 보존한다. domain은 JPA 변경 감지에 의존하지 않는다.
 
 값의 범위는 [정책](02-business-policies.md), 조회 형태는 [Read Model](06-read-models.md)에 정의한다.
