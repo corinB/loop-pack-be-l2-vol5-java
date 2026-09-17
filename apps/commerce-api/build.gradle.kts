@@ -1,3 +1,5 @@
+import org.gradle.api.plugins.quality.CheckstyleExtension
+
 dependencies {
     // add-ons
     implementation(project(":modules:jpa"))
@@ -19,4 +21,14 @@ dependencies {
     // test-fixtures
     testImplementation(testFixtures(project(":modules:jpa")))
     testImplementation(testFixtures(project(":modules:redis")))
+    testImplementation("com.tngtech.archunit:archunit-junit5:${project.properties["archUnitVersion"]}")
+}
+
+apply(plugin = "checkstyle")
+
+configure<CheckstyleExtension> {
+    toolVersion = project.properties["checkstyleVersion"].toString()
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+    maxWarnings = 0
 }
