@@ -38,3 +38,6 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Local test environment ###
+apps/commerce-api/src/test/resources/docker-java.properties

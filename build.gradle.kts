@@ -71,6 +71,7 @@ subprojects {
 
     tasks.withType(Jar::class) { enabled = true }
     tasks.withType(BootJar::class) { enabled = false }
+    tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
 
     configure(allprojects.filter { it.parent?.name.equals("apps") }) {
         tasks.withType(Jar::class) { enabled = false }
@@ -80,6 +81,7 @@ subprojects {
     tasks.test {
         maxParallelForks = 1
         useJUnitPlatform()
+        systemProperty("file.encoding", "UTF-8")
         systemProperty("user.timezone", "Asia/Seoul")
         systemProperty("spring.profiles.active", "test")
         jvmArgs("-Xshare:off")
