@@ -13,6 +13,9 @@ Bounded Context는 같은 용어와 규칙을 공유하는 업무 경계다.
 | Pay | 포인트 잔액·증감·결제 기록 | Point, PointBill, OrderBill | 잔액, 결제 금액·결과 |
 
 User는 fixture 사용자를 구분하는 최소 모델이다. 인증·인가·본인 여부 검사는 구현하지 않는다.
+PR 01에서 User·두 사용자 fixture를 준비하고, PR 04에서 Pay의 초기 잔액 0의 Point를 연결한다.
+PR 02는 상품 집계를 위해 Shopping의 Like 저장 구조를, PR 05는 결제 조회를 위해 Pay의 OrderBill 저장 구조를 먼저 준비한다.
+Like 유스케이스는 PR 03, 실제 결제 기록 생성은 PR 06에서 연결한다. 선행 구현으로 Context 소유권이 바뀌지는 않는다.
 관리자는 별도 업무 Context가 아니라 Mall·Ordering 기능을 사용하는 업무 주체다. 권한 검사는 없다.
 
 ## Context Map
