@@ -3,8 +3,11 @@ package com.loopers.interfaces.api;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.loopers.application.support.error.ApplicationException;
+import com.loopers.domain.support.error.DomainException;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -22,7 +25,22 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class ApiControllerAdvice {
+    private final ApiErrorMapper apiErrorMapper;
+
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<?>> handle(DomainException e) {
+        log.warn("DomainException : {}", e.getMessage(), e);
+        return failureResponse(apiErrorMapper.map(e.getErrorCode()), e.getMessage());
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<?>> handle(ApplicationException e) {
+        log.warn("ApplicationException : {}", e.getMessage(), e);
+        return failureResponse(apiErrorMapper.map(e.getErrorCode()), e.getMessage());
+    }
+
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handle(CoreException e) {
         log.warn("CoreException : {}", e.getCustomMessage() != null ? e.getCustomMessage() : e.getMessage(), e);
