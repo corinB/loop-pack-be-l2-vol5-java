@@ -11,6 +11,10 @@ import com.loopers.domain.mall.brand.BrandRepository;
 import com.loopers.domain.mall.product.Product;
 import com.loopers.domain.mall.product.ProductRepository;
 import com.loopers.domain.ordering.order.OrderStatus;
+import com.loopers.domain.pay.orderbill.OrderBillStatus;
+import com.loopers.domain.pay.point.Point;
+import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
 import com.loopers.interfaces.api.ApiResponse;
@@ -41,6 +45,8 @@ class OrderApiE2ETest {
     private BrandRepository brandRepository;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private PointRepository pointRepository;
     @Autowired
     private JdbcClient jdbcClient;
     @Autowired
@@ -113,6 +119,115 @@ class OrderApiE2ETest {
                 List.of(new OrderApiDto.ItemRequest(productId, 1)));
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DisplayName("주문 확정")
+    @Nested
+    class Confirm {
+        @DisplayName("재고·포인트가 충분하면 200과 결제 결과를 반환한다")
+        @Test
+        void confirmsOrder_andReturnsPaymentResult() {
+            userRepository.save(User.create(1L));
+            long productId = createProduct("상품", 1_000L, 10);
+            chargePoint(1L, 10_000L);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
+                .getBody().data().orderId();
+
+            ResponseEntity<ApiResponse<OrderView>> response = confirmOrder(orderId);
+
+            assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
+                () -> assertThat(response.getBody().data().status()).isEqualTo(OrderStatus.CONFIRMED),
+                () -> assertThat(response.getBody().data().paymentAmount()).isEqualTo(2_000L),
+                () -> assertThat(response.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(currentStock(productId)).isEqualTo(8),
+                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L)
+            );
+        }
+
+        @DisplayName("확정 후 고객·관리자 조회에서도 결제 결과가 노출된다")
+        @Test
+        void exposesPaymentResult_inCustomerAndAdminQueries() {
+            userRepository.save(User.create(1L));
+            long productId = createProduct("상품", 1_000L, 10);
+            chargePoint(1L, 10_000L);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
+                .getBody().data().orderId();
+            confirmOrder(orderId);
+
+            ResponseEntity<ApiResponse<OrderView>> customerDetail = findOrder(orderId);
+            ResponseEntity<ApiResponse<AdminOrderView>> adminDetail = restTemplate.exchange(
+                "/api-admin/v1/orders/" + orderId,
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                new ParameterizedTypeReference<>() {}
+            );
+
+            assertAll(
+                () -> assertThat(customerDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
+                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(adminDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
+                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID)
+            );
+        }
+
+        @DisplayName("없는 주문은 404를 반환한다")
+        @Test
+        void returnsNotFound_whenOrderDoesNotExist() {
+            ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(999L);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+
+        @DisplayName("재고가 부족하면 409를 반환하고 상태를 유지한다")
+        @Test
+        void returnsConflict_whenStockIsInsufficient() {
+            userRepository.save(User.create(1L));
+            long productId = createProduct("상품", 1_000L, 1);
+            chargePoint(1L, 10_000L);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
+                .getBody().data().orderId();
+
+            ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(orderId);
+
+            assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                () -> assertThat(currentStock(productId)).isEqualTo(1),
+                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L)
+            );
+        }
+
+        @DisplayName("포인트가 부족하면 409를 반환하고 상태를 유지한다")
+        @Test
+        void returnsConflict_whenPointIsInsufficient() {
+            userRepository.save(User.create(1L));
+            pointRepository.save(Point.zero(1L));
+            long productId = createProduct("상품", 1_000L, 10);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
+                .getBody().data().orderId();
+
+            ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(orderId);
+
+            assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
+                () -> assertThat(currentStock(productId)).isEqualTo(10)
+            );
+        }
+
+        @DisplayName("이미 확정된 주문을 다시 확정하면 409를 반환한다")
+        @Test
+        void returnsConflict_whenAlreadyConfirmed() {
+            userRepository.save(User.create(1L));
+            long productId = createProduct("상품", 1_000L, 10);
+            chargePoint(1L, 10_000L);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
+                .getBody().data().orderId();
+            confirmOrder(orderId);
+
+            ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(orderId);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         }
     }
 
@@ -208,6 +323,30 @@ class OrderApiE2ETest {
 
     private int currentStock(long productId) {
         return productRepository.findById(productId).orElseThrow().getStock();
+    }
+
+    private void chargePoint(long userId, long amount) {
+        Point point = pointRepository.save(Point.zero(userId));
+        point.charge(Money.positive(amount));
+        pointRepository.save(point);
+    }
+
+    private ResponseEntity<ApiResponse<OrderView>> confirmOrder(long orderId) {
+        return restTemplate.exchange(
+            "/api/v1/orders/" + orderId + "/confirm",
+            HttpMethod.POST,
+            HttpEntity.EMPTY,
+            new ParameterizedTypeReference<>() {}
+        );
+    }
+
+    private ResponseEntity<ApiResponse<Object>> confirmOrderRaw(long orderId) {
+        return restTemplate.exchange(
+            "/api/v1/orders/" + orderId + "/confirm",
+            HttpMethod.POST,
+            HttpEntity.EMPTY,
+            new ParameterizedTypeReference<>() {}
+        );
     }
 
     private long orderCount() {

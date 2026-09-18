@@ -16,6 +16,7 @@ import java.time.Instant;
 ), indexes = {
     @Index(name = "idx_product_likes_user_created", columnList = "user_id, created_at DESC, product_id DESC")
 })
+// 좋아요 JPA 엔티티
 public class LikeJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

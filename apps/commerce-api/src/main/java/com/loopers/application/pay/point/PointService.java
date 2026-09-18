@@ -11,10 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+// 포인트 충전 처리 서비스
 public class PointService implements ChargePointUseCase {
     private final PointRepository pointRepository;
     private final PointBillRepository pointBillRepository;
 
+    // 잔액 충전 후 충전 기록 저장
     @Override
     @Transactional
     public PointResult execute(PointCommand.Charge command) {

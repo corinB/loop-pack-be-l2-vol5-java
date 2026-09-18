@@ -9,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// 좋아요 등록/취소를 처리하는 JDBC DAO
 public class JdbcLikeCommandDao implements LikeCommandDao {
     private final JdbcClient jdbcClient;
 
+    // 삭제되지 않은 활성 상품인지 확인
     @Override
     @Transactional(readOnly = true)
     public boolean existsActiveProduct(long productId) {
@@ -21,6 +23,7 @@ public class JdbcLikeCommandDao implements LikeCommandDao {
             .single());
     }
 
+    // 좋아요 등록 (중복 방지)
     @Override
     @Transactional
     public void register(long userId, long productId) {
@@ -40,6 +43,7 @@ public class JdbcLikeCommandDao implements LikeCommandDao {
         }
     }
 
+    // 좋아요 취소
     @Override
     @Transactional
     public void cancel(long userId, long productId) {

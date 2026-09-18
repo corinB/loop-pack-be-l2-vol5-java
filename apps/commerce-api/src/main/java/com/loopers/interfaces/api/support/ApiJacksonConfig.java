@@ -9,8 +9,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+// Jackson 정수 역직렬화 엄격 설정
 class ApiJacksonConfig {
 
+    // 숫자 타입 강제 변환을 엄격하게 제한
     @Bean
     Jackson2ObjectMapperBuilderCustomizer strictIntegerCustomizer() {
         return builder -> builder.postConfigurer(objectMapper -> {

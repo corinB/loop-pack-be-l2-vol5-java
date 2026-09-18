@@ -8,10 +8,12 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
+// 상품 레포지토리 JPA 구현체
 public class ProductRepositoryImpl implements ProductRepository {
     private final ProductJpaRepository productJpaRepository;
     private final ProductEntityMapper mapper;
 
+    // 신규 또는 기존 상품 저장
     @Override
     public Product save(Product product) {
         ProductJpaEntity entity;

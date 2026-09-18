@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api-admin/v1/products")
 @RequiredArgsConstructor
+// 관리자용 상품 CRUD 컨트롤러
 public class AdminProductController {
     private final ProductQueryDao productQueryDao;
     private final CreateProductUseCase createProductUseCase;
@@ -38,6 +39,7 @@ public class AdminProductController {
     private final DeleteProductUseCase deleteProductUseCase;
     private final SetProductStockUseCase setProductStockUseCase;
 
+    // 상품 목록 조회
     @GetMapping
     public ApiResponse<PageResult<AdminProduct>> findAll(
         @RequestParam(required = false) Long brandId,
@@ -49,24 +51,28 @@ public class AdminProductController {
         return ApiResponse.success(productQueryDao.findAdminProducts(criteria));
     }
 
+    // 상품 단건 조회
     @GetMapping("/{productId}")
     public ApiResponse<AdminProduct> find(@PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(productQueryDao.findAdminProduct(productId).orElseThrow(AdminProductController::notFound));
     }
 
+    // 상품 생성
     @PostMapping
     public ResponseEntity<ApiResponse<AdminProduct>> create(@RequestBody ProductApiDto.CreateRequest request) {
         AdminProduct product = AdminProduct.from(createProductUseCase.execute(request.toCommand()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(product));
     }
 
+    // 상품 수정
     @PutMapping("/{productId}")
     public ApiResponse<AdminProduct> update(@PathVariable long productId, @RequestBody ProductApiDto.UpdateRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(AdminProduct.from(updateProductUseCase.execute(request.toCommand(productId))));
     }
 
+    // 상품 삭제
     @DeleteMapping("/{productId}")
     public ApiResponse<Object> delete(@PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
@@ -74,6 +80,7 @@ public class AdminProductController {
         return ApiResponse.success();
     }
 
+    // 상품 재고 설정
     @PutMapping("/{productId}/stock")
     public ApiResponse<AdminProduct> setStock(@PathVariable long productId, @RequestBody ProductApiDto.StockRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");

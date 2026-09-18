@@ -68,4 +68,30 @@ class PointTest {
             assertThat(point.getBalance()).isEqualTo(Long.MAX_VALUE);
         }
     }
+
+    @DisplayName("포인트 사용")
+    @Nested
+    class Use {
+        @DisplayName("사용액만큼 잔액을 뺀다")
+        @Test
+        void decreasesBalance_byUseAmount() {
+            Point point = Point.restore(1L, 1_000L);
+
+            point.use(Money.positive(1_000L));
+
+            assertThat(point.getBalance()).isZero();
+        }
+
+        @DisplayName("잔액이 사용액보다 1 부족하면 거절하고 기존 잔액을 유지한다")
+        @Test
+        void rejectsInsufficientBalance_andKeepsOriginalBalance() {
+            Point point = Point.restore(1L, 999L);
+
+            assertThatThrownBy(() -> point.use(Money.positive(1_000L)))
+                .isInstanceOf(DomainException.class)
+                .extracting("errorCode")
+                .isEqualTo(DomainErrorCode.INSUFFICIENT_POINT);
+            assertThat(point.getBalance()).isEqualTo(999L);
+        }
+    }
 }

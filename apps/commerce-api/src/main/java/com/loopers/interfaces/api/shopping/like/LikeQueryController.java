@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users/{userId}/likes")
 @RequiredArgsConstructor
+// 좋아요 목록 조회 API 컨트롤러
 public class LikeQueryController {
     private final LikeQueryDao likeQueryDao;
     private final UserQueryDao userQueryDao;
 
+    // 사용자 좋아요 목록 조회
     @GetMapping
     public ApiResponse<PageResult<LikeItem>> findAll(
         @PathVariable long userId,

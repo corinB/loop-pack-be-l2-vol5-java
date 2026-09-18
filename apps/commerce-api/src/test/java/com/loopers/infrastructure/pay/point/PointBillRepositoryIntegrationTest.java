@@ -43,4 +43,18 @@ class PointBillRepositoryIntegrationTest {
         assertThat(restored.getAmount()).isEqualTo(1_000L);
         assertThat(restored.getCreatedAt()).isNotNull();
     }
+
+    @DisplayName("사용 기록을 저장하고 영속성 컨텍스트를 비운 뒤 주문 ID를 재조회한다")
+    @Test
+    @Transactional
+    void savesUseBill_withOrderId() {
+        PointBill saved = pointBillRepository.save(PointBill.use(1L, 10L, 1_000L));
+        entityManager.flush();
+        entityManager.clear();
+
+        PointBillJpaEntity restored = entityManager.find(PointBillJpaEntity.class, saved.getId());
+
+        assertThat(restored.getType()).isEqualTo(PointBillType.USE);
+        assertThat(restored.getOrderId()).isEqualTo(10L);
+    }
 }

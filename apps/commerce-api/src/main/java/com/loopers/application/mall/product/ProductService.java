@@ -12,12 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+// 상품 생성·수정·삭제·재고설정 유스케이스 구현
 public class ProductService implements CreateProductUseCase, UpdateProductUseCase, DeleteProductUseCase,
         SetProductStockUseCase {
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
     private final ProductLikeCountQueryDao likeCountQueryDao;
 
+    // 상품 생성
     @Override
     @Transactional
     public ProductResult execute(ProductCommand.Create command) {
@@ -29,6 +31,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         return result(productRepository.save(product), brand);
     }
 
+    // 상품 수정
     @Override
     @Transactional
     public ProductResult execute(ProductCommand.Update command) {
@@ -37,6 +40,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         return result(productRepository.save(product), findBrand(product.getBrandId()));
     }
 
+    // 상품 삭제
     @Override
     @Transactional
     public void execute(ProductCommand.Delete command) {
@@ -45,6 +49,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         productRepository.save(product);
     }
 
+    // 상품 재고 설정
     @Override
     @Transactional
     public ProductResult execute(ProductCommand.SetStock command) {

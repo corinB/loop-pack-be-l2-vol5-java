@@ -8,6 +8,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "example")
+// 예시 도메인 엔티티 (레거시 참고용)
 public class ExampleModel extends BaseEntity {
 
     private String name;
@@ -15,6 +16,7 @@ public class ExampleModel extends BaseEntity {
 
     protected ExampleModel() {}
 
+    // 이름/설명 검증 후 생성
     public ExampleModel(String name, String description) {
         if (name == null || name.isBlank()) {
             throw new CoreException(ErrorType.BAD_REQUEST, "이름은 비어있을 수 없습니다.");
@@ -35,6 +37,7 @@ public class ExampleModel extends BaseEntity {
         return description;
     }
 
+    // 설명 검증 후 갱신
     public void update(String newDescription) {
         if (newDescription == null || newDescription.isBlank()) {
             throw new CoreException(ErrorType.BAD_REQUEST, "설명은 비어있을 수 없습니다.");

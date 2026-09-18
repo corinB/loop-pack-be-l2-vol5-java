@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/brands")
 @RequiredArgsConstructor
+// 브랜드 조회 전용 컨트롤러
 public class BrandQueryController {
     private final BrandQueryDao brandQueryDao;
 
+    // 브랜드 단건 조회
     @GetMapping("/{brandId}")
     public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");

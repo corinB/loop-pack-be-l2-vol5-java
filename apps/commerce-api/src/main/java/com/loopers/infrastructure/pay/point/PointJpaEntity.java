@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "points")
+// 포인트 JPA 엔티티
 public class PointJpaEntity {
     @Id
     @Column(name = "user_id")

@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
+// 사용자 주문 조회 컨트롤러
 public class OrderQueryController {
     private final OrderQueryDao orderQueryDao;
 
+    // 내 주문 목록 페이지 조회
     @GetMapping
     public ApiResponse<PageResult<OrderView>> findAll(
         @XUserId long userId,
@@ -31,6 +33,7 @@ public class OrderQueryController {
         return ApiResponse.success(orderQueryDao.findOrders(userId, new PageCriteria(page, size)));
     }
 
+    // 단건 주문 조회
     @GetMapping("/{orderId}")
     public ApiResponse<OrderView> find(@PathVariable long orderId) {
         RequestInputValidator.requirePositiveId(orderId, "주문 ID");

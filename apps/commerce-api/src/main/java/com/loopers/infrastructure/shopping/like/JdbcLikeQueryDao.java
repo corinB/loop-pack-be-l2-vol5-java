@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// 좋아요 목록 조회를 처리하는 JDBC DAO
 public class JdbcLikeQueryDao implements LikeQueryDao {
     private final JdbcClient jdbcClient;
 
+    // 사용자별 좋아요 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<LikeItem> findByUserId(long userId, PageCriteria criteria) {

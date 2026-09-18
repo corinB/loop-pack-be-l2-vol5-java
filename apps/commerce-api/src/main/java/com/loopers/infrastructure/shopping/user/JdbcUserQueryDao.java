@@ -10,9 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// 사용자 조회를 처리하는 JDBC DAO
 public class JdbcUserQueryDao implements UserQueryDao {
     private final JdbcClient jdbcClient;
 
+    // ID로 사용자 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<UserQueryModel> findById(long userId) {

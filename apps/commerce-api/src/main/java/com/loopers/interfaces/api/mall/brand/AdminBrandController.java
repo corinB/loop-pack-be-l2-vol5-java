@@ -28,12 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api-admin/v1/brands")
 @RequiredArgsConstructor
+// 관리자용 브랜드 CRUD 컨트롤러
 public class AdminBrandController {
     private final BrandQueryDao brandQueryDao;
     private final CreateBrandUseCase createBrandUseCase;
     private final UpdateBrandUseCase updateBrandUseCase;
     private final DeleteBrandUseCase deleteBrandUseCase;
 
+    // 브랜드 목록 조회
     @GetMapping
     public ApiResponse<PageResult<BrandDetail>> findAll(
         @RequestParam(defaultValue = "0") int page,
@@ -42,24 +44,28 @@ public class AdminBrandController {
         return ApiResponse.success(brandQueryDao.findAll(new PageCriteria(page, size)));
     }
 
+    // 브랜드 단건 조회
     @GetMapping("/{brandId}")
     public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         return ApiResponse.success(brandQueryDao.findById(brandId).orElseThrow(AdminBrandController::notFound));
     }
 
+    // 브랜드 생성
     @PostMapping
     public ResponseEntity<ApiResponse<BrandApiDto.Response>> create(@RequestBody BrandApiDto.Request request) {
         BrandApiDto.Response response = BrandApiDto.Response.from(createBrandUseCase.execute(request.toCreateCommand()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
+    // 브랜드 수정
     @PutMapping("/{brandId}")
     public ApiResponse<BrandApiDto.Response> update(@PathVariable long brandId, @RequestBody BrandApiDto.Request request) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         return ApiResponse.success(BrandApiDto.Response.from(updateBrandUseCase.execute(request.toUpdateCommand(brandId))));
     }
 
+    // 브랜드 삭제
     @DeleteMapping("/{brandId}")
     public ApiResponse<Object> delete(@PathVariable long brandId) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");

@@ -6,6 +6,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
+// 사용자 JPA 엔티티
 public class UserJpaEntity {
     @Id
     private Long id;

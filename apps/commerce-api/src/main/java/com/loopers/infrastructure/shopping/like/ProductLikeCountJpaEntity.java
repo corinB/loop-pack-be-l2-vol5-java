@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "product_like_counts")
+// 상품 좋아요 집계 JPA 엔티티
 public class ProductLikeCountJpaEntity {
     @Id
     @Column(name = "product_id")

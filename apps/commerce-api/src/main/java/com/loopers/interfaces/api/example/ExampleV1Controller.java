@@ -12,10 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/examples")
+// 예시 API 컨트롤러 (레거시 참고용)
 public class ExampleV1Controller implements ExampleV1ApiSpec {
 
     private final ExampleFacade exampleFacade;
 
+    // id로 예시 조회
     @GetMapping("/{exampleId}")
     @Override
     public ApiResponse<ExampleV1Dto.ExampleResponse> getExample(

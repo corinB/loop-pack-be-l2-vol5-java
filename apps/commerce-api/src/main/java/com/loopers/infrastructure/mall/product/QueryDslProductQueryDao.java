@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// QueryDSL 기반 상품 조회 DAO
 public class QueryDslProductQueryDao implements ProductQueryDao {
     private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
     private static final QBrandJpaEntity BRAND = QBrandJpaEntity.brandJpaEntity;
@@ -34,24 +35,28 @@ public class QueryDslProductQueryDao implements ProductQueryDao {
 
     private final JPAQueryFactory queryFactory;
 
+    // 상품 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<ProductSummary> findProducts(ProductCriteria criteria) {
         return findPage(criteria, ProductQueryRow::toSummary);
     }
 
+    // 관리자용 상품 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<AdminProduct> findAdminProducts(ProductCriteria criteria) {
         return findPage(criteria, ProductQueryRow::toAdminProduct);
     }
 
+    // 상품 상세 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<ProductDetail> findProduct(long productId) {
         return findRow(productId).map(ProductQueryRow::toDetail);
     }
 
+    // 관리자용 상품 상세 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<AdminProduct> findAdminProduct(long productId) {

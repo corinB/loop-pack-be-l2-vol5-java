@@ -4,6 +4,7 @@ import com.loopers.application.mall.product.ProductCommand;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 
+// 상품 API 요청·응답 DTO 모음
 public final class ProductApiDto {
     private ProductApiDto() {}
 

@@ -4,6 +4,7 @@ import com.loopers.application.common.PageCriteria;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 
+// 상품 목록 조회 조건
 public record ProductCriteria(Long brandId, ProductSort sort, PageCriteria page) {
     public ProductCriteria {
         if (brandId != null && brandId <= 0) {

@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// JDBC 기반 브랜드 조회 DAO
 public class JdbcBrandQueryDao implements BrandQueryDao {
     private final JdbcClient jdbcClient;
 
+    // 단건 브랜드 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<BrandDetail> findById(long brandId) {
@@ -25,6 +27,7 @@ public class JdbcBrandQueryDao implements BrandQueryDao {
             .optional();
     }
 
+    // 브랜드 페이지 목록 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<BrandDetail> findAll(PageCriteria criteria) {

@@ -19,6 +19,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "orders")
+// 주문 JPA 엔티티
 public class OrderJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

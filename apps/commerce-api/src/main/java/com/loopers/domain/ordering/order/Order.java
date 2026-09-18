@@ -6,10 +6,11 @@ import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
 import java.util.List;
 
+// 주문 도메인 모델
 public final class Order {
     private final Long id;
     private final long userId;
-    private final OrderStatus status;
+    private OrderStatus status;
     private final List<OrderItem> items;
     private final Money totalAmount;
     private final Instant createdAt;
@@ -30,11 +31,13 @@ public final class Order {
         this.createdAt = createdAt;
     }
 
+    // 새 주문 생성
     public static Order create(long userId, List<OrderItem> items) {
         Money total = sumAmounts(items);
         return new Order(null, userId, OrderStatus.DRAFT, items, total, null);
     }
 
+    // 저장된 데이터로부터 주문 복원
     public static Order restore(long id, long userId, OrderStatus status, List<OrderItem> items, long totalAmount,
                                 Instant createdAt) {
         if (id <= 0 || createdAt == null) {
@@ -47,6 +50,15 @@ public final class Order {
         return new Order(id, userId, status, items, computedTotal, createdAt);
     }
 
+    // DRAFT를 CONFIRMED로 전환
+    public void confirm() {
+        if (status == OrderStatus.CONFIRMED) {
+            throw new DomainException(DomainErrorCode.ORDER_ALREADY_CONFIRMED);
+        }
+        status = OrderStatus.CONFIRMED;
+    }
+
+    // 품목 금액 합산
     private static Money sumAmounts(List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
             throw new DomainException(DomainErrorCode.EMPTY_ORDER_ITEMS);

@@ -16,6 +16,7 @@ import java.time.Instant;
     @Index(name = "idx_products_deleted_brand_created", columnList = "deleted, brand_id, created_at DESC, id DESC"),
     @Index(name = "idx_products_deleted_brand_price", columnList = "deleted, brand_id, price ASC, id DESC")
 })
+// 상품 JPA 엔티티
 public class ProductJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +44,7 @@ public class ProductJpaEntity {
         apply(brandId, name, description, price, stock, deleted);
     }
 
+    // 상품 필드 갱신
     void apply(long brandId, String name, String description, long price, int stock, boolean deleted) {
         this.brandId = brandId;
         this.name = name;

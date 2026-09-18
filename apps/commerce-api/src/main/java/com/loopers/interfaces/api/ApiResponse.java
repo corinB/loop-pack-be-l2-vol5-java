@@ -1,5 +1,6 @@
 package com.loopers.interfaces.api;
 
+// API 공통 응답 포맷
 public record ApiResponse<T>(Metadata meta, T data) {
     public record Metadata(Result result, String errorCode, String message) {
         public enum Result {

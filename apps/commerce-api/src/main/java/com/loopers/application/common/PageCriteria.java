@@ -3,6 +3,7 @@ package com.loopers.application.common;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 
+// 페이지네이션 요청 조건
 public record PageCriteria(int page, int size) {
     public PageCriteria {
         if (page < 0 || size < 1 || size > 100) {

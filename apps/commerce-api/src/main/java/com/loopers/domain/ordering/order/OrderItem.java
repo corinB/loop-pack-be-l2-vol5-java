@@ -2,6 +2,7 @@ package com.loopers.domain.ordering.order;
 
 import com.loopers.domain.shared.Money;
 
+// 주문 품목 도메인 모델
 public final class OrderItem {
     private final long productId;
     private final String productName;
@@ -23,12 +24,14 @@ public final class OrderItem {
         this.amount = amount;
     }
 
+    // 새 주문 품목 생성
     public static OrderItem create(long productId, String productName, long unitPrice, int quantity) {
         Money price = Money.positive(unitPrice);
         Money amount = price.multiply(quantity);
         return new OrderItem(productId, productName, price, quantity, amount);
     }
 
+    // 저장된 데이터로부터 품목 복원
     public static OrderItem restore(long productId, String productName, long unitPrice, int quantity, long amount) {
         Money price = Money.positive(unitPrice);
         Money expectedAmount = price.multiply(quantity);
