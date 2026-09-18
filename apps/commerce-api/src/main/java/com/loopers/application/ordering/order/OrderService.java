@@ -19,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+// 주문 생성 유스케이스 구현체
 public class OrderService implements CreateOrderUseCase {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
 
+    // 상품별 수량을 합산해 주문 생성
     @Override
     @Transactional
     public OrderResult execute(OrderCommand.Create command) {
@@ -38,6 +40,7 @@ public class OrderService implements CreateOrderUseCase {
         return OrderResult.from(orderRepository.save(order));
     }
 
+    // 동일 상품 수량 병합
     private Map<Long, Integer> mergeQuantities(List<OrderCommand.Item> items) {
         Map<Long, Integer> merged = new LinkedHashMap<>();
         for (OrderCommand.Item item : items) {

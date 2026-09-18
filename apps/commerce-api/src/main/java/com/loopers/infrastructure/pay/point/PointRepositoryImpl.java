@@ -8,10 +8,12 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
+// 포인트 저장소 구현체
 public class PointRepositoryImpl implements PointRepository {
     private final PointJpaRepository pointJpaRepository;
     private final PointEntityMapper mapper;
 
+    // 있으면 갱신, 없으면 신규 저장
     @Override
     public Point save(Point point) {
         Optional<PointJpaEntity> existing = pointJpaRepository.findById(point.getUserId());

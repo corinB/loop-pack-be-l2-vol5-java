@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/products/{productId}/likes")
 @RequiredArgsConstructor
+// 좋아요 등록/취소 API 컨트롤러
 public class LikeController {
     private final LikeCommandDao likeCommandDao;
 
+    // 좋아요 등록 요청 처리
     @PostMapping
     public ApiResponse<Object> register(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
@@ -29,6 +31,7 @@ public class LikeController {
         return ApiResponse.success();
     }
 
+    // 좋아요 취소 요청 처리
     @DeleteMapping
     public ApiResponse<Object> cancel(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");

@@ -6,8 +6,10 @@ import com.loopers.support.error.ErrorType;
 import org.springframework.stereotype.Component;
 
 @Component
+// 도메인/애플리케이션 에러 코드를 HTTP 에러 타입으로 매핑
 public class ApiErrorMapper {
 
+    // 도메인 에러 코드 매핑
     public ErrorType map(DomainErrorCode errorCode) {
         return switch (errorCode) {
             case INVALID_USER_ID, INVALID_MONEY, NON_POSITIVE_MONEY, CALCULATION_OVERFLOW,
@@ -18,6 +20,7 @@ public class ApiErrorMapper {
         };
     }
 
+    // 애플리케이션 에러 코드 매핑
     public ErrorType map(ApplicationErrorCode errorCode) {
         return switch (errorCode) {
             case USER_NOT_FOUND, BRAND_NOT_FOUND, PRODUCT_NOT_FOUND, ORDER_NOT_FOUND -> ErrorType.NOT_FOUND;

@@ -10,8 +10,10 @@ import java.util.TimeZone;
 @ConfigurationPropertiesScan
 @SpringBootApplication
 @EnableScheduling
+// 스프링 부트 애플리케이션 진입점
 public class CommerceApiApplication {
 
+    // 타임존 초기화
     @PostConstruct
     public void started() {
         // set timezone

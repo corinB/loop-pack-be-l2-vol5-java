@@ -26,6 +26,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
+// 주문 확정용 조회/저장 JDBC 구현체
 public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -33,6 +34,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
     private final JdbcClient jdbcClient;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
+    // 주문/상품/포인트를 함께 조회
     @Override
     public ConfirmOrderLoad load(long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -49,6 +51,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
         return new ConfirmOrderLoad(order, productsByProductId, point);
     }
 
+    // 재고, 포인트, 결제 기록, 주문 상태를 한번에 저장
     @Override
     public void save(ConfirmOrderLoad load, PointBill pointBill, OrderBill orderBill) {
         saveProductStocks(load.productsByProductId().values());
@@ -58,6 +61,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
         saveOrderStatus(load.order());
     }
 
+    // 상품 재고를 배치로 반영
     private void saveProductStocks(Collection<Product> products) {
         Instant now = Instant.now();
         SqlParameterSource[] batchArgs = products.stream()
@@ -72,6 +76,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
         );
     }
 
+    // 포인트 잔액 갱신
     private void savePointBalance(Point point) {
         jdbcClient.sql("UPDATE points SET balance = :balance WHERE user_id = :userId")
             .param("balance", point.getBalance())
@@ -79,6 +84,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
             .update();
     }
 
+    // 포인트 사용 내역 저장
     private void savePointBill(PointBill pointBill) {
         jdbcClient.sql("""
                 INSERT INTO point_bills (user_id, type, amount, order_id, created_at)
@@ -92,6 +98,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
             .update();
     }
 
+    // 결제 기록 저장
     private void saveOrderBill(OrderBill orderBill) {
         jdbcClient.sql("""
                 INSERT INTO order_bills (order_id, user_id, amount, status, created_at)
@@ -105,6 +112,7 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
             .update();
     }
 
+    // 주문 상태 저장
     private void saveOrderStatus(Order order) {
         jdbcClient.sql("UPDATE orders SET status = :status WHERE id = :id")
             .param("status", order.getStatus().name())

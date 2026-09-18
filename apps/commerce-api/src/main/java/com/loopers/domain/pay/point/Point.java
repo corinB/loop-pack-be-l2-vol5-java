@@ -4,6 +4,7 @@ import com.loopers.domain.shared.Money;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 
+// 포인트 잔액 도메인 모델
 public final class Point {
     private final long userId;
     private Money balance;
@@ -24,10 +25,12 @@ public final class Point {
         return new Point(userId, Money.of(balance));
     }
 
+    // 잔액 충전
     public void charge(Money amount) {
         balance = balance.add(amount);
     }
 
+    // 잔액을 차감하고 부족하면 거절
     public void use(Money amount) {
         if (amount.getValue() > balance.getValue()) {
             throw new DomainException(DomainErrorCode.INSUFFICIENT_POINT);

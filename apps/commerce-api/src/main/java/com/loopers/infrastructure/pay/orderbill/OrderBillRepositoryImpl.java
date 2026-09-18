@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
+// 주문 결제 저장소 구현체
 public class OrderBillRepositoryImpl implements OrderBillRepository {
     private final OrderBillJpaRepository orderBillJpaRepository;
     private final OrderBillEntityMapper mapper;

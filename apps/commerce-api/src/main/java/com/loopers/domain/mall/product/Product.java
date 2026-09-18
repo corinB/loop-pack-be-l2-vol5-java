@@ -5,6 +5,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
 
+// 상품 도메인 모델
 public final class Product {
     private final Long id;
     private final long brandId;
@@ -34,6 +35,7 @@ public final class Product {
         return new Product(null, brandId, name, description, price, stock, false, null);
     }
 
+    // 저장된 값으로 상품 복원
     public static Product restore(long id, long brandId, String name, String description, long price, int stock,
                                   boolean deleted, Instant createdAt) {
         if (id <= 0 || createdAt == null) {
@@ -42,6 +44,7 @@ public final class Product {
         return new Product(id, brandId, name, description, price, stock, deleted, createdAt);
     }
 
+    // 이름·설명·가격 검증 후 값 갱신
     public void update(String name, String description, long price) {
         ensureActive();
         String normalizedName = normalizeName(name);
@@ -52,21 +55,25 @@ public final class Product {
         this.price = validatedPrice;
     }
 
+    // 재고 수량 설정
     public void setStock(int value) {
         ensureActive();
         stock = stock.set(value);
     }
 
+    // 재고 차감
     public void decreaseStock(int quantity) {
         ensureActive();
         stock = stock.decrease(quantity);
     }
 
+    // 상품 삭제 처리
     public void delete() {
         ensureActive();
         deleted = true;
     }
 
+    // 삭제된 상품인지 검증
     public void ensureActive() {
         if (deleted) {
             throw new DomainException(DomainErrorCode.DELETED_PRODUCT);
@@ -82,6 +89,7 @@ public final class Product {
     public boolean isDeleted() { return deleted; }
     public Instant getCreatedAt() { return createdAt; }
 
+    // 이름 공백 제거 및 길이 검증
     private static String normalizeName(String name) {
         if (name == null) {
             throw new DomainException(DomainErrorCode.INVALID_NAME);
@@ -93,6 +101,7 @@ public final class Product {
         return normalized;
     }
 
+    // 설명 길이 검증
     private static String validateDescription(String description) {
         if (description != null && description.length() > 1_000) {
             throw new DomainException(DomainErrorCode.INVALID_DESCRIPTION);

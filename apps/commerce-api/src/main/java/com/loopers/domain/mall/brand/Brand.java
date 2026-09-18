@@ -4,6 +4,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
 
+// 브랜드 도메인 모델
 public final class Brand {
     private final Long id;
     private String name;
@@ -23,6 +24,7 @@ public final class Brand {
         return new Brand(null, name, description, false, null);
     }
 
+    // 저장된 값으로 브랜드 복원
     public static Brand restore(long id, String name, String description, boolean deleted, Instant createdAt) {
         if (id <= 0 || createdAt == null) {
             throw new IllegalArgumentException("저장된 브랜드 상태가 올바르지 않습니다.");
@@ -30,6 +32,7 @@ public final class Brand {
         return new Brand(id, name, description, deleted, createdAt);
     }
 
+    // 이름·설명 검증 후 값 갱신
     public void update(String name, String description) {
         ensureActive();
         String normalizedName = normalizeName(name);
@@ -38,11 +41,13 @@ public final class Brand {
         this.description = validatedDescription;
     }
 
+    // 브랜드 삭제 처리
     public void delete() {
         ensureActive();
         deleted = true;
     }
 
+    // 삭제된 브랜드인지 검증
     public void ensureActive() {
         if (deleted) {
             throw new DomainException(DomainErrorCode.DELETED_BRAND);
@@ -69,6 +74,7 @@ public final class Brand {
         return createdAt;
     }
 
+    // 이름 공백 제거 및 길이 검증
     private static String normalizeName(String name) {
         if (name == null) {
             throw new DomainException(DomainErrorCode.INVALID_NAME);
@@ -80,6 +86,7 @@ public final class Brand {
         return normalized;
     }
 
+    // 설명 길이 검증
     private static String validateDescription(String description) {
         if (description != null && description.length() > 1_000) {
             throw new DomainException(DomainErrorCode.INVALID_DESCRIPTION);

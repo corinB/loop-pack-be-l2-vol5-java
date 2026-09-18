@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Profile("local")
 @RequiredArgsConstructor
+// 로컬 환경용 초기 사용자/포인트 데이터 생성기
 public class LocalUserFixtureInitializer implements ApplicationRunner {
     static final long FIRST_USER_ID = 1L;
     static final long SECOND_USER_ID = 2L;
@@ -23,6 +24,7 @@ public class LocalUserFixtureInitializer implements ApplicationRunner {
     private final UserQueryDao userQueryDao;
     private final PointRepository pointRepository;
 
+    // 고정 사용자 2명을 없으면 생성
     @Override
     @Transactional
     public void run(ApplicationArguments args) {

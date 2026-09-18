@@ -14,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+// 주문 확정 유스케이스 구현체
 public class ConfirmOrderService implements ConfirmOrderUseCase {
     private final ConfirmOrderWriter confirmOrderWriter;
 
+    // 재고 차감, 포인트 사용, 결제 기록을 한 트랜잭션으로 처리
     @Override
     @Transactional
     public ConfirmOrderResult execute(ConfirmOrderCommand command) {

@@ -2,6 +2,7 @@ package com.loopers.application.ordering.order;
 
 import java.util.List;
 
+// 주문 생성 요청 커맨드 묶음
 public final class OrderCommand {
     private OrderCommand() {}
 

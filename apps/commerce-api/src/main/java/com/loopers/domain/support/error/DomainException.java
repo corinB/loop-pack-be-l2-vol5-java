@@ -1,5 +1,6 @@
 package com.loopers.domain.support.error;
 
+// 도메인 계층 예외
 public class DomainException extends RuntimeException {
     private final DomainErrorCode errorCode;
 

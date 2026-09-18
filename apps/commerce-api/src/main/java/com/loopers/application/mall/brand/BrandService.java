@@ -10,16 +10,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+// 브랜드 생성·수정·삭제 유스케이스 구현
 public class BrandService implements CreateBrandUseCase, UpdateBrandUseCase, DeleteBrandUseCase {
     private final BrandRepository brandRepository;
     private final ActiveProductChecker activeProductChecker;
 
+    // 브랜드 생성
     @Override
     @Transactional
     public BrandResult execute(BrandCommand.Create command) {
         return BrandResult.from(brandRepository.save(Brand.create(command.name(), command.description())));
     }
 
+    // 브랜드 수정
     @Override
     @Transactional
     public BrandResult execute(BrandCommand.Update command) {
@@ -28,6 +31,7 @@ public class BrandService implements CreateBrandUseCase, UpdateBrandUseCase, Del
         return BrandResult.from(brandRepository.save(brand));
     }
 
+    // 활성 상품 없을 때만 브랜드 삭제
     @Override
     @Transactional
     public void execute(BrandCommand.Delete command) {

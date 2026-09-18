@@ -20,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
+// 주문 생성/확정 컨트롤러
 public class OrderController {
     private final CreateOrderUseCase createOrderUseCase;
     private final ConfirmOrderUseCase confirmOrderUseCase;
 
+    // 주문 생성
     @PostMapping
     public ResponseEntity<ApiResponse<OrderView>> create(
         @XUserId long userId,
@@ -33,6 +35,7 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(order));
     }
 
+    // 주문 확정
     @PostMapping("/{orderId}/confirm")
     public ApiResponse<OrderView> confirm(@PathVariable long orderId) {
         RequestInputValidator.requirePositiveId(orderId, "주문 ID");

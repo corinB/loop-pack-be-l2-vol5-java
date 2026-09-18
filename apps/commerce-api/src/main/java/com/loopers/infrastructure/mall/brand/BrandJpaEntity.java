@@ -15,6 +15,7 @@ import java.time.Instant;
 @Table(name = "brands", indexes = {
     @Index(name = "idx_brands_deleted_created", columnList = "deleted, created_at DESC, id DESC")
 })
+// 브랜드 JPA 엔티티
 public class BrandJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,6 +37,7 @@ public class BrandJpaEntity {
         apply(name, description, deleted);
     }
 
+    // 이름·설명·삭제여부 갱신
     void apply(String name, String description, boolean deleted) {
         this.name = name;
         this.description = description;

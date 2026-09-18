@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "scheduler.like-count.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
+// 좋아요 수 주기적 집계 스케줄러
 public class LikeCountAggregationScheduler {
     private final LikeCountAggregationUseCase aggregationUseCase;
 
+    // 주기적으로 좋아요 수 집계 실행
     @Scheduled(initialDelay = 0, fixedDelay = 10_000)
     public void aggregate() {
         try {

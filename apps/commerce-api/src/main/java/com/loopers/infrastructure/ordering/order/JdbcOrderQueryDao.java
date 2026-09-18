@@ -21,9 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// 주문 조회용 JDBC DAO 구현체
 public class JdbcOrderQueryDao implements OrderQueryDao {
     private final JdbcClient jdbcClient;
 
+    // 사용자 주문 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<OrderView> findOrders(long userId, PageCriteria criteria) {
@@ -54,12 +56,14 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
         return PageResult.of(items, criteria.page(), criteria.size(), total);
     }
 
+    // 단건 주문 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<OrderView> findOrder(long orderId) {
         return findHeader(orderId).map(header -> header.toView(findItemsByOrderId(orderId)));
     }
 
+    // 관리자용 전체 주문 페이지 조회
     @Override
     @Transactional(readOnly = true)
     public PageResult<AdminOrderView> findAdminOrders(PageCriteria criteria) {
@@ -85,12 +89,14 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
         return PageResult.of(items, criteria.page(), criteria.size(), total);
     }
 
+    // 관리자용 단건 주문 조회
     @Override
     @Transactional(readOnly = true)
     public Optional<AdminOrderView> findAdminOrder(long orderId) {
         return findHeader(orderId).map(header -> header.toAdminView(findItemsByOrderId(orderId)));
     }
 
+    // 주문 헤더 조회
     private Optional<OrderHeaderRow> findHeader(long orderId) {
         return jdbcClient.sql("""
                 SELECT o.id AS order_id, o.user_id, o.status, o.total_amount, o.created_at,
@@ -104,6 +110,7 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
             .optional();
     }
 
+    // 단건 주문의 품목 조회
     private List<OrderItemView> findItemsByOrderId(long orderId) {
         return jdbcClient.sql("""
                 SELECT order_id, product_id, product_name, unit_price, quantity, amount
@@ -121,6 +128,7 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
         return headers.stream().map(OrderHeaderRow::orderId).toList();
     }
 
+    // 여러 주문의 품목을 한번에 조회
     private Map<Long, List<OrderItemView>> findItemsByOrderIds(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
             return Map.of();
@@ -137,6 +145,7 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
                 Collectors.mapping(OrderItemRow::toView, Collectors.toList())));
     }
 
+    // ResultSet을 헤더 로우로 매핑
     private OrderHeaderRow mapHeader(ResultSet rs, int rowNum) throws SQLException {
         long paymentAmountValue = rs.getLong("payment_amount");
         Long paymentAmount = rs.wasNull() ? null : paymentAmountValue;
@@ -152,6 +161,7 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
         );
     }
 
+    // ResultSet을 품목 로우로 매핑
     private OrderItemRow mapItem(ResultSet rs, int rowNum) throws SQLException {
         return new OrderItemRow(
             rs.getLong("order_id"),

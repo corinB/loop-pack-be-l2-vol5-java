@@ -17,6 +17,7 @@ import java.time.Instant;
 @Table(name = "order_bills", uniqueConstraints = @UniqueConstraint(
     name = "uk_order_bills_order_id", columnNames = "order_id"
 ))
+// 주문 결제 JPA 엔티티
 public class OrderBillJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

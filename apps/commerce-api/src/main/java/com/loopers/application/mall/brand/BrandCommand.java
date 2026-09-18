@@ -1,5 +1,6 @@
 package com.loopers.application.mall.brand;
 
+// 브랜드 생성·수정·삭제 커맨드 모음
 public final class BrandCommand {
     private BrandCommand() {}
 

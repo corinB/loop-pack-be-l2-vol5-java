@@ -1,5 +1,6 @@
 package com.loopers.application.mall.product;
 
+// 상품 생성·수정·삭제·재고설정 커맨드 모음
 public final class ProductCommand {
     private ProductCommand() {}
 

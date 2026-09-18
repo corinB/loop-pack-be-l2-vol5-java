@@ -14,6 +14,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "point_bills")
+// 포인트 기록 JPA 엔티티
 public class PointBillJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

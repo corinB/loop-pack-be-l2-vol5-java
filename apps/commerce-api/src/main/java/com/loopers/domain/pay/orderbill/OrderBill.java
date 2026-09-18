@@ -3,6 +3,7 @@ package com.loopers.domain.pay.orderbill;
 import com.loopers.domain.shared.Money;
 import java.time.Instant;
 
+// 주문 결제 완료 기록
 public final class OrderBill {
     private final Long id;
     private final long orderId;
@@ -26,10 +27,12 @@ public final class OrderBill {
         this.createdAt = createdAt;
     }
 
+    // 결제 완료 상태로 생성
     public static OrderBill paid(long orderId, long userId, long amount) {
         return new OrderBill(null, orderId, userId, amount, OrderBillStatus.PAID, null);
     }
 
+    // 저장된 데이터로부터 복원
     public static OrderBill restore(long id, long orderId, long userId, long amount, OrderBillStatus status,
                                     Instant createdAt) {
         if (id <= 0 || createdAt == null) {

@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "order_items")
+// 주문 품목 JPA 엔티티
 public class OrderItemJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

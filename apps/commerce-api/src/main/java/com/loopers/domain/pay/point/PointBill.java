@@ -3,6 +3,7 @@ package com.loopers.domain.pay.point;
 import com.loopers.domain.shared.Money;
 import java.time.Instant;
 
+// 포인트 충전/사용 기록
 public final class PointBill {
     private final Long id;
     private final long userId;
@@ -29,14 +30,17 @@ public final class PointBill {
         this.createdAt = createdAt;
     }
 
+    // 충전 기록 생성
     public static PointBill charge(long userId, long amount) {
         return new PointBill(null, userId, PointBillType.CHARGE, amount, null, null);
     }
 
+    // 사용 기록 생성
     public static PointBill use(long userId, long orderId, long amount) {
         return new PointBill(null, userId, PointBillType.USE, amount, orderId, null);
     }
 
+    // 저장된 데이터로부터 복원
     public static PointBill restore(long id, long userId, PointBillType type, long amount, Long orderId,
                                     Instant createdAt) {
         if (id <= 0 || createdAt == null) {

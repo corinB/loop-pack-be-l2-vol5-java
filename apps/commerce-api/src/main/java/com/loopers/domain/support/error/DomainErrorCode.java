@@ -1,5 +1,6 @@
 package com.loopers.domain.support.error;
 
+// 도메인 계층 에러 코드
 public enum DomainErrorCode {
     INVALID_USER_ID("사용자 ID는 양의 정수여야 합니다."),
     INVALID_MONEY("금액은 0 이상이어야 합니다."),

@@ -21,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
+// 상품 조회 전용 컨트롤러
 public class ProductQueryController {
     private final ProductQueryDao productQueryDao;
 
+    // 상품 목록 조회
     @GetMapping
     public ApiResponse<PageResult<ProductSummary>> findAll(
         @RequestParam(required = false) Long brandId,
@@ -35,6 +37,7 @@ public class ProductQueryController {
         return ApiResponse.success(productQueryDao.findProducts(criteria));
     }
 
+    // 상품 단건 조회
     @GetMapping("/{productId}")
     public ApiResponse<ProductDetail> find(@PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");

@@ -8,9 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
+// JDBC 기반 상품 좋아요 수 조회
 public class JdbcProductLikeCountQueryDao implements ProductLikeCountQueryDao {
     private final JdbcClient jdbcClient;
 
+    // 상품 좋아요 수 조회
     @Override
     @Transactional(readOnly = true)
     public long findCount(long productId) {

@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/points")
 @RequiredArgsConstructor
+// 포인트 충전 API 컨트롤러
 public class PointController {
     private final ChargePointUseCase chargePointUseCase;
 
+    // 포인트 충전 요청 처리
     @PostMapping("/charge")
     public ApiResponse<PointApiDto.BalanceResponse> charge(
         @XUserId long userId,
