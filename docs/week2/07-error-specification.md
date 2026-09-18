@@ -57,6 +57,9 @@ errorCode는 기존 ErrorType의 HTTP reason phrase 형식을 유지한다.
 ## 검사 흐름과 예외
 
 필요한 사용자 입력·존재 여부와 업무 규칙을 검사하며 본인 여부는 검사하지 않는다.
+헤더 형식 오류는 DAO 조회 없이 resolver에서 거절한다. 형식이 유효하면 UserQueryDao.findById 결과가 없을 때 404다.
+좋아요 목록 Controller도 같은 DAO로 경로 사용자 존재를 확인한다. 쓰기 Service는 사용자 존재를 중복 검사하지 않는다.
+상세 조회 DAO는 Optional을 반환하고 QueryController가 빈 결과를 기존 404 오류로 변환한다.
 주문 확정은 존재 여부 → DRAFT → 상품 활성 여부·재고 → 저장된 주문 사용자의 잔액 순서로 검사한다.
 역직렬화 단계에서 거절될 수 있으므로 여러 오류가 섞인 입력에 대한 전역 우선순위는 보장하지 않는다.
 

@@ -1,7 +1,11 @@
 package com.loopers.interfaces.api.support;
 
+import com.loopers.application.shopping.user.UserQueryDao;
+import com.loopers.application.support.error.ApplicationErrorCode;
+import com.loopers.application.support.error.ApplicationException;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -10,10 +14,13 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 @Component
+@RequiredArgsConstructor
 public class XUserIdArgumentResolver implements HandlerMethodArgumentResolver {
     static final String HEADER_NAME = "X-USER-ID";
     private static final String REQUIRED_MESSAGE = "X-USER-ID는 필수입니다.";
     private static final String INVALID_MESSAGE = "X-USER-ID는 양의 정수여야 합니다.";
+
+    private final UserQueryDao userQueryDao;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -34,15 +41,18 @@ public class XUserIdArgumentResolver implements HandlerMethodArgumentResolver {
             throw new CoreException(ErrorType.BAD_REQUEST, REQUIRED_MESSAGE);
         }
 
+        long userId;
         try {
-            long userId = Long.parseLong(headerValue);
-            if (userId <= 0) {
-                throw invalidUserId();
-            }
-            return userId;
+            userId = Long.parseLong(headerValue);
         } catch (NumberFormatException e) {
             throw invalidUserId();
         }
+        if (userId <= 0) {
+            throw invalidUserId();
+        }
+        userQueryDao.findById(userId)
+            .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.USER_NOT_FOUND));
+        return userId;
     }
 
     private CoreException invalidUserId() {

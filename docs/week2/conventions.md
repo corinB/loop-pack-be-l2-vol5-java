@@ -13,7 +13,7 @@
 com.loopers
 ├── interfaces.api.ordering.order    # Request, Response, Controller
 ├── application.ordering.order      # UseCase, Service, Command, Result
-├── application.mall.product        # QueryPort, Criteria, 조회 Result
+├── application.mall.product        # QueryDao, Criteria, 조회 record
 ├── domain.mall.product             # Product, Stock, ProductRepository
 └── infrastructure.mall.product     # JpaEntity, JpaRepository, RepositoryImpl, EntityMapper
 ```
@@ -23,10 +23,10 @@ com.loopers
 | 도메인 / JPA 객체 | Product / ProductJpaEntity | 업무 규칙과 저장 기술 분리 |
 | 행동별 실행 계약 | ConfirmOrderUseCase, execute | 한 유스케이스의 입력·결과 명확화 |
 | 실행 구현 | ConfirmOrderService | UseCase 인터페이스와 구현 분리 |
-| 조회 실행 | GetOrderUseCase / GetOrderService | 쓰기와 같은 명명 방식 |
+| 조회 실행 | ProductQueryController → ProductQueryDao | 조회 Service 없이 계약 직접 호출 |
 | 저장 계약 / 구현 | ProductRepository / ProductRepositoryImpl | domain이 계약을 소유 |
 | JPA 접근 | ProductJpaRepository | Spring Data 타입을 infrastructure 안에 제한 |
-| 조회 계약 / 구현 | ProductQueryPort / ProductQueryAdapter | 응답용 조회를 domain에서 분리 |
+| 조회 계약 / 구현 | ProductQueryDao / JdbcProductQueryDao | JdbcClient로 SQL·조회 모델 조합 |
 | 저장 객체 변환 | ProductEntityMapper | 변환 코드를 repository에서 분리 |
 
 순수 도메인은 기존 JPA `BaseEntity`를 상속하지 않는다. 기존 Example은 참고용으로 보존한다.
@@ -41,21 +41,22 @@ flowchart LR
     I[interfaces] --> U[application UseCase 계약]
     S[application Service] --> U
     S --> D[domain 모델·저장 계약]
-    S --> Q[application 조회 포트·조회 타입]
+    I --> Q[application QueryDao·조회 타입]
+    S -->|상품 응답의 저장 집계 값| Q
     R[infrastructure RepositoryImpl·Mapper] --> D
-    A[infrastructure QueryAdapter] --> Q
+    A[infrastructure JdbcQueryDao] --> Q
     I --> E[domain 업무 오류]
 ```
 
 | 위치 | 책임 | 넣지 않을 것 |
 |---|---|---|
 | interfaces | HTTP 형식·입력 구조 검사, DTO 변환, 오류 HTTP 매핑 | DB 직접 접근, 재고·결제 판단 |
-| application | 존재·지정 사용자 데이터·객체 간 조건 확인, 호출 순서, 트랜잭션 | HTTP DTO, infrastructure 구현 참조 |
+| application | 쓰기 대상·사용자별 데이터·객체 간 조건, 호출 순서·쓰기 트랜잭션, DAO 계약 | HTTP 타입, infrastructure 구현 참조 |
 | domain | 상태·업무 규칙·저장 계약 | Spring·JPA·HTTP, 나머지 계층 의존 |
 | infrastructure | 저장·조회 구현, JPA 객체, 변환 | application Service 의존, 업무 정책 중복 |
 
 domain의 repository는 도메인·기본 Java 타입을 사용한다. JPA Entity·Spring Data Page를 계약에 노출하지 않는다.
-application 조회 포트의 입력·결과도 JPA·HTTP 타입을 포함하지 않는다.
+application QueryDao의 입력·결과도 JPA·HTTP·Spring Data Page 타입을 포함하지 않는다.
 순수 domain은 생성자·메서드 인자로 협력 객체를 받고, 필요한 Spring Bean 연결은 바깥 구성에서 담당한다.
 
 ## 3. 도메인 생성과 변경
@@ -89,10 +90,14 @@ public void decrease(int quantity) {
 
 ## 4. UseCase와 전달 객체
 
-`Request → Command/Criteria → Result → Response`를 계층별 record로 분리한다.
-Controller는 Request를 application 입력으로, Result를 Response로 변환한다. domain은 이 DTO를 모른다.
-조회 Service는 QueryPort 결과를 사용하고, QueryAdapter는 조인·집계·정렬을 수행한다.
-조회의 지정 사용자·노출 조건은 application이 정하고 adapter가 해당 조건으로 조회한다.
+쓰기는 `Request → Command → Result → Response`를 계층별 record로 분리한다.
+쓰기에 필요한 도메인 복원은 repository를 유지한다. domain은 HTTP DTO를 모른다.
+조회는 `Request → Criteria → 조회 record → ApiResponse`이며 별도 Response 복사를 하지 않는다.
+고객·관리자 GET은 QueryController로 분리하고 application의 QueryDao를 직접 호출한다. 조회 UseCase·Service는 두지 않는다.
+DAO는 같은 DB에서 Context 간 조인·정렬·조회 모델 조합을 수행한다. URL·응답 필드·데이터 소유권은 유지한다.
+Spring JDBC의 JdbcClient와 이름 있는 파라미터를 사용하며 복합 결과는 RowMapper로 변환한다.
+Controller는 입력 검사와 Optional 상세 결과의 404 처리를 맡는다. DAO는 HTTP 오류 정책을 구현하지 않는다.
+상품의 쓰기 성공 Result에 필요한 likeCount만 DAO로 저장 집계 값을 읽으며 상품 전체를 재조회하지 않는다.
 
 ```java
 public interface ConfirmOrderUseCase {
@@ -106,8 +111,18 @@ public record ConfirmOrderCommand(long orderId) {}
 X-USER-ID는 인증 정보가 아니다. 좋아요 목록은 경로 userId, 주문 상세·확정은 orderId를 사용한다.
 ConfirmOrderCommand는 사용자 입력을 받지 않으며, 결제 대상은 조회한 Order의 userId다.
 `ConfirmOrderService`는 위 인터페이스를 구현하고 생성자로 repository 등 계약을 주입받는다.
-쓰기 구현의 `execute`에는 `@Transactional`, 조회 구현에는 `@Transactional(readOnly = true)`를 둔다.
+쓰기 Service의 `execute`에는 `@Transactional`, DAO 구현의 공개 조회 메서드에는 `@Transactional(readOnly = true)`를 둔다.
 트랜잭션은 Spring이 관리하는 구현체를 통해 진입한다. domain과 Mapper에는 트랜잭션을 선언하지 않는다.
+
+`@XUserId` resolver는 형식 검사 후 UserQueryDao.findById를 호출하며 없으면 USER_NOT_FOUND, 있으면 ID를 반환한다.
+형식 오류 시 DAO를 호출하지 않는다. 경로 userId는 좋아요 QueryController에서 같은 DAO로 검사한다.
+쓰기 Service의 사용자 존재 재검사와 UserValidator는 제거한다. 직접 호출자는 존재하는 사용자 ID를 제공해야 한다.
+사용자 조회 모델은 ID만 가진 record다. domain UserRepository의 existsById를 제거하고 fixture도 조회 DAO를 사용한다.
+
+좋아요 관계·내 목록은 즉시 반영하되 likeCount·인기순은 Shopping의 저장 집계 값을 사용한다.
+단일 commerce-api의 스케줄러가 시작 시 1회, 이전 실행 종료 10초 후 application 집계 Service를 호출한다.
+집계 쓰기 계약은 조회 DAO와 분리하고 전체 COUNT 저장을 한 트랜잭션으로 처리한다. 실패 시 이전 값을 유지한다.
+집계 행이 없으면 0으로 표시하며 마지막 관계 취소 후에도 0으로 갱신한다. 자세한 계약은 [조회 모델](06-read-models.md)을 따른다.
 
 ## 5. 저장과 Mapper
 
@@ -141,7 +156,8 @@ Order·OrderItem의 저장·복원은 Aggregate 전체를 다루며 스냅샷·�
 |---|---|
 | Request | 누락, JSON 타입, 입력 구조 |
 | domain | 값 범위, 양수·잔액·재고, 상태 전이, 합계 등 업무 불변식 |
-| application | 존재·사용자별 데이터·여러 객체의 조건 |
+| application | 쓰기 대상·사용자별 데이터·여러 객체의 조건; DAO 계약·조회 타입 |
+| resolver / QueryController | 헤더·경로 사용자 존재, Optional 상세 결과의 없음 처리 |
 | interfaces 오류 처리 | 내부 오류를 기존 HTTP 상태·ApiResponse로 변환 |
 
 domain은 공통 `DomainException`과 `DomainErrorCode`를 사용하며 HTTP 상태나 기존 ErrorType을 참조하지 않는다.
@@ -156,7 +172,9 @@ Spring Security·ADMIN 역할·CSRF·소유권 검사와 관련 401·403 테스�
 | 대상 | 방법 | 반드시 볼 것 |
 |---|---|---|
 | domain | Spring·DB 없이 실제 객체 | 정상·경계·오류와 실패 후 값 유지 |
-| UseCase | 실제 도메인 + mock repository/조회 포트 | 사용자별 데이터 구분, 협력 순서, 실패 시 후속 처리 중단 |
+| UseCase | 실제 도메인 + mock repository/DAO | 사용자별 데이터 구분, 협력 순서, 실패 시 후속 처리 중단 |
+| QueryDao | 실제 테스트 DB | 조회·조인·페이지·집계·주문 스냅샷 보존 |
+| resolver | mock UserQueryDao | 정상·400·404, 형식 오류 시 DAO 미호출 |
 | Mapper | 복잡한 변환은 DB 없는 테스트 | 주문 품목·가격 스냅샷·메타데이터 보존 |
 | repository·트랜잭션 | 실제 테스트 DB, flush/clear 후 재조회 | 저장 관계·유일성·전체 롤백 |
 | HTTP | 실제 Controller·application·repository·DB | 입력·응답·사용자별 데이터와 저장 상태 |
@@ -182,7 +200,7 @@ Spring 구성요소에는 `@RequiredArgsConstructor`를 사용할 수 있다. �
 | 검사 대상 | 실제 신규 구현 포함; Example은 보존하며 신규 순수성 규칙 적용 대상에서 구분 |
 
 ArchUnit은 과제의 1.5.0을 기존 JUnit에 연결하는 기준이다. 빈 패키지를 검사하고 통과했다고 보고하지 않는다.
-현재 Checkstyle·ArchUnit은 아직 연결되지 않았다. 위 표는 이후 구현할 검사 기준이다.
+Checkstyle·ArchUnit 설정은 PR 01에서 연결되어 병합됐다. 이번 보완에서도 기존 규칙을 유지하고 실제 실행 결과를 별도로 기록한다.
 기능별로 계약 확인 → 변경 책임·범위·테스트 제시 → 구현·diff·관련 테스트 → 기능 완료 검사 순서로 진행한다.
 이후 구현 완료 시 `./gradlew :apps:commerce-api:check`와 관련 검사를 실행하고 성공·실패·skip 결과를 기록한다.
 미정 정책은 질문하고, 검사 통과를 위해 기대값·업무 규칙·검사 규칙을 삭제하거나 완화하지 않는다.

@@ -30,16 +30,18 @@ class UserRepositoryIntegrationTest {
         databaseCleanUp.truncateAllTables();
     }
 
-    @DisplayName("할당한 사용자 ID를 저장하고 영속성 컨텍스트를 비운 뒤 존재 여부를 조회한다")
+    @DisplayName("할당한 사용자 ID를 저장하고 영속성 컨텍스트를 비운 뒤 저장 상태를 확인한다")
     @Test
     @Transactional
-    void savesAssignedId_andFindsExistenceAfterClear() {
+    void savesAssignedId_andPreservesStoredStateAfterClear() {
+        // arrange / act
         User saved = userRepository.save(UserFixture.firstUser());
         entityManager.flush();
         entityManager.clear();
 
+        // assert
         assertThat(saved.getId()).isEqualTo(1L);
-        assertThat(userRepository.existsById(1L)).isTrue();
-        assertThat(userRepository.existsById(2L)).isFalse();
+        assertThat(entityManager.find(UserJpaEntity.class, 1L).getId()).isEqualTo(1L);
+        assertThat(entityManager.find(UserJpaEntity.class, 2L)).isNull();
     }
 }

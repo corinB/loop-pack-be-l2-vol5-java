@@ -41,11 +41,11 @@ X-USER-ID는 학습용 사용자 입력이며 권한·본인 여부를 검증하
 | 주문 확정 | 재고·포인트·이력·결제·주문 상태를 하나의 트랜잭션으로 저장 |
 | 실패 | 부분 저장 없이 전체 롤백 |
 | 개발 순서 | volume-2/main을 기준으로 총 7개 PR, 계획 정리는 PR 01에 포함 |
-| 조회 | 좋아요 관계 COUNT, 현재 상품 정보와 주문 스냅샷 구분 |
+| 조회 | 좋아요 관계의 10초 주기 DB 집계, 현재 상품 정보와 주문 스냅샷 구분 |
 | 삭제 | 논리 삭제, 기존 주문 정보 보존 |
 | 이벤트 | 업무 사실을 표현하며 비동기 메시지 처리를 요구하지 않음 |
 | 코드 구조 | 순수 domain / JPA Entity 분리, 계층 → Context → 기능 |
-| 실행·조회 | 행동별 UseCase + Service, application 조회 포트 |
+| 실행·조회 | 쓰기 UseCase + Service, GET QueryController → QueryDao → JdbcClient |
 | 변환·테스트 | 전용 EntityMapper, 핵심 도메인 규칙의 TDD·엄격한 경계 검증 |
 
 ## 원본에서 구체화한 부분

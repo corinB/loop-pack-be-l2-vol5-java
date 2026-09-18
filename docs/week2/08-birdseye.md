@@ -13,14 +13,14 @@ flowchart LR
         I[interfaces: 입력·응답 변환] --> APP[application: 유스케이스·트랜잭션]
         APP --> D[domain: Mall · Shopping · Ordering · Pay]
         APP --> PORT[domain repository 계약]
-        APP --> Q[application 조회 포트]
+        I --> Q[application QueryDao]
         PORT -.->|실행 시 구현체 호출| INF[infrastructure: DB 접근]
         Q -.->|실행 시 구현체 호출| INF
     end
     INF --> DB[(단일 DB)]
 ```
 
-응답은 처리 결과를 application·interfaces에서 조합하여 요청자에게 돌려준다.
+쓰기 응답은 application·interfaces에서 조합하고, GET은 DAO 조회 record를 ApiResponse로 감싸 반환한다.
 점선은 실행 중 구현체가 호출되는 관계다. domain 소스가 infrastructure에 의존한다는 뜻이 아니다.
 과제 원문의 인증·인가 요구는 이번 학습 범위에서 제외한다. 두 경로 모두 권한·CSRF 검사를 구현하지 않는다.
 필요한 API만 X-USER-ID로 fixture 사용자를 지정한다. 좋아요 목록은 경로 userId, 주문 상세·확정은 orderId를 쓴다.
@@ -34,20 +34,20 @@ flowchart TB
     A[application Service] --> U
     I --> D[domain 모델·저장 계약·업무 오류]
     A --> D
-    A --> Q[application 조회 포트·조회 타입]
+    I --> Q[application QueryDao·조회 타입]
     INF[infrastructure] -->|repository 계약 구현| D
-    INF -->|조회 포트 구현| Q
+    INF -->|QueryDao 구현| Q
 ```
 
 | 계층 | 하는 일 | 의존 제한 |
 |---|---|---|
 | interfaces | HTTP 입력·헤더·응답 변환 | infrastructure 직접 참조 금지 |
-| application | 지정 사용자·데이터 확인, 유스케이스 순서, 결과 조합, 트랜잭션 | interfaces·infrastructure 구현 참조 금지 |
+| application | 쓰기 대상·데이터 확인, 쓰기 순서·트랜잭션, DAO 계약 | interfaces·infrastructure 구현 참조 금지 |
 | domain | 순수 Java 상태·업무 규칙·repository 계약 | 다른 계층·Spring·JPA·HTTP 참조 금지 |
 | infrastructure | 저장·조회 계약 구현, JPA 객체·Mapper | application 구현 의존 및 HTTP·업무 정책 중복 금지 |
 
-패키지는 계층 → Context → 기능 순서다. 입력·결과·응답은 계층별 record로 구분한다.
-UseCase 인터페이스를 Service가 구현하고, 구현의 execute가 트랜잭션을 소유한다.
+패키지는 계층 → Context → 기능 순서다. 쓰기 입력·결과·응답은 계층별 record, 조회는 DAO record를 직접 반환한다.
+쓰기 UseCase의 Service.execute가 쓰기 트랜잭션을, 조회 DAO 구현의 공개 메서드가 readOnly 트랜잭션을 소유한다.
 도메인과 JPA Entity는 분리하며, 도메인은 create·restore와 의미 있는 행동으로 상태를 관리한다.
 변경 후 repository.save를 명시하고 infrastructure의 전용 Mapper로 저장 객체에 반영한다.
 자세한 규칙·이유·예시는 [개발 컨벤션](conventions.md)에 둔다.
@@ -61,7 +61,7 @@ UseCase 인터페이스를 Service가 구현하고, 구현의 execute가 트랜�
 | 주문 | Ordering | DRAFT 생성, 품목 스냅샷, CONFIRMED 전환 |
 | 충전·결제 | Pay | 잔액, PointBill, OrderBill |
 
-좋아요 수는 관계에서 집계하고, 주문의 과거 정보는 OrderItem 스냅샷에서 읽는다.
+좋아요 관계·내 목록은 즉시 반영하고 숫자·인기순은 시작 시 및 이전 실행 종료 10초 후 갱신하는 DB 집계를 사용한다. 주문은 OrderItem 스냅샷을 읽는다.
 조회 조합은 여러 Context 자료를 사용할 수 있지만 데이터 소유권까지 이동시키지는 않는다.
 
 ## 대표 흐름: 충전부터 주문 조회까지
