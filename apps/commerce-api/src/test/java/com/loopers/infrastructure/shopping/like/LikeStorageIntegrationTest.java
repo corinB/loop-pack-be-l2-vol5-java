@@ -3,8 +3,6 @@ package com.loopers.infrastructure.shopping.like;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.loopers.domain.shopping.like.Like;
-import com.loopers.domain.shopping.like.LikeRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,8 +15,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 
 @SpringBootTest
 class LikeStorageIntegrationTest {
-    @Autowired
-    private LikeRepository likeRepository;
     @Autowired
     private JdbcClient jdbcClient;
     @Autowired
@@ -35,19 +31,22 @@ class LikeStorageIntegrationTest {
         @DisplayName("같은 사용자와 상품 관계는 하나만 저장한다")
         @Test
         void enforcesUniqueUserProductRelation() {
-            likeRepository.save(Like.create(1L, 10L));
+            insertLike(1L, 10L);
 
-            assertThatThrownBy(() -> jdbcClient.sql(
-                    "INSERT INTO product_likes (user_id, product_id, created_at) VALUES (:userId, :productId, CURRENT_TIMESTAMP)")
-                .param("userId", 1L)
-                .param("productId", 10L)
-                .update())
-                .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertLike(1L, 10L)).isInstanceOf(DataIntegrityViolationException.class);
             assertThat(jdbcClient.sql("SELECT COUNT(*) FROM product_likes WHERE user_id = :userId AND product_id = :productId")
                 .param("userId", 1L)
                 .param("productId", 10L)
                 .query(Long.class)
                 .single()).isEqualTo(1L);
+        }
+
+        private void insertLike(long userId, long productId) {
+            jdbcClient.sql(
+                    "INSERT INTO product_likes (user_id, product_id, created_at) VALUES (:userId, :productId, CURRENT_TIMESTAMP)")
+                .param("userId", userId)
+                .param("productId", productId)
+                .update();
         }
     }
 
