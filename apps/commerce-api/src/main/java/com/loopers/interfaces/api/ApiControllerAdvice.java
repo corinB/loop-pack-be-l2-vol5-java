@@ -3,8 +3,11 @@ package com.loopers.interfaces.api;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.loopers.application.support.error.ApplicationException;
+import com.loopers.domain.support.error.DomainException;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -22,13 +25,33 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
+// 전역 예외를 공통 응답 포맷으로 변환하는 핸들러
 public class ApiControllerAdvice {
+    private final ApiErrorMapper apiErrorMapper;
+
+    // 도메인 예외 처리
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<?>> handle(DomainException e) {
+        log.warn("DomainException : {}", e.getMessage(), e);
+        return failureResponse(apiErrorMapper.map(e.getErrorCode()), e.getMessage());
+    }
+
+    // 애플리케이션 예외 처리
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<?>> handle(ApplicationException e) {
+        log.warn("ApplicationException : {}", e.getMessage(), e);
+        return failureResponse(apiErrorMapper.map(e.getErrorCode()), e.getMessage());
+    }
+
+    // 레거시 공통 예외 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handle(CoreException e) {
         log.warn("CoreException : {}", e.getCustomMessage() != null ? e.getCustomMessage() : e.getMessage(), e);
         return failureResponse(e.getErrorType(), e.getCustomMessage());
     }
 
+    // 파라미터 타입 불일치 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handleBadRequest(MethodArgumentTypeMismatchException e) {
         String name = e.getName();
@@ -38,6 +61,7 @@ public class ApiControllerAdvice {
         return failureResponse(ErrorType.BAD_REQUEST, message);
     }
 
+    // 필수 파라미터 누락 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handleBadRequest(MissingServletRequestParameterException e) {
         String name = e.getParameterName();
@@ -46,6 +70,7 @@ public class ApiControllerAdvice {
         return failureResponse(ErrorType.BAD_REQUEST, message);
     }
 
+    // 요청 본문 파싱 실패 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handleBadRequest(HttpMessageNotReadableException e) {
         String errorMessage;
@@ -91,6 +116,7 @@ public class ApiControllerAdvice {
         return failureResponse(ErrorType.BAD_REQUEST, errorMessage);
     }
 
+    // 서버 웹 입력 오류 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handleBadRequest(ServerWebInputException e) {
         String missingParams = extractMissingParameter(e.getReason() != null ? e.getReason() : "");
@@ -102,11 +128,13 @@ public class ApiControllerAdvice {
         }
     }
 
+    // 존재하지 않는 리소스 요청 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handleNotFound(NoResourceFoundException e) {
         return failureResponse(ErrorType.NOT_FOUND, null);
     }
 
+    // 그 외 모든 예외 처리
     @ExceptionHandler
     public ResponseEntity<ApiResponse<?>> handle(Throwable e) {
         log.error("Exception : {}", e.getMessage(), e);
