@@ -2,7 +2,6 @@ package com.loopers.infrastructure.mall.product;
 
 import com.loopers.application.common.PageResult;
 import com.loopers.application.mall.product.AdminProduct;
-import com.loopers.application.mall.product.BrandSummary;
 import com.loopers.application.mall.product.ProductCriteria;
 import com.loopers.application.mall.product.ProductDetail;
 import com.loopers.application.mall.product.ProductQueryDao;
@@ -10,9 +9,12 @@ import com.loopers.application.mall.product.ProductSort;
 import com.loopers.application.mall.product.ProductSummary;
 import com.loopers.infrastructure.mall.brand.QBrandJpaEntity;
 import com.loopers.infrastructure.shopping.like.QProductLikeCountJpaEntity;
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
@@ -24,123 +26,97 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @RequiredArgsConstructor
 public class QueryDslProductQueryDao implements ProductQueryDao {
+    private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
+    private static final QBrandJpaEntity BRAND = QBrandJpaEntity.brandJpaEntity;
+    private static final QProductLikeCountJpaEntity LIKE_COUNT_ROW =
+        QProductLikeCountJpaEntity.productLikeCountJpaEntity;
+    private static final NumberExpression<Long> LIKE_COUNT = LIKE_COUNT_ROW.likeCount.coalesce(0L);
+
     private final JPAQueryFactory queryFactory;
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<ProductSummary> findProducts(ProductCriteria criteria) {
-        return findPage(criteria, this::summary);
+        return findPage(criteria, ProductQueryRow::toSummary);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<AdminProduct> findAdminProducts(ProductCriteria criteria) {
-        return findPage(criteria, this::admin);
+        return findPage(criteria, ProductQueryRow::toAdminProduct);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ProductDetail> findProduct(long productId) {
-        return findTuple(productId).map(this::detail);
+        return findRow(productId).map(ProductQueryRow::toDetail);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<AdminProduct> findAdminProduct(long productId) {
-        return findTuple(productId).map(this::admin);
+        return findRow(productId).map(ProductQueryRow::toAdminProduct);
     }
 
-    private <T> PageResult<T> findPage(ProductCriteria criteria, Function<Tuple, T> mapper) {
-        QProductJpaEntity product = QProductJpaEntity.productJpaEntity;
-        QBrandJpaEntity brand = QBrandJpaEntity.brandJpaEntity;
-        QProductLikeCountJpaEntity likeCount = QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-        BooleanBuilder where = activeProducts(criteria, product, brand);
-
-        Long total = queryFactory.select(product.count())
-            .from(product)
-            .join(brand).on(brand.id.eq(product.brandId))
-            .where(where)
-            .fetchOne();
-        List<T> items = queryFactory.select(product.id, product.name, product.description, product.price,
-                product.stock, product.createdAt, brand.id, brand.name, likeCount.likeCount.coalesce(0L))
-            .from(product)
-            .join(brand).on(brand.id.eq(product.brandId))
-            .leftJoin(likeCount).on(likeCount.productId.eq(product.id))
-            .where(where)
-            .orderBy(orderBy(criteria.sort(), product, likeCount))
+    private <T> PageResult<T> findPage(ProductCriteria criteria, Function<ProductQueryRow, T> mapper) {
+        List<T> items = selectProducts()
+            .where(activeProduct(), activeBrand(), brandIdEquals(criteria.brandId()))
+            .orderBy(orderBy(criteria.sort()))
             .offset(criteria.page().offset())
             .limit(criteria.page().size())
             .fetch()
             .stream()
             .map(mapper)
             .toList();
-        return PageResult.of(items, criteria.page().page(), criteria.page().size(), total == null ? 0L : total);
+        return PageResult.of(items, criteria.page().page(), criteria.page().size(), countProducts(criteria));
     }
 
-    private Optional<Tuple> findTuple(long productId) {
-        QProductJpaEntity product = QProductJpaEntity.productJpaEntity;
-        QBrandJpaEntity brand = QBrandJpaEntity.brandJpaEntity;
-        QProductLikeCountJpaEntity likeCount = QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-        Tuple tuple = queryFactory.select(product.id, product.name, product.description, product.price,
-                product.stock, product.createdAt, brand.id, brand.name, likeCount.likeCount.coalesce(0L))
-            .from(product)
-            .join(brand).on(brand.id.eq(product.brandId).and(brand.deleted.isFalse()))
-            .leftJoin(likeCount).on(likeCount.productId.eq(product.id))
-            .where(product.id.eq(productId), product.deleted.isFalse())
+    private Optional<ProductQueryRow> findRow(long productId) {
+        ProductQueryRow row = selectProducts()
+            .where(PRODUCT.id.eq(productId), activeProduct(), activeBrand())
             .fetchOne();
-        return Optional.ofNullable(tuple);
+        return Optional.ofNullable(row);
     }
 
-    private BooleanBuilder activeProducts(ProductCriteria criteria, QProductJpaEntity product,
-                                          QBrandJpaEntity brand) {
-        BooleanBuilder where = new BooleanBuilder()
-            .and(product.deleted.isFalse())
-            .and(brand.deleted.isFalse());
-        if (criteria.brandId() != null) {
-            where.and(product.brandId.eq(criteria.brandId()));
-        }
-        return where;
+    private JPAQuery<ProductQueryRow> selectProducts() {
+        return queryFactory.select(productProjection())
+            .from(PRODUCT)
+            .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId))
+            .leftJoin(LIKE_COUNT_ROW).on(LIKE_COUNT_ROW.productId.eq(PRODUCT.id));
     }
 
-    private OrderSpecifier<?>[] orderBy(ProductSort sort, QProductJpaEntity product,
-                                        QProductLikeCountJpaEntity likeCount) {
+    private ConstructorExpression<ProductQueryRow> productProjection() {
+        return Projections.constructor(ProductQueryRow.class, PRODUCT.id, PRODUCT.name, PRODUCT.price,
+            BRAND.id, BRAND.name, LIKE_COUNT, PRODUCT.description, PRODUCT.stock, PRODUCT.createdAt);
+    }
+
+    private long countProducts(ProductCriteria criteria) {
+        Long count = queryFactory.select(PRODUCT.count())
+            .from(PRODUCT)
+            .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId))
+            .where(activeProduct(), activeBrand(), brandIdEquals(criteria.brandId()))
+            .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private BooleanExpression activeProduct() {
+        return PRODUCT.deleted.isFalse();
+    }
+
+    private BooleanExpression activeBrand() {
+        return BRAND.deleted.isFalse();
+    }
+
+    private BooleanExpression brandIdEquals(Long brandId) {
+        return brandId == null ? null : PRODUCT.brandId.eq(brandId);
+    }
+
+    private OrderSpecifier<?>[] orderBy(ProductSort sort) {
         OrderSpecifier<?> primary = switch (sort) {
-            case LATEST -> product.createdAt.desc();
-            case PRICE_ASC -> product.price.asc();
-            case LIKES_DESC -> likeCount.likeCount.coalesce(0L).desc();
+            case LATEST -> PRODUCT.createdAt.desc();
+            case PRICE_ASC -> PRODUCT.price.asc();
+            case LIKES_DESC -> LIKE_COUNT.desc();
         };
-        return new OrderSpecifier<?>[] {primary, product.id.desc()};
-    }
-
-    private ProductSummary summary(Tuple tuple) {
-        QProductJpaEntity product = QProductJpaEntity.productJpaEntity;
-        QProductLikeCountJpaEntity likeCount = QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-        return new ProductSummary(value(tuple, product.id), value(tuple, product.name), value(tuple, product.price),
-            brand(tuple), value(tuple, likeCount.likeCount.coalesce(0L)));
-    }
-
-    private ProductDetail detail(Tuple tuple) {
-        QProductJpaEntity product = QProductJpaEntity.productJpaEntity;
-        QProductLikeCountJpaEntity likeCount = QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-        return new ProductDetail(value(tuple, product.id), value(tuple, product.name), value(tuple, product.price),
-            brand(tuple), value(tuple, likeCount.likeCount.coalesce(0L)), value(tuple, product.description),
-            value(tuple, product.stock));
-    }
-
-    private AdminProduct admin(Tuple tuple) {
-        QProductJpaEntity product = QProductJpaEntity.productJpaEntity;
-        QProductLikeCountJpaEntity likeCount = QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-        return new AdminProduct(value(tuple, product.id), value(tuple, product.name), value(tuple, product.price),
-            brand(tuple), value(tuple, likeCount.likeCount.coalesce(0L)), value(tuple, product.description),
-            value(tuple, product.stock), value(tuple, product.createdAt));
-    }
-
-    private BrandSummary brand(Tuple tuple) {
-        QBrandJpaEntity brand = QBrandJpaEntity.brandJpaEntity;
-        return new BrandSummary(value(tuple, brand.id), value(tuple, brand.name));
-    }
-
-    private <T> T value(Tuple tuple, com.querydsl.core.types.Expression<T> expression) {
-        return tuple.get(expression);
+        return new OrderSpecifier<?>[] {primary, PRODUCT.id.desc()};
     }
 }
