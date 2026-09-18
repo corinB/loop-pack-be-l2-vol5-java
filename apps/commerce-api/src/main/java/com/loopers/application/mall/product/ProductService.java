@@ -16,6 +16,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         SetProductStockUseCase {
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
+    private final ProductLikeCountQueryDao likeCountQueryDao;
 
     @Override
     @Transactional
@@ -25,7 +26,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         brand.ensureActive();
         Product product = Product.create(command.brandId(), command.name(), command.description(), command.price(),
             command.stock());
-        return ProductResult.from(productRepository.save(product));
+        return result(productRepository.save(product), brand);
     }
 
     @Override
@@ -33,7 +34,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
     public ProductResult execute(ProductCommand.Update command) {
         Product product = findProduct(command.productId());
         product.update(command.name(), command.description(), command.price());
-        return ProductResult.from(productRepository.save(product));
+        return result(productRepository.save(product), findBrand(product.getBrandId()));
     }
 
     @Override
@@ -49,11 +50,22 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
     public ProductResult execute(ProductCommand.SetStock command) {
         Product product = findProduct(command.productId());
         product.setStock(command.stock());
-        return ProductResult.from(productRepository.save(product));
+        return result(productRepository.save(product), findBrand(product.getBrandId()));
     }
 
     private Product findProduct(long productId) {
         return productRepository.findById(productId)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    private Brand findBrand(long brandId) {
+        Brand brand = brandRepository.findById(brandId)
+            .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.BRAND_NOT_FOUND));
+        brand.ensureActive();
+        return brand;
+    }
+
+    private ProductResult result(Product product, Brand brand) {
+        return ProductResult.from(product, brand.getName(), likeCountQueryDao.findCount(product.getId()));
     }
 }

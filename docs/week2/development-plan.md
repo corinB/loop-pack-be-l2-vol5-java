@@ -83,7 +83,8 @@ PR 01의 상세 구현·테스트·커밋 순서는 [공통 개발 기반 계획
 - **결제 조회:** PR 05에 Pay 소유의 OrderBill 저장·조회 구조와 `orderId` 유일성 제약을 준비한다. DRAFT의 결제 필드는 null이며 결제 결과 조합은 저장 fixture로 검증한다. 실제 결제 기록 생성은 PR 06에서 연결한다.
 - **값 객체:** Money는 PR 02에서 `domain.shared`에 만들어 포인트·주문에서 재사용한다. Stock은 Mall에 둔다.
 - **공개 계약:** 기존 URL·상태 코드·응답 필드와 R/P/E 번호를 유지한다. 준비용 공개 API와 임시 상수 응답은 추가하지 않는다.
-- **구조:** 쓰기는 순수 domain/JPA Entity 분리·명시적 save·application 트랜잭션을 유지한다. 모든 GET은 QueryController → application QueryDao → JdbcClient 구현으로 연결하며 DAO가 readOnly 트랜잭션을 소유한다.
+- **구조:** 쓰기는 순수 domain/JPA Entity 분리·명시적 save·application 트랜잭션을 유지한다. GET은 QueryController →
+  application QueryDao로 연결하고 단순 조회는 JdbcClient, 동적 상품 조회는 QueryDSL을 사용하며 DAO가 readOnly 트랜잭션을 소유한다.
 
 상품 조회는 저장 집계 값으로 정렬 후 페이지를 적용한다. 누락 집계는 0이며 마지막 취소 후에도 0으로 갱신한다.
 집계 전체 실패는 롤백하고 이전 값·로그를 남긴 뒤 다음 주기에 실행한다. Redis·이벤트·다중 인스턴스 조율은 제외한다.

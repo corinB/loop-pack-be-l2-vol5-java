@@ -7,7 +7,8 @@ X-USER-ID는 학습용 사용자 입력이며 인증·인가를 수행하지 않
 경로 ID는 양의 정수다. 목록 조건은 page·size이고 상품만 brandId·sort를 추가로 받는다.
 
 각 쓰기 행동은 `ConfirmOrderUseCase` 같은 인터페이스와 `ConfirmOrderService` 같은 구현체로 나눈다.
-쓰기 실행 메서드는 execute이며 Service에 트랜잭션을 둔다. GET은 QueryController → QueryDao → JdbcClient로 연결하고 DAO 구현에 readOnly를 둔다.
+쓰기 실행 메서드는 execute이며 Service에 트랜잭션을 둔다. GET은 QueryController → QueryDao로 연결한다.
+단순 조회는 JdbcClient, 동적 조건·정렬 조합이 많은 상품 조회는 QueryDSL을 사용하고 DAO 구현에 readOnly를 둔다.
 쓰기는 Request → Command → Result → Response, 조회는 Criteria → 조회 record → ApiResponse로 전달한다. [명명·변환 규칙](conventions.md)을 따른다.
 
 ## 고객 API

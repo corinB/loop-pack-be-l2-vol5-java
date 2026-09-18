@@ -26,7 +26,7 @@ com.loopers
 | 조회 실행 | ProductQueryController → ProductQueryDao | 조회 Service 없이 계약 직접 호출 |
 | 저장 계약 / 구현 | ProductRepository / ProductRepositoryImpl | domain이 계약을 소유 |
 | JPA 접근 | ProductJpaRepository | Spring Data 타입을 infrastructure 안에 제한 |
-| 조회 계약 / 구현 | ProductQueryDao / JdbcProductQueryDao | JdbcClient로 SQL·조회 모델 조합 |
+| 조회 계약 / 구현 | ProductQueryDao / QueryDslProductQueryDao | 동적 상품 조건·정렬·페이지를 QueryDSL로 조합 |
 | 저장 객체 변환 | ProductEntityMapper | 변환 코드를 repository에서 분리 |
 
 순수 도메인은 기존 JPA `BaseEntity`를 상속하지 않는다. 기존 Example은 참고용으로 보존한다.
@@ -44,7 +44,7 @@ flowchart LR
     I --> Q[application QueryDao·조회 타입]
     S -->|상품 응답의 저장 집계 값| Q
     R[infrastructure RepositoryImpl·Mapper] --> D
-    A[infrastructure JdbcQueryDao] --> Q
+    A[infrastructure QueryDao 구현] --> Q
     I --> E[domain 업무 오류]
 ```
 
@@ -95,7 +95,8 @@ public void decrease(int quantity) {
 조회는 `Request → Criteria → 조회 record → ApiResponse`이며 별도 Response 복사를 하지 않는다.
 고객·관리자 GET은 QueryController로 분리하고 application의 QueryDao를 직접 호출한다. 조회 UseCase·Service는 두지 않는다.
 DAO는 같은 DB에서 Context 간 조인·정렬·조회 모델 조합을 수행한다. URL·응답 필드·데이터 소유권은 유지한다.
-Spring JDBC의 JdbcClient와 이름 있는 파라미터를 사용하며 복합 결과는 RowMapper로 변환한다.
+단순 조회와 집계 벌크 쓰기는 Spring JDBC의 JdbcClient와 이름 있는 파라미터를 사용한다.
+동적 필터·정렬·페이지 조합이 많은 상품 조회는 QueryDSL로 조합한다.
 Controller는 입력 검사와 Optional 상세 결과의 404 처리를 맡는다. DAO는 HTTP 오류 정책을 구현하지 않는다.
 상품의 쓰기 성공 Result에 필요한 likeCount만 DAO로 저장 집계 값을 읽으며 상품 전체를 재조회하지 않는다.
 

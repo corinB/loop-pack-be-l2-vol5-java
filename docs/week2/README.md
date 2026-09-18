@@ -45,7 +45,7 @@ X-USER-ID는 학습용 사용자 입력이며 권한·본인 여부를 검증하
 | 삭제 | 논리 삭제, 기존 주문 정보 보존 |
 | 이벤트 | 업무 사실을 표현하며 비동기 메시지 처리를 요구하지 않음 |
 | 코드 구조 | 순수 domain / JPA Entity 분리, 계층 → Context → 기능 |
-| 실행·조회 | 쓰기 UseCase + Service, GET QueryController → QueryDao → JdbcClient |
+| 실행·조회 | 쓰기 UseCase + Service, GET QueryController → QueryDao → JdbcClient 또는 동적 상품 조회 QueryDSL |
 | 변환·테스트 | 전용 EntityMapper, 핵심 도메인 규칙의 TDD·엄격한 경계 검증 |
 
 ## 원본에서 구체화한 부분
