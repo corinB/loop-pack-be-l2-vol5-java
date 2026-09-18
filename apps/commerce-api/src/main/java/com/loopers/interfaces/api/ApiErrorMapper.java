@@ -11,7 +11,8 @@ public class ApiErrorMapper {
     public ErrorType map(DomainErrorCode errorCode) {
         return switch (errorCode) {
             case INVALID_USER_ID, INVALID_MONEY, NON_POSITIVE_MONEY, CALCULATION_OVERFLOW,
-                 INVALID_STOCK, INVALID_QUANTITY, INVALID_NAME, INVALID_DESCRIPTION -> ErrorType.BAD_REQUEST;
+                 INVALID_STOCK, INVALID_QUANTITY, INVALID_NAME, INVALID_DESCRIPTION,
+                 EMPTY_ORDER_ITEMS -> ErrorType.BAD_REQUEST;
             case DELETED_BRAND, DELETED_PRODUCT -> ErrorType.NOT_FOUND;
             case INSUFFICIENT_STOCK -> ErrorType.CONFLICT;
         };
