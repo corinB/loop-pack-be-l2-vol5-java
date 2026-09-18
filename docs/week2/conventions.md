@@ -28,6 +28,7 @@ com.loopers
 | JPA 접근 | ProductJpaRepository | Spring Data 타입을 infrastructure 안에 제한 |
 | 조회 계약 / 구현 | ProductQueryDao / QueryDslProductQueryDao | 동적 상품 조건·정렬·페이지를 QueryDSL로 조합 |
 | 저장 객체 변환 | ProductEntityMapper | 변환 코드를 repository에서 분리 |
+| 1:1 소유 관계의 단일 값 저장 | PointJpaEntity(PK=userId) | product_like_counts 선례처럼 별도 id 없이 소유자 ID를 PK로 사용, 저장·조회를 단순화 |
 
 순수 도메인은 기존 JPA `BaseEntity`를 상속하지 않는다. 기존 Example은 참고용으로 보존한다.
 Money처럼 공유할 값은 `domain.shared`에 둘 수 있지만, Context별 업무 정책까지 공통화하지 않는다.
@@ -69,6 +70,7 @@ application QueryDao의 입력·결과도 JPA·HTTP·Spring Data Page 타입을 
 | 공개 setter 금지 | decreaseStock, confirm처럼 의미 있는 행동으로 변경 |
 | 필요한 값만 값 객체 | Money·Stock부터 적용, ID·이름은 기본 타입으로 시작 |
 | 외부에서 내부 상태 변경 금지 | 주문 품목 컬렉션은 방어적으로 복사하고 수정 불가 형태로 노출 |
+| 열거형도 지금 필요한 값만 | PointBillType은 CHARGE만 정의, USE는 실제 필요해질 때 추가(ddl-auto라 스키마 확장 비용이 낮음) |
 
 Money는 잔액을 표현하도록 0을 허용한다. 가격·충전·결제에서는 별도로 양수를 검사한다.
 복원은 신규 생성의 부수 효과를 재실행하지 않으며, CONFIRMED 같은 저장된 유효 상태도 복원한다.
@@ -204,4 +206,20 @@ ArchUnit은 과제의 1.5.0을 기존 JUnit에 연결하는 기준이다. 빈 �
 Checkstyle·ArchUnit 설정은 PR 01에서 연결되어 병합됐다. 이번 보완에서도 기존 규칙을 유지하고 실제 실행 결과를 별도로 기록한다.
 기능별로 계약 확인 → 변경 책임·범위·테스트 제시 → 구현·diff·관련 테스트 → 기능 완료 검사 순서로 진행한다.
 이후 구현 완료 시 `./gradlew :apps:commerce-api:check`와 관련 검사를 실행하고 성공·실패·skip 결과를 기록한다.
+작업 중에는 변경과 직접 관련된 테스트만 `--tests`로 먼저 실행하고, 논리적 커밋 직전에 전체 `check`를 실행해 회귀를 확인한다.
+이 선택적 실행은 작업 속도를 위한 관례일 뿐이며 빌드 인프라의 태그 분리(@Tag, includeTags 등)를 별도 결정 없이 도입하지 않는다.
 미정 정책은 질문하고, 검사 통과를 위해 기대값·업무 규칙·검사 규칙을 삭제하거나 완화하지 않는다.
+정책뿐 아니라 설계·구현상 애매하거나 여러 해석이 가능한 중요한 선택도 임의로 추론하지 않고 사용자에게 확인한다.
+
+## 9. 조회 인덱스
+
+마이그레이션 도구가 없으므로 인덱스는 JPA 엔티티의 `@Table(indexes = @Index(...))`로 직접 선언하며, `ddl-auto: create`가 로컬·테스트 스키마에 그대로 반영한다.
+
+| 규칙 | 이유 |
+|---|---|
+| WHERE/ORDER BY를 함께 커버하는 복합 인덱스를 우선한다 | SELECT 컬럼이 많아 완전한 인덱스 온리 스캔이 어려워도, 필터+정렬만 커버해 filesort·전체 스캔을 피하는 효과가 크다 |
+| 인덱스 컬럼의 정렬 방향(ASC/DESC)은 실제 쿼리의 ORDER BY와 정확히 일치시킨다 | 방향이 어긋나면 인덱스가 있어도 MySQL이 filesort를 그대로 수행한다 |
+| 정렬 기준은 조인 대상 테이블이 아니라 구동(driving) 테이블 자신의 컬럼으로 맞춘다 | 같은 값이라도(예: `p.id`와 `l.product_id`) 조인된 테이블 컬럼으로 정렬하면 MySQL 옵티마이저가 인덱스만으로 순서를 보장하지 못할 수 있다. 구동 테이블 컬럼(`l.product_id`)으로 바꾸면 인덱스 온리 스캔으로 filesort가 사라진다 |
+| 인덱스 적용 여부는 EXPLAIN으로 직접 확인한다 | 빈 테이블에서는 옵티마이저가 인덱스를 쓰지 않을 수 있어 검증되지 않는다. 로컬 DB에 대표 규모 데이터를 채운 뒤 `EXPLAIN`으로 실제 사용 여부를 확인하고, 자동화 테스트 대신 해당 PR 계획 문서의 진행 기록에 결과를 남긴다 |
+
+LIKES_DESC 정렬처럼 정렬 기준이 다른 테이블의 집계 컬럼에 있으면 단일 인덱스로 커버할 수 없다. 이런 조합은 인덱스 적용 대상에서 제외하고 문서에 남긴다.
