@@ -11,7 +11,7 @@ public final class Product {
     private String name;
     private String description;
     private Money price;
-    private final Stock stock;
+    private Stock stock;
     private boolean deleted;
     private final Instant createdAt;
 
@@ -54,12 +54,12 @@ public final class Product {
 
     public void setStock(int value) {
         ensureActive();
-        stock.set(value);
+        stock = stock.set(value);
     }
 
     public void decreaseStock(int quantity) {
         ensureActive();
-        stock.decrease(quantity);
+        stock = stock.decrease(quantity);
     }
 
     public void delete() {

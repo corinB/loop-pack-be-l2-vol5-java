@@ -4,14 +4,11 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.util.Objects;
 
-public final class Money {
-    private final long value;
-
-    private Money(long value) {
+public record Money(long value) {
+    public Money {
         if (value < 0) {
             throw new DomainException(DomainErrorCode.INVALID_MONEY);
         }
-        this.value = value;
     }
 
     public static Money zero() {
@@ -53,24 +50,4 @@ public final class Money {
         return value;
     }
 
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-        if (!(object instanceof Money money)) {
-            return false;
-        }
-        return value == money.value;
-    }
-
-    @Override
-    public int hashCode() {
-        return Long.hashCode(value);
-    }
-
-    @Override
-    public String toString() {
-        return Long.toString(value);
-    }
 }

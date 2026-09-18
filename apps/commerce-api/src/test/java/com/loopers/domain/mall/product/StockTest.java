@@ -18,9 +18,10 @@ class StockTest {
         @Test
         void setsStock_atBoundaries() {
             Stock stock = Stock.of(0);
-            stock.set(Integer.MAX_VALUE);
+            Stock changed = stock.set(Integer.MAX_VALUE);
 
-            assertThat(stock.getValue()).isEqualTo(Integer.MAX_VALUE);
+            assertThat(changed.getValue()).isEqualTo(Integer.MAX_VALUE);
+            assertThat(stock.getValue()).isZero();
         }
 
         @DisplayName("음수 재고를 거절하고 기존 값을 유지한다")
@@ -44,9 +45,10 @@ class StockTest {
         void decreasesExactStock() {
             Stock stock = Stock.of(5);
 
-            stock.decrease(5);
+            Stock changed = stock.decrease(5);
 
-            assertThat(stock.getValue()).isZero();
+            assertThat(changed.getValue()).isZero();
+            assertThat(stock.getValue()).isEqualTo(5);
         }
 
         @DisplayName("재고보다 하나 많은 수량을 거절하고 기존 값을 유지한다")
