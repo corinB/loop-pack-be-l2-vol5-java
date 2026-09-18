@@ -11,7 +11,8 @@ public enum DomainErrorCode {
     INVALID_NAME("이름은 앞뒤 공백을 제외하고 1자 이상 100자 이하여야 합니다."),
     INVALID_DESCRIPTION("설명은 1,000자 이하여야 합니다."),
     DELETED_BRAND("브랜드를 찾을 수 없습니다."),
-    DELETED_PRODUCT("상품을 찾을 수 없습니다.");
+    DELETED_PRODUCT("상품을 찾을 수 없습니다."),
+    EMPTY_ORDER_ITEMS("주문은 한 품목 이상 포함해야 합니다.");
 
     private final String message;
 
