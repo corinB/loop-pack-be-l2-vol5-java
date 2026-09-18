@@ -57,3 +57,4 @@ PR05는 `ordering` 컨텍스트에 **주문 생성(DRAFT)과 고객·관리자 �
 ## 진행 기록
 
 - 2026-09-18: PR04 병합 직후 `volume-2/main`에서 브랜치 생성, 계획 문서 작성. 실제 구현은 아직 착수하지 않음. PR06이 이 PR의 Order/OrderItem·OrderBill 저장 구조에 의존하므로, 두 PR을 동시에 진행하더라도 실제 주문 확정 코드 작성은 이 PR의 진행 상황을 참고해야 한다([pr-06-order-confirm-plan.md](pr-06-order-confirm-plan.md) 참고).
+- 2026-09-18: PR06이 위에 스택할 수 있도록 기반 커밋(`3b56af6`, "feat: 주문 도메인과 OrderBill 저장 구조 추가")을 먼저 만들어 푸시함. `domain.ordering.order`의 `Order`/`OrderItem`/`OrderStatus`(DRAFT/CONFIRMED)와 `OrderRepository`, `domain.pay.orderbill`의 `OrderBill`/`OrderBillStatus`(PAID)와 `OrderBillRepository`, 각 JPA 인프라(`order_bills`는 `order_id` 유일성 제약 포함)와 domain/infrastructure 테스트까지 포함. `Order.confirm()`처럼 PR06이 필요로 하는 상태 전이 메서드는 아직 없으며, 추가·계약 변경 시 PR06과 사전 공유하기로 함. `./gradlew :apps:commerce-api:check` 통과 확인. 이후 이 PR의 나머지 범위(주문 생성 Service, 고객/관리자 조회 DAO·Controller)를 계속 진행.
