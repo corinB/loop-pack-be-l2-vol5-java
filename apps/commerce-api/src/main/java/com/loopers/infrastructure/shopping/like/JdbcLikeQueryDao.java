@@ -38,7 +38,7 @@ public class JdbcLikeQueryDao implements LikeQueryDao {
                 JOIN brands b ON b.id = p.brand_id
                 LEFT JOIN product_like_counts c ON c.product_id = p.id
                 WHERE l.user_id = :userId AND p.deleted = false
-                ORDER BY l.created_at DESC, p.id DESC
+                ORDER BY l.created_at DESC, l.product_id DESC
                 LIMIT :size OFFSET :offset
                 """)
             .param("userId", userId)

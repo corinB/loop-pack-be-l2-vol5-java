@@ -71,3 +71,10 @@ PR 04는 `pay` 컨텍스트에 **포인트 충전·잔액 조회**(R06)를 추�
 ## 진행 기록
 
 - 2026-09-18: 계획 수립. 커버링 인덱스 적용 범위와 세션 내 선택적 테스트 실행 방식을 사용자와 질의응답으로 확정한 뒤 구현 착수.
+- 2026-09-18: 포인트 도메인·인프라·fixture·충전/조회 API 구현 완료(커밋 1~5), 매 커밋 직전 `./gradlew :apps:commerce-api:check` 통과 확인.
+- 2026-09-18: `products`/`brands`/`product_likes`에 `@Table(indexes=...)` 적용 후 로컬 MySQL(`docker-compose -f ./docker/infra-compose.yml`)에 상품 약 6,264건·브랜드 5건·좋아요 100건을 채워 `EXPLAIN`으로 실제 사용 여부를 확인했다.
+  - `idx_products_deleted_brand_created`/`idx_products_deleted_brand_price`: `brandId` 필터가 있는 목록 조회에서 `key`로 선택되고 `Using filesort` 없음(LATEST/PRICE_ASC 모두 확인). `brandId` 없이 전체 목록을 조회하면 `deleted` prefix만 쓰이고 정렬은 filesort로 처리됨 — 인덱스가 `brand_id`를 중간 컬럼으로 두기 때문에 예상된 동작이며, 이 PR에서 추가 조치는 하지 않는다.
+  - `idx_brands_deleted_created`: 브랜드 목록 조회에서 `key`로 선택되고 `Using filesort` 없음.
+  - `idx_product_likes_user_created`: 처음에는 `columnList`를 `user_id, created_at DESC, product_id`(오름차순)로 만들었는데, 기존 `JdbcLikeQueryDao`의 정렬이 `l.created_at DESC, p.id DESC`라 tie-break 방향이 맞지 않아 `EXPLAIN`에서 `Using temporary; Using filesort`가 그대로 남는 것을 발견했다. 인덱스를 `product_id DESC`로 고쳐도, `p.id`(조인된 `products` 테이블 컬럼)를 정렬 기준으로 쓰는 한 MySQL 옵티마이저가 조인을 넘어서는 정렬 보장을 인덱스만으로 증명하지 못해 여전히 filesort가 남았다. `ORDER BY` 기준 컬럼을 값이 동일한 구동 테이블 컬럼 `l.product_id DESC`로 바꾸자(`p.id = l.product_id`라 값은 같음) `Using index`만 남고 filesort가 사라졌다 — 인덱스 정의뿐 아니라 `JdbcLikeQueryDao`의 `ORDER BY` 절도 `l.product_id DESC`로 함께 수정했다(동작은 동일, 실행 계획만 개선).
+  - `product_like_counts`(PK=`product_id`), `users`(PK=`id`)는 InnoDB 클러스터드 PK라 추가 인덱스 없이도 단건 조회가 이미 최적이라 그대로 두었다.
+  - 검증에 사용한 임시 데이터는 확인 후 각 테이블 `TRUNCATE`로 정리했다(스키마 자체는 다음 로컬 기동 시 `ddl-auto: create`로 다시 생성됨).

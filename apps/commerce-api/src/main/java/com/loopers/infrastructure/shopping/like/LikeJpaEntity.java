@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -12,7 +13,9 @@ import java.time.Instant;
 @Entity
 @Table(name = "product_likes", uniqueConstraints = @UniqueConstraint(
     name = "uk_product_likes_user_product", columnNames = {"user_id", "product_id"}
-))
+), indexes = {
+    @Index(name = "idx_product_likes_user_created", columnList = "user_id, created_at DESC, product_id DESC")
+})
 public class LikeJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
