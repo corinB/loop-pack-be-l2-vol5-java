@@ -35,7 +35,27 @@ public class ProductJpaEntity {
 
     protected ProductJpaEntity() {}
 
+    ProductJpaEntity(long brandId, String name, String description, long price, int stock, boolean deleted) {
+        apply(brandId, name, description, price, stock, deleted);
+    }
+
+    void apply(long brandId, String name, String description, long price, int stock, boolean deleted) {
+        this.brandId = brandId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stock = stock;
+        this.deleted = deleted;
+    }
+
     public Long getId() { return id; }
+    public long getBrandId() { return brandId; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public long getPrice() { return price; }
+    public int getStock() { return stock; }
+    public boolean isDeleted() { return deleted; }
+    public Instant getCreatedAt() { return createdAt; }
 
     @PrePersist
     void prePersist() {
