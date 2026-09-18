@@ -97,4 +97,32 @@ class OrderTest {
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
+
+    @DisplayName("주문 확정")
+    @Nested
+    class Confirm {
+        @DisplayName("DRAFT 주문을 CONFIRMED로 전환한다")
+        @Test
+        void confirmsDraftOrder() {
+            List<OrderItem> items = List.of(OrderItem.create(1L, "상품", 1_000L, 1));
+            Order order = Order.create(1L, items);
+
+            order.confirm();
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+
+        @DisplayName("이미 CONFIRMED인 주문은 재확정을 거절하고 상태를 유지한다")
+        @Test
+        void rejectsReconfirm_andKeepsConfirmedStatus() {
+            List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
+            Order order = Order.restore(1L, 1L, OrderStatus.CONFIRMED, items, 1_000L, Instant.now());
+
+            assertThatThrownBy(order::confirm)
+                .isInstanceOf(DomainException.class)
+                .extracting("errorCode")
+                .isEqualTo(DomainErrorCode.ORDER_ALREADY_CONFIRMED);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+    }
 }

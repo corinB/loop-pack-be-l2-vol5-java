@@ -9,7 +9,7 @@ import java.util.List;
 public final class Order {
     private final Long id;
     private final long userId;
-    private final OrderStatus status;
+    private OrderStatus status;
     private final List<OrderItem> items;
     private final Money totalAmount;
     private final Instant createdAt;
@@ -45,6 +45,13 @@ public final class Order {
             throw new IllegalArgumentException("저장된 주문 합계가 올바르지 않습니다.");
         }
         return new Order(id, userId, status, items, computedTotal, createdAt);
+    }
+
+    public void confirm() {
+        if (status == OrderStatus.CONFIRMED) {
+            throw new DomainException(DomainErrorCode.ORDER_ALREADY_CONFIRMED);
+        }
+        status = OrderStatus.CONFIRMED;
     }
 
     private static Money sumAmounts(List<OrderItem> items) {
