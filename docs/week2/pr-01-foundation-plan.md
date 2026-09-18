@@ -14,8 +14,8 @@ fixture 사용자와 입력 검증을 완성한다. 공개 HTTP API는 추가하
 ### 테스트 실행 기반
 
 - Gradle daemon은 플랫폼 경로 인코딩을 사용하고 Java 컴파일·테스트 내용은 UTF-8로 고정한다.
-- Docker 29에서 Testcontainers 1.20.6이 API 1.44를 사용하도록 테스트 설정을 추가한다.
-- 환경 변수를 별도로 지정하지 않고 기존 테스트가 통과해야 한다.
+- Docker 29에서는 로컬 테스트 리소스 docker-java.properties에 api.version=1.44를 지정한다.
+- 이 파일은 기존 .gitignore 정책에 따라 커밋하지 않는다. Docker 실행과 로컬 호환 설정을 준비한 뒤 검사한다.
 
 ### 정적 검사
 
@@ -109,3 +109,16 @@ fixture 사용자와 입력 검증을 완성한다. 공개 HTTP API는 추가하
 
 기존 미커밋 설정 변경은 보존하고 이번 커밋에서 제외한다. 검증된 작업 브랜치를 origin에 일반 푸시한다.
 기준 브랜치 직접 변경·강제 푸시·PR 생성·병합은 하지 않는다.
+
+## 보완 검증 기록 (2026-09-18)
+
+- UserQueryDao / UserQueryModel / JdbcUserQueryDao를 추가하고 JPA와 동일한 DB에서 사용자 조회를 확인했다.
+- resolver의 사용자 존재 검사와 fixture DAO 전환을 완료했다. UserValidator와 domain repository의 existsById는 제거했다.
+- 각 변경은 테스트를 먼저 추가해 미구현 타입·생성자의 컴파일 실패(Red)를 확인한 뒤 구현했다.
+- DAO 실제 DB 조회, resolver 정상·400·404·잘못된 입력의 DAO 미호출, fixture 반복·기존 사용자 보존이 Green이다.
+- 기존 오류 매핑과 도메인·저장 테스트를 유지했고, 제거된 검증 책임은 resolver·DAO 테스트로 이전했다.
+- 최종 `./gradlew :apps:commerce-api:check --console=plain` 성공: 테스트 63개, 실패 0, 오류 0, 건너뜀 0.
+- Checkstyle main/test와 ArchUnit 계층·현재 구현된 Shopping domain 순수성 검사, git diff --check가 통과했다.
+- 최초 DB 테스트는 Docker 연결 단계에서 실패했다. Docker 재기동 및 Git 제외 로컬 API 1.44 설정 후 재검증했다.
+- 상품·좋아요 주기 집계·다른 Context 구현은 이번 검증 대상이 아니며 PR 02 이후로 남긴다.
+- 원래 수정돼 있던 docker/infra-compose.yml과 modules/jpa/src/main/resources/jpa.yml은 이번 커밋에 포함하지 않았다.

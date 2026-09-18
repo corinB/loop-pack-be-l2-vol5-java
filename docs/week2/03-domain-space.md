@@ -56,6 +56,7 @@ Point와 OrderBill은 userId·orderId로 외부 대상을 식별한다.
 |---|---|
 | HTTP 입력 형식, 헤더 추출, 응답 변환 | interfaces |
 | 사용자 존재 확인 | interfaces resolver·좋아요 QueryController → UserQueryDao |
+| 쓰기 호출 순서·객체 간 조건·트랜잭션 | application Service |
 | 상품 재고·포인트 잔액·주문 상태의 유효성 | 해당 Context의 domain |
 | 활성 상품 연결 여부를 확인한 브랜드 삭제 조율 | application + Mall의 조회·행동 |
 | 브랜드·좋아요 수가 포함된 상품 응답 | infrastructure DAO의 조회 record 조합, interfaces의 ApiResponse 포장 |
