@@ -2,7 +2,8 @@
 
 목표는 **설계·도메인 모델링·TDD 학습**이다. 날짜 대신 총 7개 PR의 완료 조건으로 진행 상황을 판단한다.
 계획 정리는 PR 01에 포함한다. PR 01은 PR #4로 병합됐다(1971e49).
-이번 보완은 volume-2/pr-01-query-dao-refactor에서 문서 동기화와 기존 사용자 입력 리팩터링을 수행한다.
+PR 01 보완은 volume-2/pr-01-query-dao-refactor에서 문서 동기화와 기존 사용자 입력 리팩터링을 수행했고
+PR #5로 병합됐다(fb0dee1).
 PR 02~07과 좋아요 집계는 후속 구현이며 이번 문서 보완으로 완료 처리하지 않는다.
 설계 계약은 [요구사항](01-requirements.md), 구현 방식은 [컨벤션](conventions.md)을 따른다.
 
@@ -82,7 +83,8 @@ PR 01의 상세 구현·테스트·커밋 순서는 [공통 개발 기반 계획
 - **결제 조회:** PR 05에 Pay 소유의 OrderBill 저장·조회 구조와 `orderId` 유일성 제약을 준비한다. DRAFT의 결제 필드는 null이며 결제 결과 조합은 저장 fixture로 검증한다. 실제 결제 기록 생성은 PR 06에서 연결한다.
 - **값 객체:** Money는 PR 02에서 `domain.shared`에 만들어 포인트·주문에서 재사용한다. Stock은 Mall에 둔다.
 - **공개 계약:** 기존 URL·상태 코드·응답 필드와 R/P/E 번호를 유지한다. 준비용 공개 API와 임시 상수 응답은 추가하지 않는다.
-- **구조:** 쓰기는 순수 domain/JPA Entity 분리·명시적 save·application 트랜잭션을 유지한다. 모든 GET은 QueryController → application QueryDao → JdbcClient 구현으로 연결하며 DAO가 readOnly 트랜잭션을 소유한다.
+- **구조:** 쓰기는 순수 domain/JPA Entity 분리·명시적 save·application 트랜잭션을 유지한다. GET은 QueryController →
+  application QueryDao로 연결하고 단순 조회는 JdbcClient, 동적 상품 조회는 QueryDSL을 사용하며 DAO가 readOnly 트랜잭션을 소유한다.
 
 상품 조회는 저장 집계 값으로 정렬 후 페이지를 적용한다. 누락 집계는 0이며 마지막 취소 후에도 0으로 갱신한다.
 집계 전체 실패는 롤백하고 이전 값·로그를 남긴 뒤 다음 주기에 실행한다. Redis·이벤트·다중 인스턴스 조율은 제외한다.
@@ -152,7 +154,7 @@ PR 설명에는 문제와 결과, 포함 API, 관련 R/P/E 번호, 테스트 결
 ## 진행 체크리스트
 
 - [x] PR 01: 기존 계획·작업 규칙·공통 기반·사용자 입력 병합(PR #4)
-- [x] PR 01 보완: 조회 DAO 기반·resolver 사용자 존재 검사·fixture 전환·문서 동기화 검증(작업 브랜치, 미병합)
+- [x] PR 01 보완: 조회 DAO 기반·resolver 사용자 존재 검사·fixture 전환·문서 동기화 검증(PR #5)
 - [ ] PR 02: 브랜드·상품 운영·조회와 선행 Like 저장 구조 완료 및 병합
 - [ ] PR 03: 좋아요 등록·취소·목록 완료 및 병합
 - [ ] PR 04: 포인트·기록·초기 잔액 연결 완료 및 병합

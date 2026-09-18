@@ -72,8 +72,9 @@ flowchart LR
 
 모든 GET은 고객·관리자별 QueryController로 분리하고 기존 URL을 유지한다.
 QueryController → application의 QueryDao 인터페이스 → infrastructure의 Jdbc 구현체로 연결한다.
-조회 UseCase·Service는 두지 않는다. 예: ProductQueryDao / JdbcProductQueryDao / ProductQueryController.
-SQL은 Spring JDBC의 JdbcClient로 직접 작성한다. Spring Data JDBC Repository는 사용하지 않는다.
+조회 UseCase·Service는 두지 않는다. 예: ProductQueryDao / QueryDslProductQueryDao / ProductQueryController.
+단순 상세·단일 값 조회와 집계 벌크 쓰기는 Spring JDBC의 JdbcClient를 사용하고,
+동적 필터·정렬·페이지 조합이 많은 상품 조회는 QueryDSL을 사용한다. Spring Data JDBC Repository는 사용하지 않는다.
 기존 JPA와 같은 DB·DataSource에서 Context 간 조인을 허용하되 테이블 소유권은 유지한다.
 DAO는 SQL·조회 모델 조합을 담당하고 공개 조회 메서드에 readOnly 트랜잭션을 둔다.
 Controller는 HTTP 입력·404·ApiResponse 포장을 담당한다. 상세 DAO의 Optional이 비면 기존 오류를 발생시킨다.
