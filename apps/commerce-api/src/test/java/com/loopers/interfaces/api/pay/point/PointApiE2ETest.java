@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.domain.pay.point.Point;
 import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
 import com.loopers.interfaces.api.ApiResponse;
@@ -114,6 +115,50 @@ class PointApiE2ETest {
         }
     }
 
+    @DisplayName("포인트 잔액 조회")
+    @Nested
+    class FindBalance {
+        @DisplayName("존재하는 사용자면 200을 반환하고 저장된 잔액을 반환한다")
+        @Test
+        void returnsBalance() {
+            userRepository.save(User.create(1L));
+            Point point = Point.zero(1L);
+            point.charge(Money.positive(2_000L));
+            pointRepository.save(point);
+
+            ResponseEntity<ApiResponse<PointApiDto.BalanceResponse>> response = findBalance("1");
+
+            assertAll(
+                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
+                () -> assertThat(response.getBody().data().balance()).isEqualTo(2_000L)
+            );
+        }
+
+        @DisplayName("X-USER-ID 헤더가 없으면 400을 반환한다")
+        @Test
+        void returnsBadRequest_whenHeaderIsMissing() {
+            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw(null);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+
+        @DisplayName("X-USER-ID 헤더가 양의 정수가 아니면 400을 반환한다")
+        @Test
+        void returnsBadRequest_whenHeaderIsInvalid() {
+            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw("abc");
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+
+        @DisplayName("존재하지 않는 사용자면 404를 반환한다")
+        @Test
+        void returnsNotFound_whenUserDoesNotExist() {
+            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw("999");
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+    }
+
     private void createUserWithPoint(long userId) {
         userRepository.save(User.create(userId));
         pointRepository.save(Point.zero(userId));
@@ -133,6 +178,24 @@ class PointApiE2ETest {
             "/api/v1/points/charge",
             HttpMethod.POST,
             new HttpEntity<>(new PointApiDto.ChargeRequest(amount), headers(userIdHeader)),
+            new ParameterizedTypeReference<>() {}
+        );
+    }
+
+    private ResponseEntity<ApiResponse<PointApiDto.BalanceResponse>> findBalance(String userIdHeader) {
+        return restTemplate.exchange(
+            "/api/v1/points",
+            HttpMethod.GET,
+            new HttpEntity<>(null, headers(userIdHeader)),
+            new ParameterizedTypeReference<>() {}
+        );
+    }
+
+    private ResponseEntity<ApiResponse<Object>> findBalanceRaw(String userIdHeader) {
+        return restTemplate.exchange(
+            "/api/v1/points",
+            HttpMethod.GET,
+            new HttpEntity<>(null, headers(userIdHeader)),
             new ParameterizedTypeReference<>() {}
         );
     }
