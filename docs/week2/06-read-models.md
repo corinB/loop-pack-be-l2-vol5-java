@@ -32,8 +32,8 @@
 | 조회 | 데이터 출처 | 조건 |
 |---|---|---|
 | 브랜드 상세·관리자 목록 | Brand | 활성 브랜드만 |
-| 상품 목록·상세 | Product + Brand + Like COUNT | 활성 상품·브랜드, 좋아요가 없으면 0 |
-| 내 좋아요 목록 | 경로 userId의 Like + Product + Brand + Like COUNT | 활성 상품만, 지정 사용자로 필터링 |
+| 상품 목록·상세 | Product + Brand + Shopping의 상품별 좋아요 집계 | 활성 상품·브랜드, 집계 행이 없으면 0 |
+| 내 좋아요 목록 | 경로 userId의 Like + Product + Brand + 상품별 좋아요 집계 | 활성 상품만, 지정 사용자로 필터링 |
 | 내 잔액 | 헤더 userId의 Point | DB에 저장된 현재 balance |
 | 내 주문 목록 | Order + OrderItem + OrderBill | 헤더 userId로 필터링, 상품 삭제 후에도 조회 가능 |
 | 내 주문 상세 | Order + OrderItem + OrderBill | orderId로 조회, 헤더·본인 여부 검사 없음 |
@@ -44,8 +44,14 @@
 결제 기록은 OrderBill에서 조합한다. DRAFT의 paymentAmount·paymentStatus는 null이다.
 CONFIRMED는 paymentAmount = totalAmount, paymentStatus = PAID다.
 
-PR 02에서 Like 저장 구조·유일성 제약과 실제 COUNT 조회를 준비하고 관계 fixture로 상품 집계를 검증한다.
-PR 03에서 좋아요 등록·취소·목록 유스케이스를 연결한다. likeCount를 임시 상수로 반환하지 않는다.
+PR 02에서 Like 관계·유일성·상품별 집계 테이블과 주기 집계를 준비하고 관계 fixture로 검증한다.
+PR 03에서 등록·취소와 목록 DAO를 연결한다. 관계·목록 포함 여부는 즉시 반영하고 숫자·인기순은 집계 후 반영한다.
+집계 테이블은 productId를 유일 키로 하며 likeCount를 저장한다. 상품에 집계 상태를 중복 저장하지 않는다.
+단일 commerce-api에서 시작 시 1회, 이전 실행 종료 10초 후 전체 관계 COUNT를 다시 저장한다.
+마지막 관계가 취소된 상품도 0으로 갱신한다. 누락된 집계 행은 조회 시 0이며 실시간 COUNT로 대체하지 않는다.
+전체 집계 실패 시 트랜잭션을 롤백하고 이전 값 유지·로그 기록 후 다음 주기에 실행한다.
+스케줄러는 application 집계 Service를 호출하며 집계 저장 계약은 읽기 DAO와 분리한다.
+상품 쓰기 성공 응답도 저장된 집계 값만 DAO로 읽고 기존 Result를 구성한다. 상품 전체를 다시 조회하지 않는다.
 PR 05에서 OrderBill 저장·조회 구조를 준비하고 결제 결과 조합은 저장 fixture로 검증한다.
 PR 06에서 실제 결제 기록 생성과 확정을 연결한 뒤 기존 주문 조회 API의 결제 결과도 검증한다.
 
@@ -55,22 +61,28 @@ PR 06에서 실제 결제 기록 생성과 확정을 연결한 뒤 기존 주문
 flowchart LR
     P[Product] --> Q[상품 Query 조합]
     B[Brand] --> Q
-    L[Like 관계 COUNT] --> Q
+    L[Like 관계] --> T[시작·10초 간격 전체 집계]
+    T --> LC[Shopping 상품별 좋아요 집계]
+    LC --> Q
     Q --> V[ProductSummary / ProductDetail]
     O[Order + OrderItem 스냅샷] --> R[주문 Query 조합]
     OB[OrderBill] --> R
     R --> OV[OrderView / AdminOrderView]
 ```
 
-application은 조회 순서와 결과 조합을, interfaces는 HTTP 응답 변환을 담당한다.
-조회는 `GetOrderUseCase` / `GetOrderService`처럼 계약과 구현을 나누고 구현의 execute를 readOnly로 실행한다.
-application의 조회 포트(예: ProductQueryPort)와 Criteria·Result를 infrastructure의 QueryAdapter가 구현·사용한다.
-domain repository는 도메인 저장·복원 계약에 집중하고, 화면용 조합 조회는 application 포트로 분리한다.
-domain은 HTTP DTO나 application 결과 타입을 참조하지 않는다.
-QueryAdapter가 application 구현 Service에 의존하는 것은 금지한다.
-집계·조인은 infrastructure에서 수행할 수 있지만 응답 정책을 중복 구현하지 않는다.
-HTTP Response는 application Result에서 변환하는 별도 record다. 위 응답 필드 계약은 그대로 유지한다.
-상품 페이지를 먼저 자른 뒤 likes_desc로 정렬하면 잘못된 순서가 되므로 집계·정렬 후 페이지를 자른다.
+모든 GET은 고객·관리자별 QueryController로 분리하고 기존 URL을 유지한다.
+QueryController → application의 QueryDao 인터페이스 → infrastructure의 Jdbc 구현체로 연결한다.
+조회 UseCase·Service는 두지 않는다. 예: ProductQueryDao / JdbcProductQueryDao / ProductQueryController.
+SQL은 Spring JDBC의 JdbcClient로 직접 작성한다. Spring Data JDBC Repository는 사용하지 않는다.
+기존 JPA와 같은 DB·DataSource에서 Context 간 조인을 허용하되 테이블 소유권은 유지한다.
+DAO는 SQL·조회 모델 조합을 담당하고 공개 조회 메서드에 readOnly 트랜잭션을 둔다.
+Controller는 HTTP 입력·404·ApiResponse 포장을 담당한다. 상세 DAO의 Optional이 비면 기존 오류를 발생시킨다.
+Criteria·조회 모델·페이지 결과는 application의 순수 Java record이며 HTTP·JPA·Spring Data Page에 의존하지 않는다.
+조회 record를 별도 Response 복사 없이 반환하며 위 응답 필드를 유지한다. domain은 이 DTO를 알지 못한다.
+domain repository는 쓰기 중 도메인 복원·저장에 집중한다. DAO가 application 구현 Service를 호출하는 것은 금지한다.
+UserQueryDao.findById로 resolver와 좋아요 목록 Controller가 사용자 존재를 검사한다.
+주문 목록은 주문 페이지·전체 개수·선택된 주문의 품목을 한 DAO 메서드에서 묶어 조회하고 주문별 반복 SQL을 피한다.
+저장된 좋아요 집계 값으로 정렬한 뒤 페이지를 자른다. SQL 값은 이름 있는 파라미터로 바인딩한다.
 
 ## 정렬·페이지
 
@@ -101,7 +113,9 @@ totalElements는 필터·삭제·지정 사용자 조건을 적용한 개수다.
 
 ## 검증할 사례
 
-- 좋아요가 없는 상품도 목록에 나오고 likeCount는 0이다.
+- 미집계 상품도 목록에 나오고 likeCount는 0이다. 마지막 취소 후 집계하면 기존 값도 0이 된다.
+- 관계·내 목록은 즉시 반영하고 모든 상품 응답의 숫자·인기순은 다음 집계에서 반영한다.
+- 집계 실패 시 기존 값이 보존된다. 집계를 직접 호출해 검증하며 실제 10초를 기다리지 않는다.
 - 같은 가격·좋아요 수의 상품은 ID 내림차순이며 페이지 간 중복이 없다(데이터 변경 없는 조건).
 - 상품 수정은 현재 조회에 반영되지만 기존 주문의 이름·가격은 변하지 않는다.
 - 삭제 상품은 목록·내 좋아요에서 빠지며 과거 주문 품목에는 남는다.
