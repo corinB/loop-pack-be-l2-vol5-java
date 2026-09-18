@@ -5,13 +5,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+    @Index(name = "idx_products_deleted_brand_created", columnList = "deleted, brand_id, created_at DESC, id DESC"),
+    @Index(name = "idx_products_deleted_brand_price", columnList = "deleted, brand_id, price ASC, id DESC")
+})
 public class ProductJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

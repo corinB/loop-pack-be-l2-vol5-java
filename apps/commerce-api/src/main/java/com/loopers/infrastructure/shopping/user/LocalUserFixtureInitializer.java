@@ -1,6 +1,8 @@
 package com.loopers.infrastructure.shopping.user;
 
 import com.loopers.application.shopping.user.UserQueryDao;
+import com.loopers.domain.pay.point.Point;
+import com.loopers.domain.pay.point.PointRepository;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ public class LocalUserFixtureInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final UserQueryDao userQueryDao;
+    private final PointRepository pointRepository;
 
     @Override
     @Transactional
@@ -30,6 +33,9 @@ public class LocalUserFixtureInitializer implements ApplicationRunner {
     private void saveIfMissing(long userId) {
         if (userQueryDao.findById(userId).isEmpty()) {
             userRepository.save(User.create(userId));
+        }
+        if (pointRepository.findByUserId(userId).isEmpty()) {
+            pointRepository.save(Point.zero(userId));
         }
     }
 }
