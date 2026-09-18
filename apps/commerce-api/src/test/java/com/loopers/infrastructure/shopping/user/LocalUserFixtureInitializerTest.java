@@ -1,43 +1,83 @@
 package com.loopers.infrastructure.shopping.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.loopers.application.shopping.user.UserQueryDao;
+import com.loopers.application.shopping.user.UserQueryModel;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class LocalUserFixtureInitializerTest {
+    @DisplayName("local fixture를 초기화할 때")
+    @Nested
+    class Initialize {
+        @DisplayName("반복 실행해도 사용자 1과 2만 한 번씩 저장한다")
+        @Test
+        void initializesTwoUsersIdempotently() {
+            // arrange
+            InMemoryUserRepository repository = new InMemoryUserRepository();
+            UserQueryDao dao = id -> Optional.ofNullable(repository.users.get(id))
+                .map(user -> new UserQueryModel(user.getId()));
+            LocalUserFixtureInitializer initializer = new LocalUserFixtureInitializer(repository, dao);
 
-    @DisplayName("local fixture 초기화를 반복해도 사용자 1과 2만 한 번씩 저장한다")
-    @Test
-    void initializesTwoUsersIdempotently() throws Exception {
-        InMemoryUserRepository repository = new InMemoryUserRepository();
-        LocalUserFixtureInitializer initializer = new LocalUserFixtureInitializer(repository);
+            // act
+            initializer.run(null);
+            initializer.run(null);
 
-        initializer.run(null);
-        initializer.run(null);
+            // assert
+            assertThat(repository.users).containsOnlyKeys(1L, 2L);
+            assertThat(repository.savedIds).containsExactly(1L, 2L);
+        }
 
-        assertThat(repository.users).containsOnlyKeys(1L, 2L);
-        assertThat(repository.saveCount).isEqualTo(2);
+        @DisplayName("이미 있는 사용자는 다시 저장하지 않고 다른 사용자도 보존한다")
+        @Test
+        void preservesExistingUsersAndOnlySavesMissingFixture() {
+            // arrange
+            InMemoryUserRepository repository = new InMemoryUserRepository();
+            User existing = User.create(1L);
+            User other = User.create(3L);
+            repository.users.put(1L, existing);
+            repository.users.put(3L, other);
+            UserQueryDao dao = mock(UserQueryDao.class);
+            given(dao.findById(1L)).willReturn(Optional.of(new UserQueryModel(1L)));
+            given(dao.findById(2L)).willReturn(Optional.empty());
+            LocalUserFixtureInitializer initializer = new LocalUserFixtureInitializer(repository, dao);
+
+            // act
+            initializer.run(null);
+
+            // assert
+            assertThat(repository.users).containsOnlyKeys(1L, 2L, 3L);
+            assertThat(repository.users.get(1L)).isSameAs(existing);
+            assertThat(repository.users.get(3L)).isSameAs(other);
+            assertThat(repository.savedIds).containsExactly(2L);
+            verify(dao).findById(1L);
+            verify(dao).findById(2L);
+            verifyNoMoreInteractions(dao);
+        }
     }
 
     private static class InMemoryUserRepository implements UserRepository {
         private final Map<Long, User> users = new HashMap<>();
-        private int saveCount;
+        private final List<Long> savedIds = new ArrayList<>();
 
         @Override
         public User save(User user) {
             users.put(user.getId(), user);
-            saveCount++;
+            savedIds.add(user.getId());
             return user;
-        }
-
-        @Override
-        public boolean existsById(long userId) {
-            return users.containsKey(userId);
         }
     }
 }

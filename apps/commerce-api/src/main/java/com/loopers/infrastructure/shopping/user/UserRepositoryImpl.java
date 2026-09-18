@@ -16,9 +16,4 @@ public class UserRepositoryImpl implements UserRepository {
         UserJpaEntity savedEntity = userJpaRepository.save(userEntityMapper.toEntity(user));
         return userEntityMapper.toDomain(savedEntity);
     }
-
-    @Override
-    public boolean existsById(long userId) {
-        return userJpaRepository.existsById(userId);
-    }
 }
