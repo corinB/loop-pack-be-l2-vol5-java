@@ -25,15 +25,18 @@ public class PointBillJpaEntity {
     private PointBillType type;
     @Column(nullable = false)
     private long amount;
+    @Column(name = "order_id")
+    private Long orderId;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected PointBillJpaEntity() {}
 
-    PointBillJpaEntity(long userId, PointBillType type, long amount) {
+    PointBillJpaEntity(long userId, PointBillType type, long amount, Long orderId) {
         this.userId = userId;
         this.type = type;
         this.amount = amount;
+        this.orderId = orderId;
     }
 
     public Long getId() {
@@ -50,6 +53,10 @@ public class PointBillJpaEntity {
 
     public long getAmount() {
         return amount;
+    }
+
+    public Long getOrderId() {
+        return orderId;
     }
 
     public Instant getCreatedAt() {

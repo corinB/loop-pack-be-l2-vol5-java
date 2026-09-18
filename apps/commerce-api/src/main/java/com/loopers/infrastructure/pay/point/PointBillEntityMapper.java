@@ -7,10 +7,11 @@ import org.springframework.stereotype.Component;
 public class PointBillEntityMapper {
     public PointBill toDomain(PointBillJpaEntity entity) {
         return PointBill.restore(entity.getId(), entity.getUserId(), entity.getType(), entity.getAmount(),
-            entity.getCreatedAt());
+            entity.getOrderId(), entity.getCreatedAt());
     }
 
     public PointBillJpaEntity toNewEntity(PointBill pointBill) {
-        return new PointBillJpaEntity(pointBill.getUserId(), pointBill.getType(), pointBill.getAmount());
+        return new PointBillJpaEntity(pointBill.getUserId(), pointBill.getType(), pointBill.getAmount(),
+            pointBill.getOrderId());
     }
 }

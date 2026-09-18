@@ -14,7 +14,7 @@ public class ApiErrorMapper {
                  INVALID_STOCK, INVALID_QUANTITY, INVALID_NAME, INVALID_DESCRIPTION,
                  EMPTY_ORDER_ITEMS -> ErrorType.BAD_REQUEST;
             case DELETED_BRAND, DELETED_PRODUCT -> ErrorType.NOT_FOUND;
-            case INSUFFICIENT_STOCK -> ErrorType.CONFLICT;
+            case INSUFFICIENT_STOCK, ORDER_ALREADY_CONFIRMED, INSUFFICIENT_POINT -> ErrorType.CONFLICT;
         };
     }
 

@@ -1,6 +1,8 @@
 package com.loopers.domain.pay.point;
 
 import com.loopers.domain.shared.Money;
+import com.loopers.domain.support.error.DomainErrorCode;
+import com.loopers.domain.support.error.DomainException;
 
 public final class Point {
     private final long userId;
@@ -24,6 +26,13 @@ public final class Point {
 
     public void charge(Money amount) {
         balance = balance.add(amount);
+    }
+
+    public void use(Money amount) {
+        if (amount.getValue() > balance.getValue()) {
+            throw new DomainException(DomainErrorCode.INSUFFICIENT_POINT);
+        }
+        balance = Money.of(balance.getValue() - amount.getValue());
     }
 
     public long getUserId() {
