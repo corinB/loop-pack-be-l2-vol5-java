@@ -10,6 +10,7 @@ import com.loopers.application.mall.product.ProductSummary;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.support.RequestInputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +37,7 @@ public class ProductQueryController {
 
     @GetMapping("/{productId}")
     public ApiResponse<ProductDetail> find(@PathVariable long productId) {
+        RequestInputValidator.requirePositiveId(productId, "상품 ID");
         ProductDetail product = productQueryDao.findProduct(productId)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.PRODUCT_NOT_FOUND));
         return ApiResponse.success(product);

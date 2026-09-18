@@ -10,7 +10,7 @@ public record PageCriteria(int page, int size) {
         }
     }
 
-    public int offset() {
-        return Math.multiplyExact(page, size);
+    public long offset() {
+        return Math.multiplyExact((long) page, size);
     }
 }

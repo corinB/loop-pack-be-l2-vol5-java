@@ -12,6 +12,9 @@ public final class ProductApiDto {
             if (brandId == null || price == null || stock == null) {
                 throw new DomainException(DomainErrorCode.INVALID_QUANTITY, "상품 필수 입력이 누락되었습니다.");
             }
+            if (brandId <= 0) {
+                throw new DomainException(DomainErrorCode.INVALID_QUANTITY, "브랜드 ID는 양의 정수여야 합니다.");
+            }
             return new ProductCommand.Create(brandId, name, description, price, stock);
         }
     }

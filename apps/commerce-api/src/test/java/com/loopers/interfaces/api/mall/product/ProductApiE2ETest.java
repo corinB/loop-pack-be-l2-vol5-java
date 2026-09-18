@@ -116,6 +116,7 @@ class ProductApiE2ETest {
             long brandId = createBrand();
             ResponseEntity<String> invalidSort = restTemplate.getForEntity("/api/v1/products?sort=unknown", String.class);
             ResponseEntity<String> invalidPage = restTemplate.getForEntity("/api/v1/products?page=-1", String.class);
+            ResponseEntity<String> invalidProductId = restTemplate.getForEntity("/api/v1/products/0", String.class);
             ResponseEntity<String> invalidPrice = restTemplate.postForEntity(
                 "/api-admin/v1/products",
                 new ProductApiDto.CreateRequest(brandId, "상품", null, 0L, 0),
@@ -125,6 +126,7 @@ class ProductApiE2ETest {
             assertAll(
                 () -> assertThat(invalidSort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(invalidPage.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
+                () -> assertThat(invalidProductId.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(invalidPrice.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(jdbcClient.sql("SELECT COUNT(*) FROM products").query(Long.class).single()).isZero()
             );

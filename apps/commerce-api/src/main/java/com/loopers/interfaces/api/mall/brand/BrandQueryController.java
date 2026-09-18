@@ -5,6 +5,7 @@ import com.loopers.application.mall.brand.BrandQueryDao;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.support.RequestInputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ public class BrandQueryController {
 
     @GetMapping("/{brandId}")
     public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
+        RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         BrandDetail detail = brandQueryDao.findById(brandId)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.BRAND_NOT_FOUND));
         return ApiResponse.success(detail);

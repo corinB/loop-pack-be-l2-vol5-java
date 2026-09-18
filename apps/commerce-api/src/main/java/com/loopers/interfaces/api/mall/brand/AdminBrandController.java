@@ -11,6 +11,7 @@ import com.loopers.application.mall.brand.UpdateBrandUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.support.RequestInputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,7 @@ public class AdminBrandController {
 
     @GetMapping("/{brandId}")
     public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
+        RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         return ApiResponse.success(brandQueryDao.findById(brandId).orElseThrow(AdminBrandController::notFound));
     }
 
@@ -54,11 +56,13 @@ public class AdminBrandController {
 
     @PutMapping("/{brandId}")
     public ApiResponse<BrandApiDto.Response> update(@PathVariable long brandId, @RequestBody BrandApiDto.Request request) {
+        RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         return ApiResponse.success(BrandApiDto.Response.from(updateBrandUseCase.execute(request.toUpdateCommand(brandId))));
     }
 
     @DeleteMapping("/{brandId}")
     public ApiResponse<Object> delete(@PathVariable long brandId) {
+        RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         deleteBrandUseCase.execute(new BrandCommand.Delete(brandId));
         return ApiResponse.success();
     }

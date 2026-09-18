@@ -14,6 +14,7 @@ import com.loopers.application.mall.product.UpdateProductUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.support.RequestInputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,7 @@ public class AdminProductController {
 
     @GetMapping("/{productId}")
     public ApiResponse<AdminProduct> find(@PathVariable long productId) {
+        RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(productQueryDao.findAdminProduct(productId).orElseThrow(AdminProductController::notFound));
     }
 
@@ -61,17 +63,20 @@ public class AdminProductController {
 
     @PutMapping("/{productId}")
     public ApiResponse<AdminProduct> update(@PathVariable long productId, @RequestBody ProductApiDto.UpdateRequest request) {
+        RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(AdminProduct.from(updateProductUseCase.execute(request.toCommand(productId))));
     }
 
     @DeleteMapping("/{productId}")
     public ApiResponse<Object> delete(@PathVariable long productId) {
+        RequestInputValidator.requirePositiveId(productId, "상품 ID");
         deleteProductUseCase.execute(new ProductCommand.Delete(productId));
         return ApiResponse.success();
     }
 
     @PutMapping("/{productId}/stock")
     public ApiResponse<AdminProduct> setStock(@PathVariable long productId, @RequestBody ProductApiDto.StockRequest request) {
+        RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(AdminProduct.from(setProductStockUseCase.execute(request.toCommand(productId))));
     }
 
