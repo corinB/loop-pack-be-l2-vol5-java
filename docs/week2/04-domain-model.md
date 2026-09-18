@@ -36,7 +36,7 @@ classDiagram
 | Ordering | Order | id, userId, status, totalAmount, createdAt, items | 생성, 확정 |
 | Ordering | OrderItem | productId, productName, unitPrice, quantity, amount | 주문 생성 시 구성 |
 | Pay | Point | userId, balance | 충전, 결제 차감 |
-| Pay | PointBill | id, userId, orderId, type, amount, balanceAfter, createdAt | 변경 내역 기록 |
+| Pay | PointBill | id, userId, orderId, type, amount, createdAt | 변경 내역 기록 |
 | Pay | OrderBill | id, orderId, userId, amount, status, createdAt | 성공 결제 기록 |
 
 OrderItem은 Order 내부 Entity이며 단독 변경 API를 제공하지 않는다.
@@ -90,5 +90,10 @@ CONFIRMED는 결제를 마친 상태다. 취소·환불·결제 대기 상태는
 트랜잭션은 application의 UseCase 구현 Service가 소유하고, 변경된 도메인은 repository의 `save`로 저장한다.
 RepositoryImpl은 저장을 조율하고 EntityMapper는 도메인 복원·신규 Entity 변환·기존 Entity 반영을 담당한다.
 기존 Entity의 ID·생성 시각 등 저장 메타데이터는 변환 중 보존한다. domain은 JPA 변경 감지에 의존하지 않는다.
+
+주문 확정만 예외로, 검증은 그대로 domain 객체(`Product.decreaseStock`, `Point.use`, `Order.confirm`)가 수행하되
+실제 저장은 개별 repository의 `save` 대신 `ConfirmOrderWriter`(application 계약) 하나가 JDBC로 모아서 처리한다.
+품목·기록 수만큼 반복되는 저장 라운드트립을 줄이기 위한 선택이며, 근거는 [pr-06-order-confirm-plan.md](pr-06-order-confirm-plan.md)의
+"설계 변경" 절을 따른다.
 
 값의 범위는 [정책](02-business-policies.md), 조회 형태는 [Read Model](06-read-models.md)에 정의한다.

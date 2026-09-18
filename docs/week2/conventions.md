@@ -150,6 +150,8 @@ Order·OrderItem의 저장·복원은 Aggregate 전체를 다루며 스냅샷·�
 주문 확정은 모든 재고·Point·PointBill·OrderBill·Order 상태를 같은 트랜잭션으로 저장한다.
 어느 저장에서든 실패하면 전체 롤백한다. 순차 재확정은 주문 상태 검사로 거절하며 Mapper 분리가 이를 대신하지 않는다.
 잠금·버전 검증·재시도·동시 요청 테스트는 이번 PR 완료 조건에 포함하지 않는다.
+주문 확정은 예외적으로 개별 repository의 `save` 대신 `ConfirmOrderWriter` 하나가 JDBC로 저장을 모아 처리한다(검증은
+그대로 domain이 수행). 이유는 [pr-06-order-confirm-plan.md](pr-06-order-confirm-plan.md) "설계 변경" 절 참고.
 
 ## 6. 검증과 오류
 
