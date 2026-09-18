@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -26,19 +25,4 @@ public class LikeJpaEntity {
     private Instant createdAt;
 
     protected LikeJpaEntity() {}
-
-    LikeJpaEntity(long userId, long productId) {
-        this.userId = userId;
-        this.productId = productId;
-    }
-
-    @PrePersist
-    void prePersist() {
-        createdAt = Instant.now();
-    }
-
-    public Long getId() { return id; }
-    public long getUserId() { return userId; }
-    public long getProductId() { return productId; }
-    public Instant getCreatedAt() { return createdAt; }
 }
