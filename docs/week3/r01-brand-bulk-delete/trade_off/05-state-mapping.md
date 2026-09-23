@@ -55,8 +55,9 @@ Repository가 같은 영속성 컨텍스트의 엔티티를 ID로 다시 요청�
 관리 중인 자식의 변경 감지는 cascade 없이도 적용되며, cascade가 순수 도메인의 값을 엔티티에 복사하지는 않는다.
 이 비교는 `save()` 호출 유무보다 **반영할 객체와 상태의 구성 방식**에 관한 것이다.
 
-## 남은 사항
+## 구현 시 확인
 
-상품 ID 대응과 누락 검증, 삭제 상태만 반영할 Mapper 계약을 구체화한다.
+상품 ID가 올바르게 대응되는지, 변경이 누락되지 않는지, 삭제 상태 외의 값이 보존되는지 구현·테스트에서 확인한다.
+이미 선택한 매핑 방식의 검증 항목이며 별도 트레이드오프를 요구하지 않는다.
 관련 JPA 동작은 [Hibernate 문서](https://docs.hibernate.org/orm/6.6/introduction/html_single/)와
 [Spring Data JPA 저장 설명](https://docs.spring.io/spring-data/jpa/reference/3.5/jpa/entity-persistence.html)을 참고한다.
