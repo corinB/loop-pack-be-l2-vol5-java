@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import com.loopers.application.mall.brand.BrandCommand;
+import com.loopers.application.mall.brand.DeleteBrandUseCase;
 import com.loopers.domain.mall.brand.Brand;
 import com.loopers.domain.mall.brand.BrandRepository;
 import com.loopers.domain.mall.product.Product;
@@ -33,6 +35,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class ConfirmOrderIntegrationTest {
     @Autowired
     private ConfirmOrderUseCase confirmOrderUseCase;
+    @Autowired
+    private DeleteBrandUseCase deleteBrandUseCase;
     @Autowired
     private BrandRepository brandRepository;
     @Autowired
@@ -126,6 +130,33 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(countPaidOrderBills(order.getId())).isZero()
+            );
+        }
+
+        @DisplayName("브랜드 일괄 삭제로 상품이 삭제되면 DRAFT 확정을 거절하고 재고·잔액·기록을 보존한다")
+        @Test
+        void rejectsConfirm_whenProductDeletedViaBrandBulkDelete() {
+            Brand brand = brandRepository.save(Brand.create("브랜드", null));
+            long productId = productRepository.save(Product.create(brand.getId(), "상품", null, 1_000L, 5)).getId();
+            userRepository.save(User.create(1L));
+            Point point = pointRepository.save(Point.zero(1L));
+            point.charge(Money.positive(10_000L));
+            pointRepository.save(point);
+            Order order = createOrder(1L, productId, 2, 1_000L);
+
+            deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId()));
+
+            assertThatThrownBy(() -> confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId())))
+                .isInstanceOf(DomainException.class)
+                .extracting("errorCode")
+                .isEqualTo(DomainErrorCode.DELETED_PRODUCT);
+
+            assertAll(
+                () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
+                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
+                () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
                 () -> assertThat(countPaidOrderBills(order.getId())).isZero()
             );
         }

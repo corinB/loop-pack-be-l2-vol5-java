@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.application.common.PageResult;
+import com.loopers.application.mall.brand.BrandCommand;
+import com.loopers.application.mall.brand.DeleteBrandUseCase;
 import com.loopers.application.ordering.order.AdminOrderView;
 import com.loopers.application.ordering.order.OrderView;
 import com.loopers.domain.mall.brand.Brand;
@@ -39,6 +41,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class OrderApiE2ETest {
     @Autowired
     private TestRestTemplate restTemplate;
+    @Autowired
+    private DeleteBrandUseCase deleteBrandUseCase;
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -178,6 +182,36 @@ class OrderApiE2ETest {
             ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(999L);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+
+        @DisplayName("브랜드 일괄 삭제 후에도 과거 주문의 금액·결제 결과는 보존된다")
+        @Test
+        void preservesPaymentResult_afterBrandBulkDelete() {
+            userRepository.save(User.create(1L));
+            Brand brand = brandRepository.save(Brand.create("브랜드", null));
+            Product product = productRepository.save(Product.create(brand.getId(), "상품", null, 1_000L, 10));
+            chargePoint(1L, 10_000L);
+            long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(product.getId(), 2)))
+                .getBody().data().orderId();
+            confirmOrder(orderId);
+
+            deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId()));
+
+            ResponseEntity<ApiResponse<OrderView>> customerDetail = findOrder(orderId);
+            ResponseEntity<ApiResponse<AdminOrderView>> adminDetail = restTemplate.exchange(
+                "/api-admin/v1/orders/" + orderId,
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                new ParameterizedTypeReference<>() {}
+            );
+
+            assertAll(
+                () -> assertThat(customerDetail.getBody().data().totalAmount()).isEqualTo(2_000L),
+                () -> assertThat(customerDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
+                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(adminDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
+                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID)
+            );
         }
 
         @DisplayName("재고가 부족하면 409를 반환하고 상태를 유지한다")
