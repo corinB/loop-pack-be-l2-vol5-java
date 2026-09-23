@@ -65,7 +65,7 @@ R01은 삭제 후 기존 DRAFT 확정 거절을 확인하고, R02는 그 계약�
 
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 상태 |
 |---|---|---|---|---|---|
-| 1 | R01 | `r01-brand-bulk-delete/` | `volume-3/r01-brand-bulk-delete` | `volume-3/main` | 트레이드오프 정리 완료, 구현 계획·구현·검증 미착수 |
+| 1 | R01 | `r01-brand-bulk-delete/` | `volume-3/r01-brand-bulk-delete` | `volume-3/main` | 구현·검증 완료([결과](r01-brand-bulk-delete/result.md)), PR 생성 대기 |
 | 2 | R02 | `r02-order-consistency/` | `volume-3/r02-order-consistency` | `volume-3/main` | 요구사항 정리, R01 병합 후 진행 |
 
 R01을 리뷰·병합한 뒤 최신 `volume-3/main`에서 R02 브랜치를 만든다. 작업 브랜치끼리 직접 병합하거나 미리 쌓지 않는다.
