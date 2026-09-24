@@ -23,6 +23,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -72,14 +73,22 @@ class ConfirmOrderIntegrationTest {
 
             ConfirmOrderResult result = confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId()));
 
+            Product reloadedProduct = productRepository.findById(productId).orElseThrow();
             assertAll(
                 () -> assertThat(result.order().status()).isEqualTo(OrderStatus.CONFIRMED),
                 () -> assertThat(result.paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(3),
+                () -> assertThat(reloadedProduct.getStock()).isEqualTo(3),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
                 () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED")
+                () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED"),
+                // 재고 외 무관한 상품 값은 잠금 조회·저장 이후에도 그대로 보존돼야 한다
+                () -> assertThat(reloadedProduct.getName()).isEqualTo("상품"),
+                () -> assertThat(reloadedProduct.getPrice()).isEqualTo(1_000L),
+                () -> assertThat(reloadedProduct.isDeleted()).isFalse(),
+                // 주문 당시 품목 스냅샷도 그대로 보존돼야 한다
+                () -> assertThat(orderItemSnapshot(order.getId()))
+                    .containsExactly(Tuple.tuple(productId, "상품", 1_000L, 2))
             );
         }
 

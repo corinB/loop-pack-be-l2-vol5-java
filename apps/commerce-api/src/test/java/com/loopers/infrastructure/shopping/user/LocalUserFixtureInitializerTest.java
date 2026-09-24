@@ -107,5 +107,10 @@ class LocalUserFixtureInitializerTest {
         public Optional<Wallet> findByUserId(long userId) {
             return Optional.ofNullable(wallets.get(userId));
         }
+
+        @Override
+        public Optional<Wallet> findByUserIdForUpdate(long userId) {
+            return Optional.ofNullable(wallets.get(userId));
+        }
     }
 }

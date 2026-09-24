@@ -31,4 +31,10 @@ public class WalletRepositoryImpl implements WalletRepository {
     public Optional<Wallet> findByUserId(long userId) {
         return walletJpaRepository.findById(userId).map(mapper::toDomain);
     }
+
+    // 비관적 쓰기 잠금으로 조회
+    @Override
+    public Optional<Wallet> findByUserIdForUpdate(long userId) {
+        return walletJpaRepository.findByUserIdForUpdate(userId).map(mapper::toDomain);
+    }
 }

@@ -7,4 +7,7 @@ public interface WalletRepository {
     Wallet save(Wallet wallet);
 
     Optional<Wallet> findByUserId(long userId);
+
+    // 비관적 쓰기 잠금으로 조회
+    Optional<Wallet> findByUserIdForUpdate(long userId);
 }
