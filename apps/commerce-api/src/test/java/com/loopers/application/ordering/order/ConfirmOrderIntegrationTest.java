@@ -14,8 +14,8 @@ import com.loopers.domain.ordering.order.Order;
 import com.loopers.domain.ordering.order.OrderItem;
 import com.loopers.domain.ordering.order.OrderRepository;
 import com.loopers.domain.ordering.order.OrderStatus;
-import com.loopers.domain.pay.point.Point;
-import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.pay.wallet.Wallet;
+import com.loopers.domain.pay.wallet.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
@@ -23,6 +23,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,7 +45,7 @@ class ConfirmOrderIntegrationTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private PointRepository pointRepository;
+    private WalletRepository walletRepository;
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
@@ -65,21 +66,32 @@ class ConfirmOrderIntegrationTest {
         void confirmsOrder_withStockPointAndRecords() {
             long productId = createProduct(5);
             userRepository.save(User.create(1L));
-            Point point = pointRepository.save(Point.zero(1L));
-            point.charge(Money.positive(10_000L));
-            pointRepository.save(point);
+            Wallet wallet = walletRepository.save(Wallet.zero(1L));
+            wallet.charge(Money.positive(10_000L));
+            walletRepository.save(wallet);
             Order order = createOrder(1L, productId, 2, 1_000L);
 
             ConfirmOrderResult result = confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId()));
 
+            Product reloadedProduct = productRepository.findById(productId).orElseThrow();
+            Order reloadedOrder = orderRepository.findById(order.getId()).orElseThrow();
             assertAll(
                 () -> assertThat(result.order().status()).isEqualTo(OrderStatus.CONFIRMED),
                 () -> assertThat(result.paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(3),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
+                () -> assertThat(reloadedProduct.getStock()).isEqualTo(3),
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
                 () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED")
+                () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED"),
+                // 재고 외 무관한 상품 값은 잠금 조회·저장 이후에도 그대로 보존돼야 한다
+                () -> assertThat(reloadedProduct.getName()).isEqualTo("상품"),
+                () -> assertThat(reloadedProduct.getPrice()).isEqualTo(1_000L),
+                () -> assertThat(reloadedProduct.isDeleted()).isFalse(),
+                // 주문 당시 품목 스냅샷도 그대로 보존돼야 한다
+                () -> assertThat(reloadedOrder.getItems())
+                    .extracting(OrderItem::getProductId, OrderItem::getProductName, OrderItem::getUnitPrice,
+                        OrderItem::getQuantity)
+                    .containsExactly(Tuple.tuple(productId, "상품", 1_000L, 2))
             );
         }
 
@@ -89,9 +101,9 @@ class ConfirmOrderIntegrationTest {
             long sufficientProductId = createProduct(5);
             long insufficientProductId = createProduct(1);
             userRepository.save(User.create(1L));
-            Point point = pointRepository.save(Point.zero(1L));
-            point.charge(Money.positive(10_000L));
-            pointRepository.save(point);
+            Wallet wallet = walletRepository.save(Wallet.zero(1L));
+            wallet.charge(Money.positive(10_000L));
+            walletRepository.save(wallet);
             List<OrderItem> items = List.of(
                 OrderItem.create(sufficientProductId, "상품1", 1_000L, 2),
                 OrderItem.create(insufficientProductId, "상품2", 1_000L, 2)
@@ -106,7 +118,7 @@ class ConfirmOrderIntegrationTest {
             assertAll(
                 () -> assertThat(productRepository.findById(sufficientProductId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(productRepository.findById(insufficientProductId).orElseThrow().getStock()).isEqualTo(1),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
                 () -> assertThat(countPaidOrderBills(order.getId())).isZero()
@@ -118,7 +130,7 @@ class ConfirmOrderIntegrationTest {
         void rollsBackEverything_whenPointIsInsufficient() {
             long productId = createProduct(5);
             userRepository.save(User.create(1L));
-            pointRepository.save(Point.zero(1L));
+            walletRepository.save(Wallet.zero(1L));
             Order order = createOrder(1L, productId, 2, 1_000L);
 
             assertThatThrownBy(() -> confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId())))
@@ -128,7 +140,7 @@ class ConfirmOrderIntegrationTest {
 
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countPaidOrderBills(order.getId())).isZero()
             );
@@ -140,9 +152,9 @@ class ConfirmOrderIntegrationTest {
             Brand brand = brandRepository.save(Brand.create("브랜드", null));
             long productId = productRepository.save(Product.create(brand.getId(), "상품", null, 1_000L, 5)).getId();
             userRepository.save(User.create(1L));
-            Point point = pointRepository.save(Point.zero(1L));
-            point.charge(Money.positive(10_000L));
-            pointRepository.save(point);
+            Wallet wallet = walletRepository.save(Wallet.zero(1L));
+            wallet.charge(Money.positive(10_000L));
+            walletRepository.save(wallet);
             Order order = createOrder(1L, productId, 2, 1_000L);
 
             deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId()));
@@ -154,7 +166,7 @@ class ConfirmOrderIntegrationTest {
 
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
                 () -> assertThat(countPaidOrderBills(order.getId())).isZero()
@@ -166,9 +178,9 @@ class ConfirmOrderIntegrationTest {
         void rejectsReconfirm_withoutAdditionalChangesOrRecords() {
             long productId = createProduct(5);
             userRepository.save(User.create(1L));
-            Point point = pointRepository.save(Point.zero(1L));
-            point.charge(Money.positive(10_000L));
-            pointRepository.save(point);
+            Wallet wallet = walletRepository.save(Wallet.zero(1L));
+            wallet.charge(Money.positive(10_000L));
+            walletRepository.save(wallet);
             Order order = createOrder(1L, productId, 2, 1_000L);
             confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId()));
 
@@ -179,7 +191,7 @@ class ConfirmOrderIntegrationTest {
 
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(3),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
                 () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L)
             );

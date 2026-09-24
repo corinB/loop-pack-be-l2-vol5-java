@@ -16,8 +16,8 @@ import com.loopers.domain.mall.product.ProductRepository;
 import com.loopers.domain.ordering.order.Order;
 import com.loopers.domain.ordering.order.OrderItem;
 import com.loopers.domain.ordering.order.OrderRepository;
-import com.loopers.domain.pay.point.Point;
-import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.pay.wallet.Wallet;
+import com.loopers.domain.pay.wallet.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
@@ -46,7 +46,7 @@ class DeleteBrandRollbackIntegrationTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private PointRepository pointRepository;
+    private WalletRepository walletRepository;
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
@@ -88,7 +88,7 @@ class DeleteBrandRollbackIntegrationTest {
                 () -> assertThat(brandRepository.findById(otherBrand.getId()).orElseThrow().isDeleted()).isFalse(),
                 () -> assertThat(productRepository.findById(otherProduct.getId()).orElseThrow().isDeleted()).isFalse(),
                 () -> assertThat(orderStatus(pastOrderId)).isEqualTo("CONFIRMED"),
-                () -> assertThat(pointRepository.findByUserId(2L).orElseThrow().getBalance()).isEqualTo(8_000L)
+                () -> assertThat(walletRepository.findByUserId(2L).orElseThrow().getBalance()).isEqualTo(8_000L)
             );
         } finally {
             reset(productJpaRepository);
@@ -99,9 +99,9 @@ class DeleteBrandRollbackIntegrationTest {
         Brand brand = brandRepository.save(Brand.create("과거 주문 브랜드", null));
         Product product = productRepository.save(Product.create(brand.getId(), "과거 주문 상품", null, 1_000L, 5));
         userRepository.save(User.create(2L));
-        Point point = pointRepository.save(Point.zero(2L));
-        point.charge(Money.positive(10_000L));
-        pointRepository.save(point);
+        Wallet wallet = walletRepository.save(Wallet.zero(2L));
+        wallet.charge(Money.positive(10_000L));
+        walletRepository.save(wallet);
         OrderItem item = OrderItem.create(product.getId(), "과거 주문 상품", 1_000L, 2);
         Order order = orderRepository.save(Order.create(2L, List.of(item)));
 
