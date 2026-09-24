@@ -14,6 +14,8 @@ import com.loopers.domain.mall.product.ProductRepository;
 import com.loopers.domain.ordering.order.Order;
 import com.loopers.domain.ordering.order.OrderItem;
 import com.loopers.domain.ordering.order.OrderRepository;
+import com.loopers.domain.pay.wallet.PointBill;
+import com.loopers.domain.pay.wallet.PointBillRepository;
 import com.loopers.domain.pay.wallet.Wallet;
 import com.loopers.domain.pay.wallet.WalletRepository;
 import com.loopers.domain.shared.Money;
@@ -45,6 +47,8 @@ class ConfirmOrderSqlRollbackIntegrationTest {
     @Autowired
     private WalletRepository walletRepository;
     @Autowired
+    private PointBillRepository pointBillRepository;
+    @Autowired
     private EntityManager entityManager;
     @Autowired
     private JdbcClient jdbcClient;
@@ -67,8 +71,9 @@ class ConfirmOrderSqlRollbackIntegrationTest {
         long unrelatedProductId = createProduct(5);
         userRepository.save(User.create(1L));
         Wallet wallet = walletRepository.save(Wallet.zero(1L));
-        wallet.charge(Money.positive(10_000L));
+        PointBill chargeBill = wallet.charge(Money.positive(10_000L));
         walletRepository.save(wallet);
+        pointBillRepository.save(chargeBill);
 
         Order unrelatedOrder = createOrder(1L, List.of(OrderItem.create(unrelatedProductId, "상품", 1_000L, 1)));
         Order order = createOrder(1L, List.of(
@@ -78,7 +83,7 @@ class ConfirmOrderSqlRollbackIntegrationTest {
 
         AtomicInteger stockObservedDuringSave = new AtomicInteger(-1);
         doAnswer(invocation -> {
-            Object saved = invocation.callRealMethod();
+            invocation.callRealMethod();
             entityManager.flush();
             Number stock = (Number) entityManager.createNativeQuery("SELECT stock FROM products WHERE id = ?1")
                 .setParameter(1, productAId)
@@ -103,7 +108,10 @@ class ConfirmOrderSqlRollbackIntegrationTest {
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
                 () -> assertThat(countPaidOrderBills(order.getId())).isZero(),
-                () -> assertThat(orderStatus(unrelatedOrder.getId())).isEqualTo("DRAFT")
+                () -> assertThat(orderStatus(unrelatedOrder.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(productRepository.findById(unrelatedProductId).orElseThrow().getStock()).isEqualTo(5),
+                () -> assertThat(jdbcClient.sql("SELECT amount FROM point_bills WHERE user_id = 1 AND type = 'CHARGE'")
+                    .query(Long.class).list()).containsExactly(10_000L)
             );
         } finally {
             reset(orderRepository);

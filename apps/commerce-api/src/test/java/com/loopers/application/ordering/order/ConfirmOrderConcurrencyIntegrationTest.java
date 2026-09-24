@@ -89,6 +89,7 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(countUsePointBills(userId, order.getId())).isEqualTo(1L),
             () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L)
         );
+        assertOrderOutcome(order, true);
     }
 
     @DisplayName("재고 5에 서로 다른 구매자 8명이 동시에 1개씩 주문하면 재고만큼만 성공한다")
@@ -112,6 +113,14 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(technicalErrorCount(results, Set.of(DomainErrorCode.INSUFFICIENT_STOCK))).isZero(),
             () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isZero()
         );
+        assertThat(results).hasSize(orders.size());
+        for (int i = 0; i < orders.size(); i++) {
+            Order order = orders.get(i);
+            boolean succeeded = results.get(i).isSuccess();
+            assertOrderOutcome(order, succeeded);
+            assertThat(walletRepository.findByUserId(order.getUserId()).orElseThrow().getBalance())
+                .isEqualTo(succeeded ? 9_000L : 10_000L);
+        }
     }
 
     @DisplayName("한 사용자가 4,000원 주문 3건을 동시에 확정하면 잔액이 허용하는 만큼만 성공한다")
@@ -135,6 +144,14 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(technicalErrorCount(results, Set.of(DomainErrorCode.INSUFFICIENT_POINT))).isZero(),
             () -> assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(2_000L)
         );
+        assertThat(results).hasSize(orders.size());
+        for (int i = 0; i < orders.size(); i++) {
+            Order order = orders.get(i);
+            boolean succeeded = results.get(i).isSuccess();
+            assertOrderOutcome(order, succeeded);
+            assertThat(productRepository.findById(order.getItems().get(0).getProductId()).orElseThrow().getStock())
+                .isEqualTo(succeeded ? 9 : 10);
+        }
     }
 
     @DisplayName("충전과 결제를 동시에 실행하면 둘 다 성공하고 최종 잔액이 정확하다")
@@ -156,6 +173,10 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(5_000L),
             () -> assertThat(countUsePointBills(userId, order.getId())).isEqualTo(1L)
         );
+        assertOrderOutcome(order, true);
+        assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(4);
+        assertThat(jdbcClient.sql("SELECT amount FROM point_bills WHERE user_id = :userId AND type = 'CHARGE'")
+            .param("userId", userId).query(Long.class).list()).containsExactly(2_000L);
     }
 
     @DisplayName("관리자 재고 설정과 주문 확정을 동시에 실행해도 순차 실행에 해당하는 결과만 나온다")
@@ -177,6 +198,8 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(technicalErrorCount(results, Set.of())).isZero(),
             () -> assertThat(finalStock).isIn(8, 10)
         );
+        assertOrderOutcome(order, true);
+        assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(8_000L);
     }
 
     @DisplayName("같은 두 상품을 반대 순서로 담은 두 주문이 동시에 확정돼도 데드락 없이 둘 다 성공한다")
@@ -206,6 +229,29 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(technicalErrorCount(results, Set.of())).isZero(),
             () -> assertThat(productRepository.findById(productAId).orElseThrow().getStock()).isEqualTo(3),
             () -> assertThat(productRepository.findById(productBId).orElseThrow().getStock()).isEqualTo(3)
+        );
+        assertOrderOutcome(order1, true);
+        assertOrderOutcome(order2, true);
+        assertThat(walletRepository.findByUserId(user1).orElseThrow().getBalance()).isEqualTo(8_000L);
+        assertThat(walletRepository.findByUserId(user2).orElseThrow().getBalance()).isEqualTo(8_000L);
+    }
+
+    private void assertOrderOutcome(Order order, boolean succeeded) {
+        assertAll(
+            () -> assertThat(jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
+                .param("orderId", order.getId()).query(String.class).single())
+                .isEqualTo(succeeded ? "CONFIRMED" : "DRAFT"),
+            () -> assertThat(jdbcClient.sql("SELECT total_amount FROM orders WHERE id = :orderId")
+                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(order.getTotalAmount()),
+            () -> assertThat(jdbcClient.sql("SELECT SUM(quantity) FROM order_items WHERE order_id = :orderId")
+                .param("orderId", order.getId()).query(Long.class).single())
+                .isEqualTo(order.getItems().stream().mapToLong(OrderItem::getQuantity).sum()),
+            () -> assertThat(countUsePointBills(order.getUserId(), order.getId())).isEqualTo(succeeded ? 1 : 0),
+            () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(succeeded ? 1 : 0),
+            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM point_bills WHERE order_id = :orderId")
+                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0),
+            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM order_bills WHERE order_id = :orderId")
+                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0)
         );
     }
 
