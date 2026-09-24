@@ -17,6 +17,7 @@ R01 병합 내용은 현재 작업 브랜치에 반영되어 있다. 구현 착�
 6. [충돌·대기·재시도 정책](06-failure-handling.md): **기존 DB 대기 설정·자동 재시도 없이 전체 롤백** / ~~제한된 자동 재시도~~
 7. [사용자 잔액 도메인 모델링](07-wallet-model.md): **Point→Wallet 전환, PointBill은 이름 유지, 이력은 개념적 소유+독립 쓰기, Money 상속 VO 미도입** / ~~현행 분리된 팩토리 호출 유지~~ / ~~PointBill을 Wallet의 진짜 JPA 컬렉션으로 소유~~
 8. [OrderBill 생성 책임과 컨텍스트 경계](08-bill-creation-boundary.md): **Application(ConfirmOrderService)이 생성(현행 유지), Order.confirm()은 반환값 없음** / ~~OrderBill을 ordering 컨텍스트로 이관~~ / ~~Order가 pay.orderbill.OrderBill을 직접 생성~~
+9. [브랜드 일괄 삭제의 상품 잠금](09-brand-delete-product-lock.md): **`findForDeletion`을 잠금 조회로 — 통합 테스트로 자식(Product) 행까지 잠김을 확인** / ~~findByIdForUpdate 반복 재사용~~ / ~~entityManager.lock()+refresh()~~ / ~~낙관적 락(버전 컬럼)~~
 
 주제를 시작할 때 템플릿을 복사해 `번호-주제.md` 형식으로 만들고 이 목록에 연결한다. 문답 중 함께 결론 나는 내용은 관련 문서로 연결해 반복을 줄인다.
 
@@ -26,6 +27,7 @@ R01 병합 내용은 현재 작업 브랜치에 반영되어 있다. 구현 착�
 JPA 조회·매핑과 실제 SQL, 예외 전파·전체 롤백을 [구현 계획](../plan.md)에 구체화했다.
 7번(Wallet 전환)은 구현 착수 중 추가로 합의된 트레이드오프이며, 구현 계획의 새 커밋 1로 다른 커밋보다 먼저 진행한다(기존 커밋 1~7은 커밋 2~8로 이동).
 8번(OrderBill 생성 책임)은 7번 결정을 컨텍스트 경계 관점에서 재검토해 나온 후속 트레이드오프다 — 애그리거트는 하나의 컨텍스트 안에서만 성립하므로, 같은 컨텍스트인 Wallet/PointBill과 다른 컨텍스트인 Order/OrderBill의 생성 책임을 비대칭으로 둔다.
+9번(브랜드 삭제 상품 잠금)은 커밋 4(같은 행을 변경하는 기존 경로 보호) 착수 중 합의됐다. 통합 테스트로 실제 잠금 여부를 확인해 채택안을 확정했다.
 
 업무 결과와 필수 경쟁 사례는 요구사항을 따른다. 실패 주입·worker·connection 등 테스트 구성도 구현 계획을 따른다. 계획 작성은 구현·검증 완료를 의미하지 않는다.
 
