@@ -33,7 +33,7 @@ class WalletServiceTest {
             WalletRepository walletRepository = mock(WalletRepository.class);
             PointBillRepository pointBillRepository = mock(PointBillRepository.class);
             Wallet wallet = Wallet.zero(1L);
-            given(walletRepository.findByUserId(1L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByUserIdForUpdate(1L)).willReturn(Optional.of(wallet));
             given(walletRepository.save(wallet)).willReturn(wallet);
             given(pointBillRepository.save(any(PointBill.class))).willAnswer(invocation -> invocation.getArgument(0));
             WalletService service = new WalletService(walletRepository, pointBillRepository);
@@ -44,7 +44,7 @@ class WalletServiceTest {
             // assert
             assertThat(result.balance()).isEqualTo(1_000L);
             InOrder order = inOrder(walletRepository, pointBillRepository);
-            order.verify(walletRepository).findByUserId(1L);
+            order.verify(walletRepository).findByUserIdForUpdate(1L);
             order.verify(walletRepository).save(wallet);
             order.verify(pointBillRepository).save(any(PointBill.class));
         }
@@ -56,7 +56,7 @@ class WalletServiceTest {
             WalletRepository walletRepository = mock(WalletRepository.class);
             PointBillRepository pointBillRepository = mock(PointBillRepository.class);
             Wallet wallet = Wallet.restore(1L, Long.MAX_VALUE);
-            given(walletRepository.findByUserId(1L)).willReturn(Optional.of(wallet));
+            given(walletRepository.findByUserIdForUpdate(1L)).willReturn(Optional.of(wallet));
             WalletService service = new WalletService(walletRepository, pointBillRepository);
 
             // act & assert
@@ -74,7 +74,7 @@ class WalletServiceTest {
             // arrange
             WalletRepository walletRepository = mock(WalletRepository.class);
             PointBillRepository pointBillRepository = mock(PointBillRepository.class);
-            given(walletRepository.findByUserId(1L)).willReturn(Optional.of(Wallet.zero(1L)));
+            given(walletRepository.findByUserIdForUpdate(1L)).willReturn(Optional.of(Wallet.zero(1L)));
             WalletService service = new WalletService(walletRepository, pointBillRepository);
 
             // act & assert

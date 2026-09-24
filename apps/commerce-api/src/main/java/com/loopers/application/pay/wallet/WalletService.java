@@ -20,7 +20,7 @@ public class WalletService implements ChargeWalletUseCase {
     @Override
     @Transactional
     public WalletResult execute(WalletCommand.Charge command) {
-        Wallet wallet = walletRepository.findByUserId(command.userId()).orElseThrow();
+        Wallet wallet = walletRepository.findByUserIdForUpdate(command.userId()).orElseThrow();
         PointBill pointBill = wallet.charge(Money.positive(command.amount()));
         Wallet saved = walletRepository.save(wallet);
         pointBillRepository.save(pointBill);
