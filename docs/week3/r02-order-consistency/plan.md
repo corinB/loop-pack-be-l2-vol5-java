@@ -4,21 +4,21 @@
 
 작업 브랜치: `volume-3/r02-order-consistency` · PR 대상: `volume-3/main`
 
-상태: 커밋 1(Point→Wallet 전환)·커밋 2(주문 확정 도메인 규칙 분리)·커밋 3(JPA 잠금 조회·저장)·커밋 4(같은 행을 변경하는 기존 경로 보호)·커밋 5(실제 SQL 이후 전체 롤백)·커밋 6(갱신 유실 대조군과 동시 실행 테스트 기반)·커밋 7(실제 서비스 동시성 검증, 필수 6개 시나리오로 범위 한정) 구현·테스트 통과. 커밋 8은 미착수다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
+상태: 커밋 1(Point→Wallet 전환)·커밋 2(주문 확정 도메인 규칙 분리)·커밋 3(JPA 잠금 조회·저장)·커밋 4(같은 행을 변경하는 기존 경로 보호)·커밋 5(실제 SQL 이후 전체 롤백)·커밋 6(갱신 유실 대조군과 동시 실행 테스트 기반)·커밋 7(실제 서비스 동시성 검증, 필수 6개 시나리오로 범위 한정) 구현·테스트 통과. 커밋 8(HTTP·회귀 검사와 결과 문서)도 완료했다. 최종 check 247건 통과(실패·오류·skip 0), Checkstyle 위반 0건이며 상세 결과와 남은 검증 한계는 [result.md](result.md)에 기록했다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
 구현 착수 중 [사용자 잔액 도메인 모델링](trade_off/07-wallet-model.md), [OrderBill 생성 책임과 컨텍스트 경계](trade_off/08-bill-creation-boundary.md), [브랜드 삭제 상품 잠금](trade_off/09-brand-delete-product-lock.md) 트레이드오프가 추가로 합의되었다. 기존 커밋 1~7은 커밋 2~8로 번호를 옮겼다.
 
 ## 문서와 진행 원칙
 
 이 문서는 R01과 같은 커밋별 목표·TODO·완료 기준 형식으로 작성한다.
-이번 작업은 계획 문서 작성과 관련 문서의 상태·링크 갱신까지다. 기능 구현·Git 커밋·푸시는 포함하지 않는다.
-구현 체크박스는 미완료로 두고, `result.md`는 실제 구현·검증 이후 작성한다.
+최초 계획 작성 단계는 문서 정리만 범위였으며, 이후 사용자 요청에 따라 구현·검증·커밋·PR 제출까지 진행했다.
+구현 체크박스는 실제 완료 상태를 반영하며, 실행 결과는 [result.md](result.md)에 기록한다. 미실행·제외 항목은 구분해 남긴다.
 
 각 구현 커밋은 **실패 테스트 확인 → 구현 → 리팩터링 → 관련 테스트 통과 → 커밋** 순서로 진행한다.
 기존 동작이 처음부터 통과하면 그대로 기록한다. 아래 커밋은 이후 구현 작업을 나누는 단위이며 테스트와 해당 구현·보완을 함께 커밋한다.
 
 ## 공통 설계
 
-- 기존 API·응답·업무 오류·주문 당시 금액을 유지한다. 스키마 변경이나 인증·인가 추가는 없다.
+- 기존 API·응답·업무 오류·주문 당시 금액을 유지한다. 추가 합의에 따라 잔액 테이블명은 `points` → `wallets`로 전환한다. 인증·인가 추가는 없다.
 - 호출은 `Controller → ConfirmOrderService.execute(REQUIRED) → 잠금 조회 → 순수 도메인 서비스 → JPA 저장 → 커밋`으로 구성한다.
 - 주문 확정의 잠금 순서는 **주문 → 해당 사용자 포인트 → 상품 ID 오름차순**으로 고정한다. 상품은 중복 ID를 제거하고 하나씩 잠근다.
 - 잠금부터 저장까지 같은 트랜잭션을 유지한다. 하위 MANDATORY·REQUIRES_NEW·자동 재시도·별도 잠금 대기 설정은 추가하지 않는다.
@@ -29,14 +29,14 @@
 
 **목표:** 사용자 잔액 도메인의 이름·이력 생성 책임을 정리해 이후 커밋(도메인 규칙 분리, 락 도입)의 기반을 만든다. [트레이드오프](trade_off/07-wallet-model.md) 참고.
 
-- [ ] `domain.pay.point` → `domain.pay.wallet`로 패키지를 옮기고 `Point`→`Wallet`, `PointRepository`→`WalletRepository`로 이름을 바꾼다. `PointBill`/`PointBillRepository`는 이름을 유지한 채 같은 패키지로 옮긴다.
-- [ ] `application.pay.point` → `application.pay.wallet`. `PointService`→`WalletService`, `ChargePointUseCase`→`ChargeWalletUseCase`, `PointCommand`→`WalletCommand`, `PointResult`→`WalletResult`, `PointQueryDao`→`WalletQueryDao`로 이름을 바꾼다.
-- [ ] `infrastructure.pay.point` → `infrastructure.pay.wallet`. `PointJpaEntity`→`WalletJpaEntity`(테이블 `points`→`wallets`, 컬럼명 유지), `PointJpaRepository`→`WalletJpaRepository`, `PointRepositoryImpl`→`WalletRepositoryImpl`, `PointEntityMapper`→`WalletEntityMapper`, `JdbcPointQueryDao`→`JdbcWalletQueryDao`로 이름을 바꾼다. `PointBillJpaEntity`(테이블 `point_bills` 유지)/`PointBillJpaRepository`/`PointBillRepositoryImpl`/`PointBillEntityMapper`는 이름을 유지한 채 같은 패키지로 옮긴다.
-- [ ] `interfaces.api.pay.point` → `interfaces.api.pay.wallet`. `PointController`→`WalletController`, `PointQueryController`→`WalletQueryController`, `PointApiDto`→`WalletApiDto`로 이름을 바꾸되 `@RequestMapping` 경로(`/api/v1/points`, `/api/v1/points/charge`)와 요청·응답 필드는 그대로 유지한다.
-- [ ] `Wallet.charge(Money)`가 `PointBill`을 생성해 반환하고, `WalletService`가 그 반환값을 `PointBillRepository.save`로 저장하도록 바꾼다(기존에는 서비스가 직접 `PointBill.charge(...)`를 호출했다).
-- [ ] `application.ordering.order`(`ConfirmOrderLoad`, `ConfirmOrderService`, `ConfirmOrderWriter`, `infrastructure.ordering.order.JdbcConfirmOrderWriter`)의 `Point`/`PointRepository` 참조를 `Wallet`/`WalletRepository`로 갱신한다. 이 커밋에서는 사용 시점의 `PointBill` 생성 방식(반환값 사용)은 바꾸지 않고, 다음 커밋(도메인 규칙 분리)에서 `Wallet.use(...)`가 `PointBill`을 반환하도록 정리한다.
-- [ ] 테스트 파일·클래스명(`PointTest`→`WalletTest`, `PointServiceTest`→`WalletServiceTest`, `PointRepositoryIntegrationTest`→`WalletRepositoryIntegrationTest`, `PointApiE2ETest`→`WalletApiE2ETest` 등)과 내부 변수명을 함께 갱신한다. `PointBillTest`는 이름을 유지한다.
-- [ ] 이름만 바뀌었을 뿐 기존 동작(HTTP 계약·업무 규칙)이 그대로임을 관련 테스트로 확인하고 커밋한다.
+- [x] `domain.pay.point` → `domain.pay.wallet`로 패키지를 옮기고 `Point`→`Wallet`, `PointRepository`→`WalletRepository`로 이름을 바꾼다. `PointBill`/`PointBillRepository`는 이름을 유지한 채 같은 패키지로 옮긴다.
+- [x] `application.pay.point` → `application.pay.wallet`. `PointService`→`WalletService`, `ChargePointUseCase`→`ChargeWalletUseCase`, `PointCommand`→`WalletCommand`, `PointResult`→`WalletResult`, `PointQueryDao`→`WalletQueryDao`로 이름을 바꾼다.
+- [x] `infrastructure.pay.point` → `infrastructure.pay.wallet`. `PointJpaEntity`→`WalletJpaEntity`(테이블 `points`→`wallets`, 컬럼명 유지), `PointJpaRepository`→`WalletJpaRepository`, `PointRepositoryImpl`→`WalletRepositoryImpl`, `PointEntityMapper`→`WalletEntityMapper`, `JdbcPointQueryDao`→`JdbcWalletQueryDao`로 이름을 바꾼다. `PointBillJpaEntity`(테이블 `point_bills` 유지)/`PointBillJpaRepository`/`PointBillRepositoryImpl`/`PointBillEntityMapper`는 이름을 유지한 채 같은 패키지로 옮긴다.
+- [x] `interfaces.api.pay.point` → `interfaces.api.pay.wallet`. `PointController`→`WalletController`, `PointQueryController`→`WalletQueryController`, `PointApiDto`→`WalletApiDto`로 이름을 바꾸되 `@RequestMapping` 경로(`/api/v1/points`, `/api/v1/points/charge`)와 요청·응답 필드는 그대로 유지한다.
+- [x] `Wallet.charge(Money)`가 `PointBill`을 생성해 반환하고, `WalletService`가 그 반환값을 `PointBillRepository.save`로 저장하도록 바꾼다(기존에는 서비스가 직접 `PointBill.charge(...)`를 호출했다).
+- [x] `application.ordering.order`(`ConfirmOrderLoad`, `ConfirmOrderService`, `ConfirmOrderWriter`, `infrastructure.ordering.order.JdbcConfirmOrderWriter`)의 `Point`/`PointRepository` 참조를 `Wallet`/`WalletRepository`로 갱신한다. 이 커밋에서는 사용 시점의 `PointBill` 생성 방식(반환값 사용)은 바꾸지 않고, 다음 커밋(도메인 규칙 분리)에서 `Wallet.use(...)`가 `PointBill`을 반환하도록 정리한다.
+- [x] 테스트 파일·클래스명(`PointTest`→`WalletTest`, `PointServiceTest`→`WalletServiceTest`, `PointRepositoryIntegrationTest`→`WalletRepositoryIntegrationTest`, `PointApiE2ETest`→`WalletApiE2ETest` 등)과 내부 변수명을 함께 갱신한다. `PointBillTest`는 이름을 유지한다.
+- [x] 이름만 바뀌었을 뿐 기존 동작(HTTP 계약·업무 규칙)이 그대로임을 관련 테스트로 확인하고 커밋한다.
 
 **완료 기준:** `Point` 참조가 남아있지 않고(`PointBill` 계열 제외), 기존 API·업무 규칙·테스트가 이름 변경 전과 동일하게 통과한다.
 
@@ -106,9 +106,9 @@
 - [x] 대조군은 테스트 소스에만 두고 실제 서비스의 정합성 증거와 구분한다.
 - [x] worker 실행 도구는 요청별 성공·업무 거절·기술 오류를 수집한다. 준비 데이터 커밋, 시작 동기화, 제한 시간, finally 정리를 공통화한다. (`ConcurrentRequests` — `Outcome<T>`로 성공 값/예외를 모아 반환, 업무 거절·기술 오류 구분은 커밋 7에서 호출부가 예외 타입으로 분류)
 - [x] 시작 대기는 10초, 전체 결과 수집은 공통 마감 시각 기준 30초로 제한한다. 실패 시 대기를 해제하고 작업 취소·executor 종료·connection 반환을 수행한다.
-- [x] 대조군과 자원 정리 검증이 통과하면 커밋한다.
+- [ ] 대조군과 자원 정리 검증이 통과하면 커밋한다. — 대조군은 통과했다. timeout·인터럽트 경로의 종료/누수에 대한 별도 테스트와 executor 종료 완료 assertion은 미실행이며 [결과 문서](result.md)에 한계로 남긴다.
 
-**완료 기준:** 의도적으로 실패하는 테스트 없이 갱신 유실을 설명하고, 모든 worker 결과와 종료를 추적할 수 있다. — 충족.
+**완료 기준:** 갱신 유실 재현과 요청별 결과 수집은 충족. 실패 시 자원 정리의 모든 분기에 대한 독립 검증은 미실행이다.
 
 ## 커밋 7 — 실제 서비스 동시성 검증
 
@@ -120,7 +120,7 @@
 - [x] 잔액 10,000원에서 2,000원 충전과 7,000원 확정: 둘 다 성공·최종 잔액 5,000원.
 - [x] 초기 재고 5에서 최종 재고 10 설정과 수량 2 주문: 둘 다 성공하며 최종 재고는 순차 실행에 해당하는 8 또는 10.
 - [x] 동일한 두 상품을 반대 품목 순서로 가진 주문도 함께 성공하는지 확인해 상품 잠금 순서를 검증한다.
-- [ ] ~~상품 정보 수정·개별 삭제·브랜드 일괄 삭제와 확정의 경쟁도 검증한다.~~ **의도적으로 생략.** requirement.md의 완료 조건(숫자로 명시된 필수 경쟁 사례)에는 포함되지 않은 plan.md 자체 체크리스트 항목이며, 해당 경로들의 잠금(변경용 조회)은 이미 커밋 3(`findByIdForUpdate`)·커밋 4(`ProductService`/`WalletService`)·커밋 9 트레이드오프(`findForDeletion` 잠금)로 구조적으로 검증됐다. 사용자와 협의해 범위에서 제외하기로 함 — 별도 동시성 테스트는 만들지 않는다.
+- [ ] ~~상품 정보 수정·개별 삭제·브랜드 일괄 삭제와 확정의 경쟁도 검증한다.~~ **의도적으로 생략.** requirement.md의 완료 조건(숫자로 명시된 필수 경쟁 사례)에는 포함되지 않은 plan.md 자체 체크리스트 항목이며, 해당 경로들의 잠금(변경용 조회)은 이미 커밋 3(`findByIdForUpdate`)·커밋 4(`ProductService`/`WalletService`)·트레이드오프 09(`findForDeletion` 잠금)로 구조적으로 검증됐다. 사용자와 협의해 범위에서 제외하기로 함 — 별도 동시성 테스트는 만들지 않는다.
 - [x] 모든 사례에서 기술 오류 0, 요청 집계 일치, 성공량에 따른 수량·잔액식, 거절 요청의 부분 반영 부재를 확인한다.
 - [x] 실제 서비스 테스트는 시작만 동기화한다. 제품 코드의 잠금 구간에 장벽·sleep을 넣거나 통과할 때까지 재시도하지 않는다. (`ConcurrentRequests`는 시작 시점만 동기화)
 
@@ -130,14 +130,14 @@
 
 **목표:** 기존 외부 계약을 유지하고 R02의 구현·검증 결과를 제출 가능한 상태로 정리한다.
 
-- [ ] 실제 Controller·Application·DB를 연결한 대표 성공, 재고·잔액 부족, 재확정, 삭제 상품 오류를 확인한다.
-- [ ] 주입한 저장 오류가 전체 롤백 후 기존 기술 오류 응답으로 연결되는지 검증한다. 잠금·SQL 오류를 품절이나 잔액 부족으로 바꾸지 않는다.
-- [ ] R01과 관련 브랜드·상품·포인트·주문 회귀 테스트를 실행한다.
-- [ ] `./gradlew :apps:commerce-api:check`를 실행하고 Checkstyle·ArchUnit이 신규 코드까지 검사하는지 확인한다.
-- [ ] `result.md`에 실제 테스트 이름·건수·실패·skip·종료 결과, SQL·프록시·트랜잭션 경계, 계획과의 차이·한계·회고를 기록한다.
-- [ ] 요구사항·트레이드오프·계획·전체 진행 상태를 실제 결과와 일치시킨다. 완료한 항목만 체크한다.
-- [ ] 관련 diff와 문서 링크를 확인하고 커밋한다.
+- [x] 실제 Controller·Application·DB를 연결한 대표 성공, 재고·잔액 부족, 재확정, 삭제 상품 오류를 확인한다.
+- [x] 주입한 저장 오류가 전체 롤백 후 기존 기술 오류 응답으로 연결되는지 검증한다. 잠금·SQL 오류를 품절이나 잔액 부족으로 바꾸지 않는다.
+- [x] R01과 관련 브랜드·상품·포인트·주문 회귀 테스트를 실행한다.
+- [x] `./gradlew :apps:commerce-api:check`를 실행하고 Checkstyle·ArchUnit이 신규 코드까지 검사하는지 확인한다.
+- [x] `result.md`에 실제 테스트 이름·건수·실패·skip·종료 결과, SQL·프록시·트랜잭션 경계, 계획과의 차이·한계·회고를 기록한다.
+- [x] 요구사항·트레이드오프·계획·전체 진행 상태를 실제 결과와 일치시킨다. 완료한 항목만 체크한다.
+- [x] 관련 diff와 문서 링크를 확인하고 커밋한다.
 
 **완료 기준:** 요구사항의 완료 조건을 검증 결과로 설명할 수 있으며, 미실행 항목과 한계도 사실대로 기록되어 있다.
 
-실제 실행 결과·계획과의 차이·회고는 구현 이후 `result.md`에 기록한다. 문서 작성만으로 구현·검증 완료를 표시하지 않는다.
+실제 실행 결과·계획과의 차이·회고는 [result.md](result.md)에 기록했다. 커밋 3의 SQL 전체 순서 검증과 커밋 6의 실패 시 자원 정리 검증은 남은 한계이며, 커밋 7의 추가 경쟁 사례는 합의에 따라 제외했다.

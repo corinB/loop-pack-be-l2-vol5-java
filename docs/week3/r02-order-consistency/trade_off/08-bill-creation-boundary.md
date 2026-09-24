@@ -2,6 +2,8 @@
 
 [← 전체 선택 현황](total_trade_off.md)
 
+현재 상태: 채택안을 구현하고 최종 모듈 검사를 통과했다. 설계 당시 비교와 구분되는 실제 검증 범위·남은 한계는 [구현 결과](../result.md)를 따른다.
+
 ## 판단할 문제
 
 [Wallet 모델링](07-wallet-model.md)에서 "애그리거트가 자기 이력을 만들어 반환한다"(옵션 C)를 채택하면서, 같은 논리를 `Order.confirm()`이 `OrderBill`을 만들어 반환하는 데도 적용하기로 했었다.
@@ -43,7 +45,7 @@ flowchart TB
 |---|---|---|---|
 | 무엇을 표현하는가 | `OrderBill`은 "결제됐다"는 금전적 사실 — `Order.status`(DRAFT/CONFIRMED)와는 다른 층위 | 트리거 시점(주문 확정)을 기준으로 소속을 정함 — 표현 내용(결제 사실)과 컨텍스트가 어긋남 | 동일 |
 | 컨텍스트 경계 | 지킴 — 각 도메인은 자기 컨텍스트 타입만 다룸 | 지킴 — 이관하면 같은 컨텍스트가 됨 | 깨짐 — ordering 도메인이 pay 도메인 타입에 의존 |
-| 기존 컨벤션 | 변경 없음(원래도 이 방식) | [week2 도메인 모델](../../week2/04-domain-model.md)·[pr-05 계획](../../week2/pr-05-order-create-query-plan.md)의 "결제 조회용 Pay 소유 OrderBill 저장 구조"와 정면 충돌, `JdbcOrderQueryDao`의 `order_bills` 조인 전제 재검토 필요 | 변경 없음 |
+| 기존 컨벤션 | 변경 없음(원래도 이 방식) | [week2 도메인 모델](../../../week2/04-domain-model.md)·[pr-05 계획](../../../week2/pr-05-order-create-query-plan.md)의 "결제 조회용 Pay 소유 OrderBill 저장 구조"와 정면 충돌, `JdbcOrderQueryDao`의 `order_bills` 조인 전제 재검토 필요 | 변경 없음 |
 | 구현 범위 | R02 범위 내, 커밋 2에서 추가 변경 없음 | 패키지 이동 + read model·문서 전반 재조정 — R02 범위를 크게 벗어남 | Order.confirm() 시그니처 변경, 컨텍스트 경계 위반을 코드에 고착 |
 | DDD 원칙 | 애플리케이션 서비스가 여러 애그리거트를 조율하는 표준 패턴 | 애그리거트 자기 책임 원칙은 지키지만 "트리거 시점 = 소유 컨텍스트"라는 잘못된 전제에 기반 | "애그리거트가 만든다"는 표현 자체가 성립하지 않음(범주 오류) |
 
@@ -53,7 +55,7 @@ flowchart TB
 
 > **미채택 — B:** "충전/사용 시 `PointBill`이 생기듯 확정 시 `OrderBill`이 생기니 같은 컨텍스트로 옮기자"는 제안은 자연스러워 보이지만, `PointBill`이 Wallet과 같은 컨텍스트인 진짜 이유는 "Wallet 변경 때 생겨서"가 아니라 **둘 다 같은 종류(금전 기록)라서**다. 같은 기준을 적용하면 `OrderBill`도 "결제 사실"을 기록하는 것이므로 오히려 Pay 쪽 소속이 맞다 — `Order`는 이미 `status`로 자기 상태(DRAFT/CONFIRMED)를 갖고 있고, `OrderBill`은 그와 별개인 Pay의 사실이다.
 > 비유: 주문 확정은 `Product.decreaseStock()`도 트리거하지만, 그렇다고 재고 차감 로직을 `ordering`으로 옮기지 않는다 — 재고는 여전히 `mall`(Product) 소관이고 `Order`는 그걸 호출만 한다. "무엇을 트리거하느냐"가 아니라 "그 데이터가 무엇을 표현하느냐"가 소속을 정한다.
-> 이 설계는 우연이 아니라 의도적이다 — [pr-05 계획 문서](../../week2/pr-05-order-create-query-plan.md)가 "**결제 조회용 저장 구조 (Pay 컨텍스트, OrderBill)**"라고 명시하며 "Pay 소유의 OrderBill 저장·조회 구조"를 못 박아뒀고, `JdbcOrderQueryDao`가 `order_bills`를 LEFT JOIN해 주문 조회에 결제 상태를 노출하는 것도 이 설계를 전제로 이미 동작한다.
+> 이 설계는 우연이 아니라 의도적이다 — [pr-05 계획 문서](../../../week2/pr-05-order-create-query-plan.md)가 "**결제 조회용 저장 구조 (Pay 컨텍스트, OrderBill)**"라고 명시하며 "Pay 소유의 OrderBill 저장·조회 구조"를 못 박아뒀고, `JdbcOrderQueryDao`가 `order_bills`를 LEFT JOIN해 주문 조회에 결제 상태를 노출하는 것도 이 설계를 전제로 이미 동작한다.
 
 > **미채택 — C:** [Wallet 모델링](07-wallet-model.md)에서 처음 이렇게 정했던 결정을 재검토한 결과다. 애그리거트는 하나의 컨텍스트 안에서만 성립하므로 `Order`가 `pay.orderbill.OrderBill`을 만드는 것은 "애그리거트의 책임"이 아니라 컨텍스트 경계 위반이다.
 

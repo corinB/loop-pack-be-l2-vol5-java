@@ -2,6 +2,8 @@
 
 [← 전체 선택 현황](total_trade_off.md)
 
+현재 상태: 채택안을 구현하고 최종 모듈 검사를 통과했다. 설계 당시 비교와 구분되는 실제 검증 범위·남은 한계는 [구현 결과](../result.md)를 따른다.
+
 ## 판단할 문제
 
 `BrandRepositoryImpl.findForDeletion(brandId)`는 브랜드와 소속 상품 전체를 `LEFT JOIN FETCH`로 한 번에 읽지만 잠금이 없다. `BrandRepositoryImpl.save(brand)`는 저장 직전에 상품을 `productJpaRepository.findById(...)`로 다시 조회하지만, 실제로 엔티티에 반영하는 값은 `findForDeletion` 시점에 읽어 도메인 객체에 담긴 **오래된 값**이다.
