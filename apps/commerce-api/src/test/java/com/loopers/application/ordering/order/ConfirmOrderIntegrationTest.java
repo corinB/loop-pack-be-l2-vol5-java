@@ -221,6 +221,15 @@ class ConfirmOrderIntegrationTest {
             .single();
     }
 
+    private List<Tuple> orderItemSnapshot(long orderId) {
+        return jdbcClient.sql(
+                "SELECT product_id, product_name, unit_price, quantity FROM order_items WHERE order_id = :orderId ORDER BY id")
+            .param("orderId", orderId)
+            .query((rs, rowNum) -> Tuple.tuple(rs.getLong("product_id"), rs.getString("product_name"),
+                rs.getLong("unit_price"), rs.getInt("quantity")))
+            .list();
+    }
+
     private String orderStatus(long orderId) {
         return jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
             .param("orderId", orderId)
