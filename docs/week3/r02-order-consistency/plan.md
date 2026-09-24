@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/r02-order-consistency` · PR 대상: `volume-3/main`
 
-상태: 커밋 1(Point→Wallet 전환)·커밋 2(주문 확정 도메인 규칙 분리) 구현·테스트 통과. 커밋 3~8은 미착수다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
+상태: 커밋 1(Point→Wallet 전환)·커밋 2(주문 확정 도메인 규칙 분리)·커밋 3(JPA 잠금 조회·저장) 구현·테스트 통과. 커밋 4~8은 미착수다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
 구현 착수 중 [사용자 잔액 도메인 모델링](trade_off/07-wallet-model.md), [OrderBill 생성 책임과 컨텍스트 경계](trade_off/08-bill-creation-boundary.md) 트레이드오프가 추가로 합의되어 커밋 1로 반영했다. 기존 커밋 1~7은 커밋 2~8로 번호를 옮겼다.
 
 ## 문서와 진행 원칙
@@ -59,15 +59,15 @@
 
 **목표:** 보호된 최신 상태로 판단하고 모든 변경을 같은 JPA 트랜잭션에 저장한다.
 
-- [ ] 주문·포인트·상품에 변경용 조회 계약을 추가하고 Infrastructure에서 `PESSIMISTIC_WRITE`로 구현한다. 일반 조회에 잠금을 강제하지 않는다.
-- [ ] `ConfirmOrderWriter`와 `ConfirmOrderLoad` 계약을 유지하면서 구현을 `JpaConfirmOrderWriter`로 교체한다.
-- [ ] 주문 행을 먼저 잠근 뒤 변경되지 않는 주문 품목을 읽고, 포인트와 상품을 정해진 순서로 잠근다.
-- [ ] 기존 repository·mapper로 변경을 관리 엔티티에 반영하고 USE·PAID 기록도 JPA로 저장한다. 기존 주문 품목을 재생성하지 않는다.
-- [ ] 저장소 통합 테스트에서 실제 잠금 SQL·획득 순서·트랜잭션 참여를 확인한다. flush 후 영속성 컨텍스트를 비우고 재조회한다.
-- [ ] 주문 당시 품목·단가·총액·생성 정보와 상품의 이름·가격·삭제 상태 등 무관한 값이 보존되는지 검증한다.
-- [ ] 참조가 없어진 주문 확정 JDBC 구현을 제거하고 관련 테스트가 통과하면 커밋한다.
+- [x] 주문·포인트·상품에 변경용 조회 계약을 추가하고 Infrastructure에서 `PESSIMISTIC_WRITE`로 구현한다. 일반 조회에 잠금을 강제하지 않는다. (`findByIdForUpdate`/`findByUserIdForUpdate`, 기존 `findById`와 별개 메서드)
+- [x] `ConfirmOrderWriter`와 `ConfirmOrderLoad` 계약을 유지하면서 구현을 `JpaConfirmOrderWriter`로 교체한다.
+- [x] 주문 행을 먼저 잠근 뒤 변경되지 않는 주문 품목을 읽고, 포인트와 상품을 정해진 순서로 잠근다. (`JpaConfirmOrderWriterTest`로 호출 순서 확인)
+- [x] 기존 repository·mapper로 변경을 관리 엔티티에 반영하고 USE·PAID 기록도 JPA로 저장한다. 기존 주문 품목을 재생성하지 않는다.
+- [ ] 저장소 통합 테스트에서 실제 잠금 SQL·획득 순서·트랜잭션 참여를 확인한다. flush 후 영속성 컨텍스트를 비우고 재조회한다. — **부분 완료**: 잠금·저장 호출 순서는 mock 기반 단위 테스트(`JpaConfirmOrderWriterTest`)로 확인했고 실제 MySQL로 정상 동작함은 `ConfirmOrderIntegrationTest`로 확인했다. 다만 생성된 SQL에 실제로 `for update`가 포함되는지 쿼리 로그를 직접 검사하지는 않았다 — 필요해지면 재검토한다.
+- [x] 주문 당시 품목·단가·총액·생성 정보와 상품의 이름·가격·삭제 상태 등 무관한 값이 보존되는지 검증한다. (`ConfirmOrderIntegrationTest.confirmsOrder_withStockPointAndRecords`)
+- [x] 참조가 없어진 주문 확정 JDBC 구현을 제거하고 관련 테스트가 통과하면 커밋한다.
 
-**완료 기준:** 주문 확정이 도메인 판단 전 잠금을 확보하고, 재고·포인트·주문·기록을 JPA로 함께 저장한다.
+**완료 기준:** 주문 확정이 도메인 판단 전 잠금을 확보하고, 재고·포인트·주문·기록을 JPA로 함께 저장한다. — 충족(잠금 SQL 로그 직접 검사는 남은 한계로 기록).
 
 ## 커밋 4 — 같은 행을 변경하는 기존 경로 보호
 
