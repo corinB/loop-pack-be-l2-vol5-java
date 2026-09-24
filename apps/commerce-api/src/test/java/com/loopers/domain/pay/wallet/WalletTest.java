@@ -75,14 +75,18 @@ class WalletTest {
     @DisplayName("포인트 사용")
     @Nested
     class Use {
-        @DisplayName("사용액만큼 잔액을 뺀다")
+        @DisplayName("사용액만큼 잔액을 빼고 주문 ID를 담은 사용 기록을 반환한다")
         @Test
-        void decreasesBalance_byUseAmount() {
+        void decreasesBalance_andReturnsUseBill() {
             Wallet wallet = Wallet.restore(1L, 1_000L);
 
-            wallet.use(Money.positive(1_000L));
+            PointBill bill = wallet.use(Money.positive(1_000L), 10L);
 
             assertThat(wallet.getBalance()).isZero();
+            assertThat(bill.getUserId()).isEqualTo(1L);
+            assertThat(bill.getType()).isEqualTo(PointBillType.USE);
+            assertThat(bill.getOrderId()).isEqualTo(10L);
+            assertThat(bill.getAmount()).isEqualTo(1_000L);
         }
 
         @DisplayName("잔액이 사용액보다 1 부족하면 거절하고 기존 잔액을 유지한다")
@@ -90,7 +94,7 @@ class WalletTest {
         void rejectsInsufficientBalance_andKeepsOriginalBalance() {
             Wallet wallet = Wallet.restore(1L, 999L);
 
-            assertThatThrownBy(() -> wallet.use(Money.positive(1_000L)))
+            assertThatThrownBy(() -> wallet.use(Money.positive(1_000L), 10L))
                 .isInstanceOf(DomainException.class)
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.INSUFFICIENT_POINT);

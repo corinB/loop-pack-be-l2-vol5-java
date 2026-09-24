@@ -31,12 +31,18 @@ public final class Wallet {
         return PointBill.charge(userId, amount.getValue());
     }
 
-    // 잔액을 차감하고 부족하면 거절
-    public void use(Money amount) {
+    // 차감 가능 여부만 검증하고 잔액은 바꾸지 않음
+    public void ensureSufficientBalance(Money amount) {
         if (amount.getValue() > balance.getValue()) {
             throw new DomainException(DomainErrorCode.INSUFFICIENT_POINT);
         }
+    }
+
+    // 잔액을 차감하고 사용 기록을 반환
+    public PointBill use(Money amount, long orderId) {
+        ensureSufficientBalance(amount);
         balance = Money.of(balance.getValue() - amount.getValue());
+        return PointBill.use(userId, orderId, amount.getValue());
     }
 
     public long getUserId() {
