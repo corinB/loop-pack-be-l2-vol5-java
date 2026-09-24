@@ -4,8 +4,8 @@
 
 작업 브랜치: `volume-3/r02-order-consistency` · PR 대상: `volume-3/main`
 
-상태: 구현 계획 작성·합의 완료. 커밋 1~8의 구현·검증은 미착수다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
-구현 착수 중 [사용자 잔액 도메인 모델링](trade_off/07-wallet-model.md) 트레이드오프가 추가로 합의되어 커밋 1(Point→Wallet 전환)로 반영했다. 기존 커밋 1~7은 커밋 2~8로 번호를 옮겼다.
+상태: 커밋 1(Point→Wallet 전환)·커밋 2(주문 확정 도메인 규칙 분리) 구현·테스트 통과. 커밋 3~8은 미착수다. R01 병합 내용은 현재 작업 브랜치에 반영되어 있다.
+구현 착수 중 [사용자 잔액 도메인 모델링](trade_off/07-wallet-model.md), [OrderBill 생성 책임과 컨텍스트 경계](trade_off/08-bill-creation-boundary.md) 트레이드오프가 추가로 합의되어 커밋 1로 반영했다. 기존 커밋 1~7은 커밋 2~8로 번호를 옮겼다.
 
 ## 문서와 진행 원칙
 
@@ -44,16 +44,16 @@
 
 **목표:** 주문·상품·잔액의 업무 흐름을 순수 도메인 서비스로 묶고, 업무 검증 실패 시 메모리 상태도 보존한다.
 
-- [ ] Ordering 도메인에 `OrderConfirmation`과 사용·결제 기록을 반환하는 결과 타입을 추가한다. Spring·DB·Application 타입에 의존하지 않는다.
-- [ ] `Stock`에 non-mutating `ensureCanDecrease(int)`를 추가하고 `decrease(int)`가 내부에서 재사용하도록 리팩터한다. `Wallet`에 non-mutating `ensureSufficientBalance(Money)`를 추가하고 `use(Money, long orderId)`가 재사용하도록 리팩터한다(값 검증·변경 책임은 VO/애그리거트 자신에게 둔다).
-- [ ] 주문 상태 → 상품별 총수량·삭제 여부·재고 → 저장된 주문 합계에 대한 잔액 순서로, 위 non-mutating 검증 메서드를 먼저 전부 호출한 뒤(1차), 실제 mutate 메서드를 호출(2차)하는 순서로 도메인 서비스를 구성한다.
-- [ ] `Wallet.use(Money, long orderId)`가 `PointBill`을 생성해 반환하도록 한다(같은 컨텍스트 애그리거트가 자기 기록 생성을 책임지되, 영속화는 `PointBillRepository`로 독립적으로 수행 — Wallet이 Bill을 컬렉션으로 소유하지 않는다). `Order.confirm()`은 반환값 없이 상태만 바꾸고, `OrderBill`은 지금처럼 `ConfirmOrderService`(application)가 생성한다 — `Order`(ordering)와 `OrderBill`(pay.orderbill)은 다른 컨텍스트라 애그리거트가 서로의 기록을 대신 만들 수 없다([trade_off/08-bill-creation-boundary.md](trade_off/08-bill-creation-boundary.md)).
-- [ ] 동일 상품 품목은 총수량으로 검증하고 차감한다. 수량 합산 초과는 기존 계산 초과 오류를 사용한다.
-- [ ] 정상·정확한 재고와 잔액·1 부족·뒤쪽 품목 실패·삭제 상품·재확정·중복 품목·계산 초과를 검증한다. 실패 후 주문·전체 상품·잔액 상태가 유지되어야 한다.
-- [ ] `ConfirmOrderService`는 조회·도메인 호출·저장·응답 조합만 담당하도록 연결한다. 이 커밋에서는 기존 저장 구현을 사용한다.
-- [ ] 도메인·서비스 단위 테스트와 관련 기존 통합 테스트가 통과하면 커밋한다.
+- [x] Ordering 도메인에 `OrderConfirmation`과 사용·결제 기록을 반환하는 결과 타입을 추가한다. Spring·DB·Application 타입에 의존하지 않는다.
+- [x] `Stock`에 non-mutating `ensureCanDecrease(int)`를 추가하고 `decrease(int)`가 내부에서 재사용하도록 리팩터한다. `Wallet`에 non-mutating `ensureSufficientBalance(Money)`를 추가하고 `use(Money, long orderId)`가 재사용하도록 리팩터한다(값 검증·변경 책임은 VO/애그리거트 자신에게 둔다). (`Product.ensureCanDecreaseStock`, `Order.ensureCanConfirm`도 같은 패턴으로 추가)
+- [x] 주문 상태 → 상품별 총수량·삭제 여부·재고 → 저장된 주문 합계에 대한 잔액 순서로, 위 non-mutating 검증 메서드를 먼저 전부 호출한 뒤(1차), 실제 mutate 메서드를 호출(2차)하는 순서로 도메인 서비스를 구성한다. (`OrderConfirmationPolicy.confirm`)
+- [x] `Wallet.use(Money, long orderId)`가 `PointBill`을 생성해 반환하도록 한다(같은 컨텍스트 애그리거트가 자기 기록 생성을 책임지되, 영속화는 `PointBillRepository`로 독립적으로 수행 — Wallet이 Bill을 컬렉션으로 소유하지 않는다). `Order.confirm()`은 반환값 없이 상태만 바꾸고, `OrderBill`은 지금처럼 `ConfirmOrderService`(application)가 생성한다 — `Order`(ordering)와 `OrderBill`(pay.orderbill)은 다른 컨텍스트라 애그리거트가 서로의 기록을 대신 만들 수 없다([trade_off/08-bill-creation-boundary.md](trade_off/08-bill-creation-boundary.md)).
+- [x] 동일 상품 품목은 총수량으로 검증하고 차감한다. 수량 합산 초과는 기존 계산 초과 오류를 사용한다.
+- [x] 정상·정확한 재고와 잔액·1 부족·뒤쪽 품목 실패·삭제 상품·재확정·중복 품목·계산 초과를 검증한다. 실패 후 주문·전체 상품·잔액 상태가 유지되어야 한다. (`OrderConfirmationPolicyTest`)
+- [x] `ConfirmOrderService`는 조회·도메인 호출·저장·응답 조합만 담당하도록 연결한다. 이 커밋에서는 기존 저장 구현을 사용한다. (`JdbcConfirmOrderWriter` 그대로)
+- [x] 도메인·서비스 단위 테스트와 관련 기존 통합 테스트가 통과하면 커밋한다. (`./gradlew :apps:commerce-api:test` 전체 통과 확인)
 
-**완료 기준:** DB 없이 전체 업무 규칙과 실패 후 상태 보존을 검증하고 기존 API 동작을 유지한다.
+**완료 기준:** DB 없이 전체 업무 규칙과 실패 후 상태 보존을 검증하고 기존 API 동작을 유지한다. — 충족.
 
 ## 커밋 3 — 주문 확정의 JPA 잠금 조회·저장
 
