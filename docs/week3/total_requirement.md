@@ -66,7 +66,7 @@ R01은 삭제 후 기존 DRAFT 확정 거절을 확인하고, R02는 그 계약�
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 상태 |
 |---|---|---|---|---|---|
 | 1 | R01 | `r01-brand-bulk-delete/` | `volume-3/r01-brand-bulk-delete` | `volume-3/main` | 구현·검증 완료([결과](r01-brand-bulk-delete/result.md)), 병합 완료 |
-| 2 | R02 | `r02-order-consistency/` | `volume-3/r02-order-consistency` | `volume-3/main` | 트레이드오프 정리 완료, R01 병합 반영 후 구현 착수 |
+| 2 | R02 | `r02-order-consistency/` | `volume-3/r02-order-consistency` | `volume-3/main` | R01 병합 반영, 트레이드오프·[구현 계획](r02-order-consistency/plan.md) 작성·합의 완료, 구현·검증 미착수 |
 
 R02는 최신 `origin/volume-3/main`에서 독립적으로 분기해 문서 준비·트레이드오프 문답과 결정까지 선행할 수 있다.
 R02 구현은 R01 리뷰·병합 후 최신 `volume-3/main`을 반영하고 관련 저장 경로와 삭제 후 확정 거절 계약을 확인한 뒤 시작한다.
@@ -95,7 +95,7 @@ R02 구현은 R01 리뷰·병합 후 최신 `volume-3/main`을 반영하고 관�
 - 시나리오는 **사전 상태 / 실행 / 기대 결과 / 유지되어야 할 상태**로 구분한다.
 - 트레이드오프는 깊은 번호 중첩 없이 주제별 파일로 나눈다. 미확정 옵션에는 채택 표시나 취소선을 사용하지 않는다.
 - 현재 R01의 결정과 남은 사항은 [트레이드오프 전체 목록](r01-brand-bulk-delete/trade_off/total_trade_off.md)에서 확인한다.
-- R02는 [전체 목록](r02-order-consistency/trade_off/total_trade_off.md)에서 문답을 진행한다. 주제를 시작할 때 [템플릿](r02-order-consistency/trade_off/_template.md)을 복사하고 실제 파일이 생긴 뒤 목록에 연결한다.
+- R02의 확정된 선택은 [전체 목록](r02-order-consistency/trade_off/total_trade_off.md), 7개 커밋의 목표·TODO·완료 기준은 [구현 계획](r02-order-consistency/plan.md)을 따른다. 추가 주제를 시작할 때 [템플릿](r02-order-consistency/trade_off/_template.md)을 복사하고 실제 파일이 생긴 뒤 목록에 연결한다.
 - Mermaid는 비교 흐름을 표현하며 구현 완료를 뜻하지 않는다. 템플릿의 예시는 설계 결정으로 간주하지 않는다.
 - 잠금 전략·재시도 정책·구체적인 코드 변경은 초기 요구사항에서 확정하지 않는다.
 - 설계 문서에는 Controller부터 repository·SQL까지의 실제 경로, 프록시 진입점, 예외 전달, 전파와 잠금 순서를 표시한다.
