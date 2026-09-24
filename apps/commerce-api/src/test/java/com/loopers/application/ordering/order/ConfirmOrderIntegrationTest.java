@@ -74,6 +74,7 @@ class ConfirmOrderIntegrationTest {
             ConfirmOrderResult result = confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId()));
 
             Product reloadedProduct = productRepository.findById(productId).orElseThrow();
+            Order reloadedOrder = orderRepository.findById(order.getId()).orElseThrow();
             assertAll(
                 () -> assertThat(result.order().status()).isEqualTo(OrderStatus.CONFIRMED),
                 () -> assertThat(result.paymentAmount()).isEqualTo(2_000L),
@@ -87,7 +88,9 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(reloadedProduct.getPrice()).isEqualTo(1_000L),
                 () -> assertThat(reloadedProduct.isDeleted()).isFalse(),
                 // 주문 당시 품목 스냅샷도 그대로 보존돼야 한다
-                () -> assertThat(orderItemSnapshot(order.getId()))
+                () -> assertThat(reloadedOrder.getItems())
+                    .extracting(OrderItem::getProductId, OrderItem::getProductName, OrderItem::getUnitPrice,
+                        OrderItem::getQuantity)
                     .containsExactly(Tuple.tuple(productId, "상품", 1_000L, 2))
             );
         }
@@ -219,15 +222,6 @@ class ConfirmOrderIntegrationTest {
             .param("orderId", orderId)
             .query(Long.class)
             .single();
-    }
-
-    private List<Tuple> orderItemSnapshot(long orderId) {
-        return jdbcClient.sql(
-                "SELECT product_id, product_name, unit_price, quantity FROM order_items WHERE order_id = :orderId ORDER BY id")
-            .param("orderId", orderId)
-            .query((rs, rowNum) -> Tuple.tuple(rs.getLong("product_id"), rs.getString("product_name"),
-                rs.getLong("unit_price"), rs.getInt("quantity")))
-            .list();
     }
 
     private String orderStatus(long orderId) {
