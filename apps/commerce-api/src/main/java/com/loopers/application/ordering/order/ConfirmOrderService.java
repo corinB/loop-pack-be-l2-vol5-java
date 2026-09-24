@@ -5,8 +5,8 @@ import com.loopers.domain.ordering.order.Order;
 import com.loopers.domain.ordering.order.OrderItem;
 import com.loopers.domain.pay.orderbill.OrderBill;
 import com.loopers.domain.pay.orderbill.OrderBillStatus;
-import com.loopers.domain.pay.point.Point;
-import com.loopers.domain.pay.point.PointBill;
+import com.loopers.domain.pay.wallet.PointBill;
+import com.loopers.domain.pay.wallet.Wallet;
 import com.loopers.domain.shared.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,8 +32,8 @@ public class ConfirmOrderService implements ConfirmOrderUseCase {
             product.decreaseStock(item.getQuantity());
         }
 
-        Point point = load.point();
-        point.use(Money.positive(order.getTotalAmount()));
+        Wallet wallet = load.wallet();
+        wallet.use(Money.positive(order.getTotalAmount()));
 
         PointBill pointBill = PointBill.use(order.getUserId(), order.getId(), order.getTotalAmount());
         OrderBill orderBill = OrderBill.paid(order.getId(), order.getUserId(), order.getTotalAmount());

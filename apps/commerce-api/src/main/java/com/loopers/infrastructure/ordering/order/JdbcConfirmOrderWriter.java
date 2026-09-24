@@ -10,9 +10,9 @@ import com.loopers.domain.ordering.order.Order;
 import com.loopers.domain.ordering.order.OrderItem;
 import com.loopers.domain.ordering.order.OrderRepository;
 import com.loopers.domain.pay.orderbill.OrderBill;
-import com.loopers.domain.pay.point.Point;
-import com.loopers.domain.pay.point.PointBill;
-import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.pay.wallet.PointBill;
+import com.loopers.domain.pay.wallet.Wallet;
+import com.loopers.domain.pay.wallet.WalletRepository;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -30,11 +30,11 @@ import org.springframework.stereotype.Repository;
 public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
-    private final PointRepository pointRepository;
+    private final WalletRepository walletRepository;
     private final JdbcClient jdbcClient;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    // 주문/상품/포인트를 함께 조회
+    // 주문/상품/지갑을 함께 조회
     @Override
     public ConfirmOrderLoad load(long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -47,15 +47,15 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
             productsByProductId.put(item.getProductId(), product);
         }
 
-        Point point = pointRepository.findByUserId(order.getUserId()).orElseThrow();
-        return new ConfirmOrderLoad(order, productsByProductId, point);
+        Wallet wallet = walletRepository.findByUserId(order.getUserId()).orElseThrow();
+        return new ConfirmOrderLoad(order, productsByProductId, wallet);
     }
 
-    // 재고, 포인트, 결제 기록, 주문 상태를 한번에 저장
+    // 재고, 지갑 잔액, 결제 기록, 주문 상태를 한번에 저장
     @Override
     public void save(ConfirmOrderLoad load, PointBill pointBill, OrderBill orderBill) {
         saveProductStocks(load.productsByProductId().values());
-        savePointBalance(load.point());
+        saveWalletBalance(load.wallet());
         savePointBill(pointBill);
         saveOrderBill(orderBill);
         saveOrderStatus(load.order());
@@ -76,11 +76,11 @@ public class JdbcConfirmOrderWriter implements ConfirmOrderWriter {
         );
     }
 
-    // 포인트 잔액 갱신
-    private void savePointBalance(Point point) {
-        jdbcClient.sql("UPDATE points SET balance = :balance WHERE user_id = :userId")
-            .param("balance", point.getBalance())
-            .param("userId", point.getUserId())
+    // 지갑 잔액 갱신
+    private void saveWalletBalance(Wallet wallet) {
+        jdbcClient.sql("UPDATE wallets SET balance = :balance WHERE user_id = :userId")
+            .param("balance", wallet.getBalance())
+            .param("userId", wallet.getUserId())
             .update();
     }
 

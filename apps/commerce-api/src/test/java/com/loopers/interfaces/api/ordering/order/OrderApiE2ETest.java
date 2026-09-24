@@ -14,8 +14,8 @@ import com.loopers.domain.mall.product.Product;
 import com.loopers.domain.mall.product.ProductRepository;
 import com.loopers.domain.ordering.order.OrderStatus;
 import com.loopers.domain.pay.orderbill.OrderBillStatus;
-import com.loopers.domain.pay.point.Point;
-import com.loopers.domain.pay.point.PointRepository;
+import com.loopers.domain.pay.wallet.Wallet;
+import com.loopers.domain.pay.wallet.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.user.User;
 import com.loopers.domain.shopping.user.UserRepository;
@@ -50,7 +50,7 @@ class OrderApiE2ETest {
     @Autowired
     private ProductRepository productRepository;
     @Autowired
-    private PointRepository pointRepository;
+    private WalletRepository walletRepository;
     @Autowired
     private JdbcClient jdbcClient;
     @Autowired
@@ -146,7 +146,7 @@ class OrderApiE2ETest {
                 () -> assertThat(response.getBody().data().paymentAmount()).isEqualTo(2_000L),
                 () -> assertThat(response.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
                 () -> assertThat(currentStock(productId)).isEqualTo(8),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L)
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L)
             );
         }
 
@@ -228,7 +228,7 @@ class OrderApiE2ETest {
             assertAll(
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT),
                 () -> assertThat(currentStock(productId)).isEqualTo(1),
-                () -> assertThat(pointRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L)
+                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L)
             );
         }
 
@@ -236,7 +236,7 @@ class OrderApiE2ETest {
         @Test
         void returnsConflict_whenPointIsInsufficient() {
             userRepository.save(User.create(1L));
-            pointRepository.save(Point.zero(1L));
+            walletRepository.save(Wallet.zero(1L));
             long productId = createProduct("상품", 1_000L, 10);
             long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2)))
                 .getBody().data().orderId();
@@ -360,9 +360,9 @@ class OrderApiE2ETest {
     }
 
     private void chargePoint(long userId, long amount) {
-        Point point = pointRepository.save(Point.zero(userId));
-        point.charge(Money.positive(amount));
-        pointRepository.save(point);
+        Wallet wallet = walletRepository.save(Wallet.zero(userId));
+        wallet.charge(Money.positive(amount));
+        walletRepository.save(wallet);
     }
 
     private ResponseEntity<ApiResponse<OrderView>> confirmOrder(long orderId) {
