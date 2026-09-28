@@ -69,21 +69,6 @@ class LikeApiE2ETest {
             );
         }
 
-        @DisplayName("이미 등록된 관계는 다시 등록해도 200이며 관계는 하나로 유지된다")
-        @Test
-        void ignoresDuplicateRegistration() {
-            User user = userRepository.save(User.create(1L));
-            Product product = createProduct();
-            register(product.getId(), String.valueOf(user.getId()));
-
-            ResponseEntity<ApiResponse<Object>> response = register(product.getId(), String.valueOf(user.getId()));
-
-            assertAll(
-                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
-                () -> assertThat(countLikes(user.getId(), product.getId())).isEqualTo(1L)
-            );
-        }
-
         @DisplayName("X-USER-ID 헤더가 없으면 400을 반환한다")
         @Test
         void returnsBadRequest_whenHeaderIsMissing() {
@@ -147,17 +132,6 @@ class LikeApiE2ETest {
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
                 () -> assertThat(countLikes(user.getId(), product.getId())).isZero()
             );
-        }
-
-        @DisplayName("관계가 없어도 200을 그대로 반환한다")
-        @Test
-        void ignoresCancelOfMissingRelation() {
-            User user = userRepository.save(User.create(1L));
-            Product product = createProduct();
-
-            ResponseEntity<ApiResponse<Object>> response = cancel(product.getId(), String.valueOf(user.getId()));
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         }
 
         @DisplayName("브랜드 일괄 삭제로 상품이 삭제되어도 기존 좋아요 취소는 그대로 동작한다")

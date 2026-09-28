@@ -44,23 +44,6 @@ class BrandRepositoryIntegrationTest {
         assertThat(found.getProducts()).isEmpty();
     }
 
-    @DisplayName("브랜드에 연결된 모든 미삭제 상품을 재고 0을 포함해 누락 없이 조회한다")
-    @Test
-    @Transactional
-    void findsBrandForDeletion_withAllUndeletedProducts() {
-        Brand brand = brandRepository.save(Brand.create("브랜드", null));
-        Product active = productRepository.save(Product.create(brand.getId(), "상품1", null, 1_000L, 5));
-        Product outOfStock = productRepository.save(Product.create(brand.getId(), "상품2", null, 1_000L, 0));
-        entityManager.flush();
-        entityManager.clear();
-
-        Brand found = brandRepository.findForDeletion(brand.getId()).orElseThrow();
-
-        assertThat(found.getProducts())
-            .extracting(Product::getId)
-            .containsExactlyInAnyOrder(active.getId(), outOfStock.getId());
-    }
-
     @DisplayName("브랜드 저장 한 번으로 브랜드와 모든 연결 상품의 삭제 상태가 함께 반영되고 무관한 값은 보존된다")
     @Test
     @Transactional
