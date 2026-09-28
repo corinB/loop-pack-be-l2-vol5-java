@@ -57,10 +57,11 @@ public final class Order {
         }
     }
 
-    // DRAFT를 CONFIRMED로 전환
-    public void confirm() {
+    // DRAFT를 CONFIRMED로 전환하고 주문 기록을 반환
+    public OrderRecord confirm() {
         ensureCanConfirm();
         status = OrderStatus.CONFIRMED;
+        return OrderRecord.paid(id, userId, totalAmount.getValue());
     }
 
     // 품목 금액 합산

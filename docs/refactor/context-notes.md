@@ -69,6 +69,19 @@
   `findHeader`, 문자열은 3곳)에서 테이블명 `order_bills` → `order_records`와 함께 LEFT JOIN 별칭도
   `ob` → `orec`로 바꿔 테이블명과의 연결성을 유지했다. `modules/jpa`의 `DatabaseCleanUp`은 테이블명을
   하드코딩하지 않아 변경할 필요가 없었다.
+- 커밋 A3(확정 흐름) 실행 중 변경 순서가 "재고 차감 → order.confirm() → wallet.use()"에서
+  "wallet.use()(결제 단계) → 재고 차감 → order.confirm()(주문 단계)"로 바뀌었다. 검증(주문 상태 → 상품별
+  재고 → 잔액)은 여전히 모든 변경보다 먼저 끝나므로 오류 우선순위·롤백 대상은 그대로다. `wallet.use()`가
+  내부에서 잔액을 다시 확인하지만 검증을 이미 통과했으므로 새로운 실패 경로는 생기지 않는다.
+  `OrderConfirmationPolicy.confirm`은 `pay()`(결제 단계)·`placeOrder()`(주문 단계) private static 메서드로
+  나눴다. 기존 단위 테스트(`OrderTest`의 `confirmsDraftOrder`)가 `Order.create`로 만든 id 없는(`null`) DRAFT
+  주문에 `confirm()`을 호출하고 있었는데, `confirm()`이 이제 `OrderRecord.paid(id, ...)`를 반환하며 `id`가
+  `long`으로 언박싱되어 `NullPointerException`이 났다. 이는 새 반환값이 강제한 수정이라 `Order.restore`로 실제
+  id를 가진 DRAFT 주문을 쓰도록 고치고, 같은 테스트에 `OrderRecord` 반환값 검증(주문 id·userId·총액·`PAID`
+  상태)을 추가했다. `OrderConfirmationPolicyTest`에는 `orderRecord()`가 주문과 일치하고 `pointBill()`이 `USE`
+  영수증인지 확인하는 테스트를 추가했다. 지정된 검증 범위(architecture·domain.ordering·domain.pay·
+  application.ordering·infrastructure.persistence/dao/query.ordering·interfaces.api.ordering) 111개 테스트
+  (기존 109 + 신규 2) 전부 통과했다.
 
 ## 추가 작업 결정 — OrderRecord
 

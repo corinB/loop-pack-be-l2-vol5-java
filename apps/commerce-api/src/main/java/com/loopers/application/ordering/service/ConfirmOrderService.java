@@ -9,7 +9,6 @@ import com.loopers.application.ordering.usecase.ConfirmOrderUseCase;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderConfirmation;
 import com.loopers.domain.ordering.model.OrderRecord;
-import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.policy.OrderConfirmationPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,10 +28,10 @@ public class ConfirmOrderService implements ConfirmOrderUseCase {
         OrderConfirmation confirmation =
             OrderConfirmationPolicy.confirm(load.order(), load.productsByProductId(), load.wallet());
         Order order = confirmation.order();
+        OrderRecord orderRecord = confirmation.orderRecord();
 
-        OrderRecord orderRecord = OrderRecord.paid(order.getId(), order.getUserId(), order.getTotalAmount());
         confirmOrderWriter.save(load, confirmation.pointBill(), orderRecord);
 
-        return new ConfirmOrderResult(OrderResult.from(order), order.getTotalAmount(), OrderRecordStatus.PAID);
+        return new ConfirmOrderResult(OrderResult.from(order), orderRecord.getAmount(), orderRecord.getStatus());
     }
 }

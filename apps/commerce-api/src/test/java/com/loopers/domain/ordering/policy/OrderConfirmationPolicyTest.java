@@ -48,6 +48,25 @@ class OrderConfirmationPolicyTest {
             assertThat(result.pointBill().getAmount()).isEqualTo(2_500L);
         }
 
+        @DisplayName("확정 결과의 주문 기록은 주문과 일치하고 사용 기록은 결제 영수증이다")
+        @Test
+        void returnsOrderRecordMatchingOrder_andPointBillAsUseReceipt() {
+            Order order = draftOrder(1L, List.of(
+                OrderItem.restore(10L, "상품A", 1_000L, 2, 2_000L)
+            ), 2_000L);
+            Product product = product(10L, 5);
+            Wallet wallet = Wallet.restore(1L, 10_000L);
+
+            OrderConfirmation result = OrderConfirmationPolicy.confirm(order, Map.of(10L, product), wallet);
+
+            assertThat(result.orderRecord().getOrderId()).isEqualTo(order.getId());
+            assertThat(result.orderRecord().getUserId()).isEqualTo(order.getUserId());
+            assertThat(result.orderRecord().getAmount()).isEqualTo(order.getTotalAmount());
+            assertThat(result.pointBill().getType()).isEqualTo(PointBillType.USE);
+            assertThat(result.pointBill().getOrderId()).isEqualTo(order.getId());
+            assertThat(result.pointBill().getAmount()).isEqualTo(order.getTotalAmount());
+        }
+
         @DisplayName("동일 상품 품목은 총수량으로 합산해 한 번만 차감한다")
         @Test
         void aggregatesDuplicateProductItems_beforeDecreasingOnce() {

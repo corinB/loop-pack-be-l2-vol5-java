@@ -68,13 +68,13 @@
 - [x] `refactor: OrderBill을 ordering 컨텍스트의 OrderRecord로 이관` 커밋
 
 ### 커밋 A3 — 확정 흐름
-- [ ] `Order.confirm()`이 `OrderRecord` 반환
-- [ ] OrderConfirmationPolicy를 검증 → 결제 단계 → 주문 단계로 정리, OrderConfirmation에 orderRecord 추가
-- [ ] ConfirmOrderService가 기록을 만들지 않고 저장만
-- [ ] 테스트 최소 수정 + `Order.confirm()` 반환값 테스트 추가
-- [ ] 컴파일 + Checkstyle 통과
-- [ ] 관련 테스트 + ArchUnit 통과
-- [ ] `refactor: 주문 확정을 결제 단계와 주문 기록 단계로 나누고 Order.confirm이 OrderRecord를 반환` 커밋
+- [x] `Order.confirm()`이 `OrderRecord` 반환
+- [x] OrderConfirmationPolicy를 검증 → 결제 단계 → 주문 단계로 정리, OrderConfirmation에 orderRecord 추가
+- [x] ConfirmOrderService가 기록을 만들지 않고 저장만
+- [x] 테스트 최소 수정 + `Order.confirm()` 반환값 테스트 추가
+- [x] 컴파일 + Checkstyle 통과
+- [x] 관련 테스트 + ArchUnit 통과
+- [x] `refactor: 주문 확정을 결제 단계와 주문 기록 단계로 나누고 Order.confirm이 OrderRecord를 반환` 커밋
 
 ### 병합
 - [ ] `volume-3/refacto`로 fast-forward 병합

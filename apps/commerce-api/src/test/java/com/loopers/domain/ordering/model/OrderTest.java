@@ -104,12 +104,26 @@ class OrderTest {
         @DisplayName("DRAFT 주문을 CONFIRMED로 전환한다")
         @Test
         void confirmsDraftOrder() {
-            List<OrderItem> items = List.of(OrderItem.create(1L, "상품", 1_000L, 1));
-            Order order = Order.create(1L, items);
+            List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now());
 
             order.confirm();
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+
+        @DisplayName("확정하면 주문의 id·사용자·총액을 담은 PAID 상태의 주문 기록을 반환한다")
+        @Test
+        void confirmReturnsPaidOrderRecord_withOrderIdUserIdAndTotalAmount() {
+            List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 2, 2_000L));
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 2_000L, Instant.now());
+
+            OrderRecord orderRecord = order.confirm();
+
+            assertThat(orderRecord.getOrderId()).isEqualTo(order.getId());
+            assertThat(orderRecord.getUserId()).isEqualTo(order.getUserId());
+            assertThat(orderRecord.getAmount()).isEqualTo(order.getTotalAmount());
+            assertThat(orderRecord.getStatus()).isEqualTo(OrderRecordStatus.PAID);
         }
 
         @DisplayName("이미 CONFIRMED인 주문은 재확정을 거절하고 상태를 유지한다")

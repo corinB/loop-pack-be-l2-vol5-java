@@ -6,6 +6,8 @@
 
 상태: 커밋 1(domain)·커밋 2(infrastructure)·커밋 3(application)·커밋 4(interfaces) 완료.
 커밋 4는 사용자 요청으로 ArchUnit·전체 테스트 없이 컴파일 + Checkstyle만 통과 확인했다(추후 커밋 5 전에 실행 필요). 커밋 5(결과 문서) 진행 예정.
+추가 작업 브랜치 `volume-3/refacto-order-record`에서는 커밋 A1(문서)·커밋 A2(OrderBill→OrderRecord 이관)·
+커밋 A3(확정 흐름을 결제 단계·주문 단계로 정리) 완료. fast-forward 병합은 아직이다.
 
 ## 배경
 

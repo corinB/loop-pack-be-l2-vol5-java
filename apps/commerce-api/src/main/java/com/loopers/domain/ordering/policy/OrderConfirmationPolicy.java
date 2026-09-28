@@ -4,6 +4,7 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderConfirmation;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.shared.Money;
@@ -12,12 +13,12 @@ import com.loopers.domain.support.error.DomainException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// 주문 확정의 업무 규칙을 검증 후 변경 순서로 묶는 순수 도메인 서비스
+// 주문 확정을 검증 -> 결제 단계 -> 주문 단계 순서로 묶는 순수 도메인 서비스
 public final class OrderConfirmationPolicy {
 
     private OrderConfirmationPolicy() {}
 
-    // 주문 상태 -> 상품별 총수량/삭제/재고 -> 잔액 순서로 검증한 뒤 모두 통과하면 변경한다
+    // 주문 상태 -> 상품별 총수량/삭제/재고 -> 잔액 순서로 검증한 뒤 모두 통과하면 결제 단계, 주문 단계 순으로 변경한다
     public static OrderConfirmation confirm(Order order, Map<Long, Product> productsByProductId, Wallet wallet) {
         order.ensureCanConfirm();
 
@@ -29,13 +30,24 @@ public final class OrderConfirmationPolicy {
         Money paymentAmount = Money.positive(order.getTotalAmount());
         wallet.ensureSufficientBalance(paymentAmount);
 
-        order.confirm();
+        PointBill pointBill = pay(order, wallet, paymentAmount);
+        OrderRecord orderRecord = placeOrder(order, productsByProductId, quantityByProductId);
+
+        return new OrderConfirmation(order, productsByProductId, wallet, pointBill, orderRecord);
+    }
+
+    // 결제 단계: 지갑에서 포인트를 차감하고 영수증(PointBill)을 만든다
+    private static PointBill pay(Order order, Wallet wallet, Money paymentAmount) {
+        return wallet.use(paymentAmount, order.getId());
+    }
+
+    // 주문 단계: 재고를 차감하고 주문을 확정해 주문 기록을 만든다
+    private static OrderRecord placeOrder(Order order, Map<Long, Product> productsByProductId,
+                                          Map<Long, Integer> quantityByProductId) {
         for (Map.Entry<Long, Integer> entry : quantityByProductId.entrySet()) {
             productsByProductId.get(entry.getKey()).decreaseStock(entry.getValue());
         }
-        PointBill pointBill = wallet.use(paymentAmount, order.getId());
-
-        return new OrderConfirmation(order, productsByProductId, wallet, pointBill);
+        return order.confirm();
     }
 
     // 동일 상품 품목의 수량을 합산하고 초과 시 기존 계산 초과 오류를 사용한다
