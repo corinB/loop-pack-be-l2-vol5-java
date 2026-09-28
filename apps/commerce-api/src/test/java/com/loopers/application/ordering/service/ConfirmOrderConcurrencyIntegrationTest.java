@@ -25,6 +25,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import com.loopers.support.concurrency.ConcurrentRequests.Outcome;
 import com.loopers.support.concurrency.ConcurrentRequests;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,12 +34,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@IntegrationTest
+@Tag("slow")
 // 실제 Spring 서비스로 필수 경쟁 시나리오를 검증(requirement.md 완료 조건 + 잠금 순서)
 class ConfirmOrderConcurrencyIntegrationTest {
     @Autowired

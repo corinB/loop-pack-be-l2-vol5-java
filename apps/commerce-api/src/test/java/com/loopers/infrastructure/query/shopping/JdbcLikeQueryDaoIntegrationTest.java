@@ -4,21 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.shopping.query.LikedProductView;
 import com.loopers.application.shopping.query.LikeQueryDao;
+import com.loopers.application.shopping.query.LikedProductView;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@IntegrationTest
 class JdbcLikeQueryDaoIntegrationTest {
     @Autowired
     private LikeQueryDao likeQueryDao;

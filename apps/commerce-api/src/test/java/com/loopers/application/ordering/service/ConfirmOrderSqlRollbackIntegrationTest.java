@@ -23,6 +23,7 @@ import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -31,11 +32,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-@SpringBootTest
+@IntegrationTest
 // 저장 전 검증 실패와 구분되는, 실제 변경 SQL 실행 이후 전체 롤백을 검증
 class ConfirmOrderSqlRollbackIntegrationTest {
     @Autowired
@@ -56,7 +55,7 @@ class ConfirmOrderSqlRollbackIntegrationTest {
     private JdbcClient jdbcClient;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
-    @MockitoSpyBean
+    @Autowired
     private OrderRepository orderRepository;
 
     @AfterEach

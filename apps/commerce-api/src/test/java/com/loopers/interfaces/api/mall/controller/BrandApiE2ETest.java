@@ -7,6 +7,7 @@ import com.loopers.application.common.PageResult;
 import com.loopers.application.mall.query.BrandView;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.mall.dto.BrandApiDto;
+import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -22,7 +22,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@E2ETest
 class BrandApiE2ETest {
     @Autowired
     private TestRestTemplate restTemplate;

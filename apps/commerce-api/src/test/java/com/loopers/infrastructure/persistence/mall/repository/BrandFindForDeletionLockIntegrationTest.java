@@ -6,6 +6,7 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,13 +19,14 @@ import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@SpringBootTest
+@IntegrationTest
+@Tag("slow")
 // findForDeletion(@Lock)이 브랜드뿐 아니라 딸린 상품 행까지 실제로 잠그는지 검증
 class BrandFindForDeletionLockIntegrationTest {
     @Autowired

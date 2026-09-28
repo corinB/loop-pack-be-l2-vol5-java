@@ -24,6 +24,7 @@ import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import org.assertj.core.groups.Tuple;
@@ -32,10 +33,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@IntegrationTest
 class ConfirmOrderIntegrationTest {
     @Autowired
     private ConfirmOrderUseCase confirmOrderUseCase;

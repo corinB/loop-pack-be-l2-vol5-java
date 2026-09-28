@@ -5,20 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.application.common.PageResult;
 import com.loopers.application.mall.command.BrandCommand;
-import com.loopers.application.mall.usecase.DeleteBrandUseCase;
 import com.loopers.application.mall.query.AdminProductView;
 import com.loopers.application.mall.query.ProductDetailView;
 import com.loopers.application.mall.query.ProductSummaryView;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.mall.dto.BrandApiDto;
 import com.loopers.interfaces.api.mall.dto.ProductApiDto;
+import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -28,7 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@E2ETest
 class ProductApiE2ETest {
     @Autowired
     private TestRestTemplate restTemplate;

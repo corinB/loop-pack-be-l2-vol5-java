@@ -5,28 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
-import com.loopers.utils.DatabaseCleanUp;
+import com.loopers.support.test.IntegrationTest;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@IntegrationTest
 class WalletRepositoryIntegrationTest {
     @Autowired
     private WalletRepository walletRepository;
     @Autowired
     private EntityManager entityManager;
-    @Autowired
-    private DatabaseCleanUp databaseCleanUp;
-
-    @AfterEach
-    void tearDown() {
-        databaseCleanUp.truncateAllTables();
-    }
 
     @DisplayName("사용자별 초기 지갑을 저장하고 충전한 뒤 영속성 컨텍스트를 비워도 잔액을 보존한다")
     @Test

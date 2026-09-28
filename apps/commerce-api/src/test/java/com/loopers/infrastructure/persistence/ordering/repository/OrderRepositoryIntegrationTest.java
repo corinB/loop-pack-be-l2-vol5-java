@@ -8,29 +8,20 @@ import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.ordering.repository.OrderRepository;
-import com.loopers.utils.DatabaseCleanUp;
+import com.loopers.support.test.IntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@IntegrationTest
 class OrderRepositoryIntegrationTest {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
     private EntityManager entityManager;
-    @Autowired
-    private DatabaseCleanUp databaseCleanUp;
-
-    @AfterEach
-    void tearDown() {
-        databaseCleanUp.truncateAllTables();
-    }
 
     @DisplayName("주문과 품목을 저장하고 영속성 컨텍스트를 비워도 스냅샷과 합계를 보존한다")
     @Test

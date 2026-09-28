@@ -6,28 +6,19 @@ import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.PointBillType;
 import com.loopers.domain.pay.repository.PointBillRepository;
 import com.loopers.infrastructure.persistence.pay.entity.PointBillJpaEntity;
-import com.loopers.utils.DatabaseCleanUp;
+import com.loopers.support.test.IntegrationTest;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@IntegrationTest
 class PointBillRepositoryIntegrationTest {
     @Autowired
     private PointBillRepository pointBillRepository;
     @Autowired
     private EntityManager entityManager;
-    @Autowired
-    private DatabaseCleanUp databaseCleanUp;
-
-    @AfterEach
-    void tearDown() {
-        databaseCleanUp.truncateAllTables();
-    }
 
     @DisplayName("충전 기록을 저장하고 영속성 컨텍스트를 비운 뒤 저장 값을 재조회한다")
     @Test

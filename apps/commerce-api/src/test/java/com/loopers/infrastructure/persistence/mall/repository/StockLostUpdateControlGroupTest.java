@@ -6,8 +6,9 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
-import com.loopers.support.concurrency.ConcurrentRequests;
 import com.loopers.support.concurrency.ConcurrentRequests.Outcome;
+import com.loopers.support.concurrency.ConcurrentRequests;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,11 +19,12 @@ import java.util.concurrent.CyclicBarrier;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@IntegrationTest
+@Tag("slow")
 // 제품 코드를 거치지 않고 잠금 없는 SELECT+상수 UPDATE로 갱신 유실을 재현하는 대조군
 class StockLostUpdateControlGroupTest {
     @Autowired

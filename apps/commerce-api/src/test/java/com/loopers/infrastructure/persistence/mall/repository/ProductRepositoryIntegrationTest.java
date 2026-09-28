@@ -5,28 +5,19 @@ import static org.assertj.core.api.Assertions.within;
 
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
-import com.loopers.utils.DatabaseCleanUp;
+import com.loopers.support.test.IntegrationTest;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@IntegrationTest
 class ProductRepositoryIntegrationTest {
     @Autowired
     private ProductRepository productRepository;
     @Autowired
     private EntityManager entityManager;
-    @Autowired
-    private DatabaseCleanUp databaseCleanUp;
-
-    @AfterEach
-    void tearDown() {
-        databaseCleanUp.truncateAllTables();
-    }
 
     @DisplayName("상품을 저장하고 수정한 뒤 영속성 컨텍스트를 비워도 상태를 보존한다")
     @Test

@@ -7,16 +7,15 @@ import static org.mockito.Mockito.reset;
 
 import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
 import com.loopers.infrastructure.dao.shopping.JdbcLikeCountAggregationDao;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-@SpringBootTest
+@IntegrationTest
 class LikeCountAggregationIntegrationTest {
     @Autowired
     private LikeCountAggregationUseCase aggregationUseCase;
@@ -24,7 +23,7 @@ class LikeCountAggregationIntegrationTest {
     private JdbcClient jdbcClient;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
-    @MockitoSpyBean
+    @Autowired
     private JdbcLikeCountAggregationDao aggregationDao;
 
     @AfterEach

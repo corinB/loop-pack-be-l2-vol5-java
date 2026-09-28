@@ -6,17 +6,15 @@ import com.loopers.application.pay.query.WalletQueryDao;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
-import com.loopers.utils.DatabaseCleanUp;
+import com.loopers.support.test.IntegrationTest;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@IntegrationTest
 @Transactional
 class JdbcWalletQueryDaoIntegrationTest {
     @Autowired
@@ -25,13 +23,6 @@ class JdbcWalletQueryDaoIntegrationTest {
     private WalletRepository walletRepository;
     @Autowired
     private EntityManager entityManager;
-    @Autowired
-    private DatabaseCleanUp databaseCleanUp;
-
-    @AfterEach
-    void tearDown() {
-        databaseCleanUp.truncateAllTables();
-    }
 
     @DisplayName("잔액 조회")
     @Nested

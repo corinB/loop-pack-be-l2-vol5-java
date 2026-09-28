@@ -6,16 +6,16 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import com.loopers.application.shopping.dao.LikeCommandDao;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@IntegrationTest
 class JdbcLikeCommandDaoIntegrationTest {
     @Autowired
     private LikeCommandDao likeCommandDao;

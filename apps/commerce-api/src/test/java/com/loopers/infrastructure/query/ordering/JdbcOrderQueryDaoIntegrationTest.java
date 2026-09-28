@@ -10,6 +10,7 @@ import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
 import com.loopers.domain.ordering.repository.OrderRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import java.util.Optional;
@@ -17,10 +18,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@IntegrationTest
 class JdbcOrderQueryDaoIntegrationTest {
     @Autowired
     private OrderQueryDao orderQueryDao;

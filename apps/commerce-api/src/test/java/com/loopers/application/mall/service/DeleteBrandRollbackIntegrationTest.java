@@ -25,17 +25,16 @@ import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.infrastructure.persistence.mall.entity.ProductJpaEntity;
 import com.loopers.infrastructure.persistence.mall.jpa.ProductJpaRepository;
+import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-@SpringBootTest
+@IntegrationTest
 class DeleteBrandRollbackIntegrationTest {
     @Autowired
     private DeleteBrandUseCase deleteBrandUseCase;
@@ -55,7 +54,7 @@ class DeleteBrandRollbackIntegrationTest {
     private JdbcClient jdbcClient;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
-    @MockitoSpyBean
+    @Autowired
     private ProductJpaRepository productJpaRepository;
 
     @AfterEach
