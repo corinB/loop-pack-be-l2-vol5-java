@@ -65,6 +65,10 @@
   같은 이유로 `BrandApiE2ETest`(`BrandApiDto`), `OrderApiE2ETest`(`OrderApiDto`), `WalletApiE2ETest`
   (`WalletApiDto`)에 새 import를 추가했고, `ProductApiE2ETest`는 이미 있던 `BrandApiDto`의 cross-feature import
   경로를 `mall.dto`로 갱신하면서 `ProductApiDto` import를 새로 추가했다.
+- 커밋 A2(OrderBill → OrderRecord) 실행 중 JdbcOrderQueryDao의 4개 SQL(`findOrders`·`findAdminOrders`·
+  `findHeader`, 문자열은 3곳)에서 테이블명 `order_bills` → `order_records`와 함께 LEFT JOIN 별칭도
+  `ob` → `orec`로 바꿔 테이블명과의 연결성을 유지했다. `modules/jpa`의 `DatabaseCleanUp`은 테이블명을
+  하드코딩하지 않아 변경할 필요가 없었다.
 
 ## 추가 작업 결정 — OrderRecord
 

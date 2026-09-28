@@ -15,9 +15,9 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.ordering.repository.OrderRepository;
-import com.loopers.domain.pay.model.OrderBillStatus;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
@@ -156,7 +156,7 @@ class OrderApiE2ETest {
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
                 () -> assertThat(response.getBody().data().status()).isEqualTo(OrderStatus.CONFIRMED),
                 () -> assertThat(response.getBody().data().paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(response.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(response.getBody().data().paymentStatus()).isEqualTo(OrderRecordStatus.PAID),
                 () -> assertThat(currentStock(productId)).isEqualTo(8),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L)
             );
@@ -182,9 +182,9 @@ class OrderApiE2ETest {
 
             assertAll(
                 () -> assertThat(customerDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderRecordStatus.PAID),
                 () -> assertThat(adminDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID)
+                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderRecordStatus.PAID)
             );
         }
 
@@ -220,9 +220,9 @@ class OrderApiE2ETest {
             assertAll(
                 () -> assertThat(customerDetail.getBody().data().totalAmount()).isEqualTo(2_000L),
                 () -> assertThat(customerDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID),
+                () -> assertThat(customerDetail.getBody().data().paymentStatus()).isEqualTo(OrderRecordStatus.PAID),
                 () -> assertThat(adminDetail.getBody().data().paymentAmount()).isEqualTo(2_000L),
-                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderBillStatus.PAID)
+                () -> assertThat(adminDetail.getBody().data().paymentStatus()).isEqualTo(OrderRecordStatus.PAID)
             );
         }
 
@@ -474,7 +474,7 @@ class OrderApiE2ETest {
                 .param("orderId", orderId).query(String.class).single()).isEqualTo("DRAFT"),
             () -> assertThat(jdbcClient.sql("SELECT COUNT(*) FROM point_bills WHERE order_id = :orderId")
                 .param("orderId", orderId).query(Long.class).single()).isZero(),
-            () -> assertThat(jdbcClient.sql("SELECT COUNT(*) FROM order_bills WHERE order_id = :orderId")
+            () -> assertThat(jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId")
                 .param("orderId", orderId).query(Long.class).single()).isZero()
         );
     }

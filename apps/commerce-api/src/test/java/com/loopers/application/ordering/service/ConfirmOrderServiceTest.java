@@ -17,8 +17,8 @@ import com.loopers.application.support.error.ApplicationException;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.ordering.model.OrderStatus;
-import com.loopers.domain.pay.model.OrderBill;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.support.error.DomainErrorCode;
@@ -54,7 +54,7 @@ class ConfirmOrderServiceTest {
             assertThat(result.paymentAmount()).isEqualTo(2_000L);
             assertThat(product.getStock()).isEqualTo(3);
             assertThat(wallet.getBalance()).isEqualTo(3_000L);
-            verify(writer).save(any(ConfirmOrderLoad.class), any(PointBill.class), any(OrderBill.class));
+            verify(writer).save(any(ConfirmOrderLoad.class), any(PointBill.class), any(OrderRecord.class));
         }
 
         @DisplayName("없는 주문이면 저장 없이 거절한다")

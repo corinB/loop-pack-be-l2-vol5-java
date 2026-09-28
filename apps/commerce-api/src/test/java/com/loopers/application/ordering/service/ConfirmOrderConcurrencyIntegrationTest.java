@@ -89,7 +89,7 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(4),
             () -> assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(9_000L),
             () -> assertThat(countUsePointBills(userId, order.getId())).isEqualTo(1L),
-            () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L)
+            () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L)
         );
         assertOrderOutcome(order, true);
     }
@@ -249,10 +249,10 @@ class ConfirmOrderConcurrencyIntegrationTest {
                 .param("orderId", order.getId()).query(Long.class).single())
                 .isEqualTo(order.getItems().stream().mapToLong(OrderItem::getQuantity).sum()),
             () -> assertThat(countUsePointBills(order.getUserId(), order.getId())).isEqualTo(succeeded ? 1 : 0),
-            () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(succeeded ? 1 : 0),
+            () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(succeeded ? 1 : 0),
             () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM point_bills WHERE order_id = :orderId")
                 .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0),
-            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM order_bills WHERE order_id = :orderId")
+            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM order_records WHERE order_id = :orderId")
                 .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0)
         );
     }
@@ -305,8 +305,8 @@ class ConfirmOrderConcurrencyIntegrationTest {
             .single();
     }
 
-    private long countPaidOrderBills(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_bills WHERE order_id = :orderId AND status = 'PAID'")
+    private long countPaidOrderRecords(long orderId) {
+        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
             .param("orderId", orderId)
             .query(Long.class)
             .single();

@@ -9,9 +9,9 @@ import com.loopers.application.ordering.query.OrderQueryDao;
 import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.repository.OrderRecordRepository;
 import com.loopers.domain.ordering.repository.OrderRepository;
-import com.loopers.domain.pay.model.OrderBill;
-import com.loopers.domain.pay.repository.OrderBillRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ class JdbcOrderQueryDaoIntegrationTest {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private OrderBillRepository orderBillRepository;
+    private OrderRecordRepository orderRecordRepository;
     @Autowired
     private JdbcClient jdbcClient;
     @Autowired
@@ -72,9 +72,9 @@ class JdbcOrderQueryDaoIntegrationTest {
 
     @DisplayName("결제 완료된 주문은 결제 금액·상태를 함께 반환한다")
     @Test
-    void includesPaymentFields_whenOrderBillExists() {
+    void includesPaymentFields_whenOrderRecordExists() {
         Order saved = orderRepository.save(order(1L));
-        orderBillRepository.save(OrderBill.paid(saved.getId(), 1L, saved.getTotalAmount()));
+        orderRecordRepository.save(OrderRecord.paid(saved.getId(), 1L, saved.getTotalAmount()));
 
         OrderView view = orderQueryDao.findOrder(saved.getId()).orElseThrow();
 

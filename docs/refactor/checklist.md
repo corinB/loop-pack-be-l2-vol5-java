@@ -59,13 +59,13 @@
 - [x] `docs: OrderBill을 ordering의 OrderRecord로 옮기는 트레이드오프 정리` 커밋
 
 ### 커밋 A2 — 이관·이름 변경
-- [ ] OrderBill·OrderBillStatus·OrderBillRepository와 infrastructure 3종을 ordering으로 `git mv` + 이름 변경
-- [ ] 테이블·제약명 `order_records`로 변경, JdbcOrderQueryDao·테스트 SQL 갱신
-- [ ] 참조 코드·테스트 갱신, 변수명·주석 정리
-- [ ] 컴파일 + Checkstyle 통과
-- [ ] 관련 테스트 + ArchUnit 통과
-- [ ] 기존 이름 `git grep` 잔여 0건
-- [ ] `refactor: OrderBill을 ordering 컨텍스트의 OrderRecord로 이관` 커밋
+- [x] OrderBill·OrderBillStatus·OrderBillRepository와 infrastructure 3종을 ordering으로 `git mv` + 이름 변경
+- [x] 테이블·제약명 `order_records`로 변경, JdbcOrderQueryDao·테스트 SQL 갱신
+- [x] 참조 코드·테스트 갱신, 변수명·주석 정리
+- [x] 컴파일 + Checkstyle 통과
+- [x] 관련 테스트 + ArchUnit 통과
+- [x] 기존 이름 `git grep` 잔여 0건
+- [x] `refactor: OrderBill을 ordering 컨텍스트의 OrderRecord로 이관` 커밋
 
 ### 커밋 A3 — 확정 흐름
 - [ ] `Order.confirm()`이 `OrderRecord` 반환

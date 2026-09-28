@@ -8,9 +8,9 @@ import com.loopers.application.ordering.result.OrderResult;
 import com.loopers.application.ordering.usecase.ConfirmOrderUseCase;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderConfirmation;
+import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.policy.OrderConfirmationPolicy;
-import com.loopers.domain.pay.model.OrderBill;
-import com.loopers.domain.pay.model.OrderBillStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConfirmOrderService implements ConfirmOrderUseCase {
     private final ConfirmOrderWriter confirmOrderWriter;
 
-    // 재고 차감, 포인트 사용, 결제 기록을 한 트랜잭션으로 처리
+    // 재고 차감, 포인트 사용, 주문 기록을 한 트랜잭션으로 처리
     @Override
     @Transactional
     public ConfirmOrderResult execute(ConfirmOrderCommand command) {
@@ -30,9 +30,9 @@ public class ConfirmOrderService implements ConfirmOrderUseCase {
             OrderConfirmationPolicy.confirm(load.order(), load.productsByProductId(), load.wallet());
         Order order = confirmation.order();
 
-        OrderBill orderBill = OrderBill.paid(order.getId(), order.getUserId(), order.getTotalAmount());
-        confirmOrderWriter.save(load, confirmation.pointBill(), orderBill);
+        OrderRecord orderRecord = OrderRecord.paid(order.getId(), order.getUserId(), order.getTotalAmount());
+        confirmOrderWriter.save(load, confirmation.pointBill(), orderRecord);
 
-        return new ConfirmOrderResult(OrderResult.from(order), order.getTotalAmount(), OrderBillStatus.PAID);
+        return new ConfirmOrderResult(OrderResult.from(order), order.getTotalAmount(), OrderRecordStatus.PAID);
     }
 }

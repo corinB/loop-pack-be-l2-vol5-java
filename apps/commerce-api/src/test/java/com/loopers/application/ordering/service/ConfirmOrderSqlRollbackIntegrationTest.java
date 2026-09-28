@@ -109,7 +109,7 @@ class ConfirmOrderSqlRollbackIntegrationTest {
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderBills(order.getId())).isZero(),
+                () -> assertThat(countPaidOrderRecords(order.getId())).isZero(),
                 () -> assertThat(orderStatus(unrelatedOrder.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(productRepository.findById(unrelatedProductId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(jdbcClient.sql("SELECT amount FROM point_bills WHERE user_id = 1 AND type = 'CHARGE'")
@@ -138,8 +138,8 @@ class ConfirmOrderSqlRollbackIntegrationTest {
             .single();
     }
 
-    private long countPaidOrderBills(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_bills WHERE order_id = :orderId AND status = 'PAID'")
+    private long countPaidOrderRecords(long orderId) {
+        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
             .param("orderId", orderId)
             .query(Long.class)
             .single();

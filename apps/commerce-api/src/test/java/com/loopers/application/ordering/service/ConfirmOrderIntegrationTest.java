@@ -84,7 +84,7 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(reloadedProduct.getStock()).isEqualTo(3),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
-                () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L),
+                () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED"),
                 // 재고 외 무관한 상품 값은 잠금 조회·저장 이후에도 그대로 보존돼야 한다
                 () -> assertThat(reloadedProduct.getName()).isEqualTo("상품"),
@@ -124,7 +124,7 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderBills(order.getId())).isZero()
+                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -145,7 +145,7 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
-                () -> assertThat(countPaidOrderBills(order.getId())).isZero()
+                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -172,7 +172,7 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
                 () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderBills(order.getId())).isZero()
+                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -196,7 +196,7 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(3),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
                 () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
-                () -> assertThat(countPaidOrderBills(order.getId())).isEqualTo(1L)
+                () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L)
             );
         }
     }
@@ -220,8 +220,8 @@ class ConfirmOrderIntegrationTest {
             .single();
     }
 
-    private long countPaidOrderBills(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_bills WHERE order_id = :orderId AND status = 'PAID'")
+    private long countPaidOrderRecords(long orderId) {
+        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
             .param("orderId", orderId)
             .query(Long.class)
             .single();

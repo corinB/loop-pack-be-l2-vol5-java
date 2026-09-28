@@ -8,11 +8,11 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.repository.OrderRecordRepository;
 import com.loopers.domain.ordering.repository.OrderRepository;
-import com.loopers.domain.pay.model.OrderBill;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
-import com.loopers.domain.pay.repository.OrderBillRepository;
 import com.loopers.domain.pay.repository.PointBillRepository;
 import com.loopers.domain.pay.repository.WalletRepository;
 import java.util.LinkedHashMap;
@@ -29,7 +29,7 @@ public class JpaConfirmOrderWriter implements ConfirmOrderWriter {
     private final ProductRepository productRepository;
     private final WalletRepository walletRepository;
     private final PointBillRepository pointBillRepository;
-    private final OrderBillRepository orderBillRepository;
+    private final OrderRecordRepository orderRecordRepository;
 
     // 주문 -> 해당 사용자 지갑 -> 상품 ID 오름차순 순서로 잠가 조회
     @Override
@@ -53,15 +53,15 @@ public class JpaConfirmOrderWriter implements ConfirmOrderWriter {
         return new ConfirmOrderLoad(order, productsByProductId, wallet);
     }
 
-    // 재고, 지갑 잔액, 결제 기록, 주문 상태를 각 repository로 저장
+    // 재고, 지갑 잔액, 주문 기록, 주문 상태를 각 repository로 저장
     @Override
-    public void save(ConfirmOrderLoad load, PointBill pointBill, OrderBill orderBill) {
+    public void save(ConfirmOrderLoad load, PointBill pointBill, OrderRecord orderRecord) {
         for (Product product : load.productsByProductId().values()) {
             productRepository.save(product);
         }
         walletRepository.save(load.wallet());
         pointBillRepository.save(pointBill);
-        orderBillRepository.save(orderBill);
+        orderRecordRepository.save(orderRecord);
         orderRepository.save(load.order());
     }
 }

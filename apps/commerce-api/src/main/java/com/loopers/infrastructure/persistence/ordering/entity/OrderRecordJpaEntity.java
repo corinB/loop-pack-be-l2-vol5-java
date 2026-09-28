@@ -1,6 +1,6 @@
-package com.loopers.infrastructure.persistence.pay.entity;
+package com.loopers.infrastructure.persistence.ordering.entity;
 
-import com.loopers.domain.pay.model.OrderBillStatus;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,11 +14,11 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 
 @Entity
-@Table(name = "order_bills", uniqueConstraints = @UniqueConstraint(
-    name = "uk_order_bills_order_id", columnNames = "order_id"
+@Table(name = "order_records", uniqueConstraints = @UniqueConstraint(
+    name = "uk_order_records_order_id", columnNames = "order_id"
 ))
 // 주문 결제 JPA 엔티티
-public class OrderBillJpaEntity {
+public class OrderRecordJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -30,13 +30,13 @@ public class OrderBillJpaEntity {
     private long amount;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private OrderBillStatus status;
+    private OrderRecordStatus status;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    protected OrderBillJpaEntity() {}
+    protected OrderRecordJpaEntity() {}
 
-    OrderBillJpaEntity(long orderId, long userId, long amount, OrderBillStatus status) {
+    OrderRecordJpaEntity(long orderId, long userId, long amount, OrderRecordStatus status) {
         this.orderId = orderId;
         this.userId = userId;
         this.amount = amount;
@@ -59,7 +59,7 @@ public class OrderBillJpaEntity {
         return amount;
     }
 
-    public OrderBillStatus getStatus() {
+    public OrderRecordStatus getStatus() {
         return status;
     }
 

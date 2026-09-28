@@ -6,8 +6,8 @@ import com.loopers.application.ordering.query.AdminOrderView;
 import com.loopers.application.ordering.query.OrderItemView;
 import com.loopers.application.ordering.query.OrderQueryDao;
 import com.loopers.application.ordering.query.OrderView;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
-import com.loopers.domain.pay.model.OrderBillStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -36,9 +36,9 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
 
         List<OrderHeaderRow> headers = jdbcClient.sql("""
                 SELECT o.id AS order_id, o.user_id, o.status, o.total_amount, o.created_at,
-                       ob.amount AS payment_amount, ob.status AS payment_status
+                       orec.amount AS payment_amount, orec.status AS payment_status
                 FROM orders o
-                LEFT JOIN order_bills ob ON ob.order_id = o.id
+                LEFT JOIN order_records orec ON orec.order_id = o.id
                 WHERE o.user_id = :userId
                 ORDER BY o.created_at DESC, o.id DESC
                 LIMIT :size OFFSET :offset
@@ -71,9 +71,9 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
 
         List<OrderHeaderRow> headers = jdbcClient.sql("""
                 SELECT o.id AS order_id, o.user_id, o.status, o.total_amount, o.created_at,
-                       ob.amount AS payment_amount, ob.status AS payment_status
+                       orec.amount AS payment_amount, orec.status AS payment_status
                 FROM orders o
-                LEFT JOIN order_bills ob ON ob.order_id = o.id
+                LEFT JOIN order_records orec ON orec.order_id = o.id
                 ORDER BY o.created_at DESC, o.id DESC
                 LIMIT :size OFFSET :offset
                 """)
@@ -100,9 +100,9 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
     private Optional<OrderHeaderRow> findHeader(long orderId) {
         return jdbcClient.sql("""
                 SELECT o.id AS order_id, o.user_id, o.status, o.total_amount, o.created_at,
-                       ob.amount AS payment_amount, ob.status AS payment_status
+                       orec.amount AS payment_amount, orec.status AS payment_status
                 FROM orders o
-                LEFT JOIN order_bills ob ON ob.order_id = o.id
+                LEFT JOIN order_records orec ON orec.order_id = o.id
                 WHERE o.id = :orderId
                 """)
             .param("orderId", orderId)
@@ -156,7 +156,7 @@ public class JdbcOrderQueryDao implements OrderQueryDao {
             OrderStatus.valueOf(rs.getString("status")),
             rs.getLong("total_amount"),
             paymentAmount,
-            paymentStatus == null ? null : OrderBillStatus.valueOf(paymentStatus),
+            paymentStatus == null ? null : OrderRecordStatus.valueOf(paymentStatus),
             rs.getTimestamp("created_at").toInstant()
         );
     }

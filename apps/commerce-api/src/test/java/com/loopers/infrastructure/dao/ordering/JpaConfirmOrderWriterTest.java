@@ -11,12 +11,12 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.ordering.model.OrderStatus;
+import com.loopers.domain.ordering.repository.OrderRecordRepository;
 import com.loopers.domain.ordering.repository.OrderRepository;
-import com.loopers.domain.pay.model.OrderBill;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
-import com.loopers.domain.pay.repository.OrderBillRepository;
 import com.loopers.domain.pay.repository.PointBillRepository;
 import com.loopers.domain.pay.repository.WalletRepository;
 import java.time.Instant;
@@ -40,7 +40,7 @@ class JpaConfirmOrderWriterTest {
             ProductRepository productRepository = mock(ProductRepository.class);
             WalletRepository walletRepository = mock(WalletRepository.class);
             PointBillRepository pointBillRepository = mock(PointBillRepository.class);
-            OrderBillRepository orderBillRepository = mock(OrderBillRepository.class);
+            OrderRecordRepository orderRecordRepository = mock(OrderRecordRepository.class);
             Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, List.of(
                 OrderItem.restore(30L, "상품C", 1_000L, 1, 1_000L),
                 OrderItem.restore(10L, "상품A", 1_000L, 1, 1_000L),
@@ -52,7 +52,7 @@ class JpaConfirmOrderWriterTest {
             given(productRepository.findByIdForUpdate(anyLong())).willAnswer(
                 invocation -> java.util.Optional.of(product(invocation.getArgument(0))));
             JpaConfirmOrderWriter writer = new JpaConfirmOrderWriter(
-                orderRepository, productRepository, walletRepository, pointBillRepository, orderBillRepository);
+                orderRepository, productRepository, walletRepository, pointBillRepository, orderRecordRepository);
 
             // act
             ConfirmOrderLoad load = writer.load(1L);
@@ -79,26 +79,26 @@ class JpaConfirmOrderWriterTest {
             ProductRepository productRepository = mock(ProductRepository.class);
             WalletRepository walletRepository = mock(WalletRepository.class);
             PointBillRepository pointBillRepository = mock(PointBillRepository.class);
-            OrderBillRepository orderBillRepository = mock(OrderBillRepository.class);
+            OrderRecordRepository orderRecordRepository = mock(OrderRecordRepository.class);
             JpaConfirmOrderWriter writer = new JpaConfirmOrderWriter(
-                orderRepository, productRepository, walletRepository, pointBillRepository, orderBillRepository);
+                orderRepository, productRepository, walletRepository, pointBillRepository, orderRecordRepository);
             Order order = Order.restore(1L, 1L, OrderStatus.CONFIRMED,
                 List.of(OrderItem.restore(10L, "상품A", 1_000L, 1, 1_000L)), 1_000L, Instant.now());
             Product product = product(10L);
             Wallet wallet = Wallet.restore(1L, 9_000L);
             ConfirmOrderLoad load = new ConfirmOrderLoad(order, Map.of(10L, product), wallet);
             PointBill pointBill = PointBill.use(1L, 1L, 1_000L);
-            OrderBill orderBill = OrderBill.paid(1L, 1L, 1_000L);
+            OrderRecord orderRecord = OrderRecord.paid(1L, 1L, 1_000L);
 
             // act
-            writer.save(load, pointBill, orderBill);
+            writer.save(load, pointBill, orderRecord);
 
             // assert
-            InOrder callOrder = inOrder(productRepository, walletRepository, pointBillRepository, orderBillRepository, orderRepository);
+            InOrder callOrder = inOrder(productRepository, walletRepository, pointBillRepository, orderRecordRepository, orderRepository);
             callOrder.verify(productRepository).save(product);
             callOrder.verify(walletRepository).save(wallet);
             callOrder.verify(pointBillRepository).save(pointBill);
-            callOrder.verify(orderBillRepository).save(orderBill);
+            callOrder.verify(orderRecordRepository).save(orderRecord);
             callOrder.verify(orderRepository).save(order);
         }
     }
