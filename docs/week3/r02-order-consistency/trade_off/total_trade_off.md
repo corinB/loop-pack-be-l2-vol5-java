@@ -19,6 +19,7 @@ R01 병합 내용은 현재 작업 브랜치에 반영되어 있다. 최신 원�
 8. [OrderBill 생성 책임과 컨텍스트 경계](08-bill-creation-boundary.md): **Application(ConfirmOrderService)이 생성(현행 유지), Order.confirm()은 반환값 없음** / ~~OrderBill을 ordering 컨텍스트로 이관~~ / ~~Order가 pay.orderbill.OrderBill을 직접 생성~~
 9. [브랜드 일괄 삭제의 상품 잠금](09-brand-delete-product-lock.md): **`findForDeletion`을 잠금 조회로 — 통합 테스트로 자식(Product) 행까지 잠김을 확인** / ~~findByIdForUpdate 반복 재사용~~ / ~~entityManager.lock()+refresh()~~ / ~~낙관적 락(버전 컬럼)~~
 10. [주문 확정 기록 소유](10-order-record-ownership.md): **OrderBill을 ordering의 OrderRecord로 이관, Order.confirm()이 생성·반환, 확정은 검증 후 결제 단계→주문 단계** / ~~현행 유지(pay.OrderBill, Service 생성)~~ / ~~이관하되 Policy/Service가 생성~~. 8번을 대체하며 R02 이후 패키지 구조 리팩토링 중 합의
+11. [주문 기록의 애그리거트 경계](11-order-record-aggregate.md): **OrderRecord를 Order 애그리거트의 1:1 자식으로, 독립 저장소 제거·cascade 저장, record가 FK 주인** / ~~별도 애그리거트 유지~~. 10번의 생성·저장 방식을 보완
 
 주제를 시작할 때 템플릿을 복사해 `번호-주제.md` 형식으로 만들고 이 목록에 연결한다. 문답 중 함께 결론 나는 내용은 관련 문서로 연결해 반복을 줄인다.
 

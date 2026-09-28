@@ -2,6 +2,8 @@
 
 [← 전체 선택 현황](total_trade_off.md) · [이전 결정: 08 OrderBill 생성 책임](08-bill-creation-boundary.md) · [패키지 리팩토링 결정 기록](../../../refactor/context-notes.md)
 
+> 후속 결정: [11번 주문 기록의 애그리거트 경계](11-order-record-aggregate.md)에서 `OrderRecord`를 `Order` 애그리거트 안으로 옮겼다. `Order.confirm()`은 기록을 반환하지 않고 내부에 보관하며, 독립 저장소는 없어진다.
+
 현재 상태: 패키지 구조 리팩토링(`volume-3/refacto`) 중 사용자와 문답으로 합의했다. 구현은 `volume-3/refacto-order-record` 브랜치에서 진행한다.
 
 ## 판단할 문제

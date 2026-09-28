@@ -77,4 +77,23 @@
 - [x] `refactor: 주문 확정을 결제 단계와 주문 기록 단계로 나누고 Order.confirm이 OrderRecord를 반환` 커밋
 
 ### 병합
+- [x] `volume-3/refacto`로 fast-forward 병합
+
+## 추가 작업 2 — OrderRecord 애그리거트 편입 (`volume-3/refacto-order-aggregate`)
+
+### 커밋 B1 — 문서
+- [x] R02 트레이드오프 11 작성, 10·total_trade_off에 연결
+- [x] plan.md 추가 작업 2 절, 체크리스트, 결정 기록 갱신
+- [x] `docs: OrderRecord를 Order 애그리거트에 포함하는 트레이드오프 정리` 커밋
+
+### 커밋 B2 — 구현
+- [ ] 도메인: OrderRecord orderId 제거, Order에 record 필드·getRecord()·restore 불변식, confirm() void
+- [ ] OrderConfirmation·정책·ConfirmOrderWriter·ConfirmOrderService 정리
+- [ ] JPA @OneToOne 매핑(record가 FK 주인, cascade), 매퍼 갱신, 독립 저장소 삭제
+- [ ] 테스트 이관·강제 수정·새 테스트
+- [ ] 컴파일 + Checkstyle 통과
+- [ ] 관련 테스트 + ArchUnit 통과
+- [ ] `refactor: OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 편입` 커밋
+
+### 병합
 - [ ] `volume-3/refacto`로 fast-forward 병합

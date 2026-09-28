@@ -94,3 +94,16 @@
     영수증은 새 타입 없이 기존 `PointBill(USE)`이다.
 17. **별도 브랜치 `volume-3/refacto-order-record`에서 진행하고 관련 테스트 + ArchUnit만 돌린 뒤 fast-forward 병합한다.**
     테스트는 이름·시그니처 변경에 따른 수정과 새 동작 검증 추가만 허용한다.
+
+## 추가 작업 2 결정 — OrderRecord 애그리거트 편입
+
+18. **OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 둔다.** 주문 없이 존재할 수 없고 주문당 하나이며 확정과 같은
+    순간에만 생기므로 루트가 규칙을 지키게 했다. 근거는 [트레이드오프 11](../week3/r02-order-consistency/trade_off/11-order-record-aggregate.md).
+19. **`Order`가 `record`를 필드로 보유하고 `confirm()`은 다시 `void`다.** 기록은 `getRecord()`(Optional)로 얻는다.
+    `OrderConfirmation`에서 `orderRecord`를 빼고 `ConfirmOrderWriter.save(load, pointBill)`로 단순화한다.
+20. **독립 저장소(`OrderRecordRepository`·Impl·JpaRepository)를 없애고 `OrderRepository.save`의 cascade로 저장한다.**
+21. **JPA는 `order_records.order_id`가 FK 주인인 `@OneToOne`이다.** 테이블 구조·조회 SQL을 그대로 두기 위해서이며,
+    주문 로드마다 기록 조회 1회가 늘어나는 비용을 감수한다. 유니크 제약명 유지, FK `fk_order_records_order_id` 추가.
+22. **도메인 `OrderRecord`에서 `orderId`를 뺀다.** 관계로 알 수 있고, id 없는 주문 확정 시 NPE 문제도 사라진다.
+    `userId`·`amount`는 확정 시점 스냅샷으로, `status(PAID)`는 API 호환과 향후 상태 확장을 위해 유지한다.
+23. **`Order.restore`는 CONFIRMED ⇔ 기록 존재를 검사한다.** 테스트는 이관·강제 수정·새 테스트만 허용하고 행위 기대값은 바꾸지 않는다.

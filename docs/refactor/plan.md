@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/refacto` · 기준 브랜치: `volume-3/main` · 대상: `apps/commerce-api` (main + test)
 
-상태: 커밋 1(domain)·커밋 2(infrastructure)·커밋 3(application)·커밋 4(interfaces) 완료.
+상태: 커밋 1(domain)~4(interfaces) 완료. 추가 작업 A1~A3(OrderRecord 이관·확정 흐름) 완료·병합, B1~B2(OrderRecord 애그리거트 편입) 진행 중. 커밋 5(전체 check·결과 문서) 남음.
 커밋 4는 사용자 요청으로 ArchUnit·전체 테스트 없이 컴파일 + Checkstyle만 통과 확인했다(추후 커밋 5 전에 실행 필요). 커밋 5(결과 문서) 진행 예정.
 추가 작업 브랜치 `volume-3/refacto-order-record`에서는 커밋 A1(문서)·커밋 A2(OrderBill→OrderRecord 이관)·
 커밋 A3(확정 흐름을 결제 단계·주문 단계로 정리) 완료. fast-forward 병합은 아직이다.
@@ -250,3 +250,47 @@ ApiControllerAdviceTest, ContractClassificationTest, ExampleV1ApiE2ETest, `inter
 ```
 
 A2·A3 커밋마다 실행한다. `git grep -nwE "OrderBill|OrderBillStatus|OrderBillRepository|order_bills"` 결과가 `apps/`에서 0건이어야 한다.
+
+## 추가 작업 2 — OrderRecord를 Order 애그리거트의 1:1 자식으로
+
+작업 브랜치: `volume-3/refacto-order-aggregate` (`volume-3/refacto`의 `33d6584`에서 분기, 완료 후 fast-forward 병합)
+결정 근거: [R02 트레이드오프 11](../week3/r02-order-consistency/trade_off/11-order-record-aggregate.md)
+
+| # | 커밋 제목 | 범위 |
+|---|---|---|
+| B1 | `docs: OrderRecord를 Order 애그리거트에 포함하는 트레이드오프 정리` | 트레이드오프 11, 10·total_trade_off 링크, 이 절, 체크리스트, 결정 기록 |
+| B2 | `refactor: OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 편입` | 도메인·영속성·확정 흐름·테스트 |
+
+### 커밋 B2 — 변경 내용
+
+도메인
+- `OrderRecord`: `orderId` 필드와 관련 검증 제거. 필드는 `id`, `userId`, `amount`, `status`, `createdAt`. 팩토리는 `paid(userId, amount)`, `restore(id, userId, amount, status, createdAt)`.
+- `Order`: `private OrderRecord record` 추가(DRAFT면 `null`). `confirm()`은 `void`로 돌리고 내부에서 `record = OrderRecord.paid(userId, totalAmount)`. `getRecord()`는 `Optional<OrderRecord>`.
+  `Order.restore(..., OrderRecord record)`에 인자를 추가하고 CONFIRMED이면 기록 필수, DRAFT이면 기록 없음을 검사해 어기면 `IllegalArgumentException`(한국어 메시지). `Order.create`는 기록 없이 만든다.
+- `OrderConfirmation`에서 `orderRecord` 제거. `OrderConfirmationPolicy`의 주문 단계는 재고 차감 → `order.confirm()`만 하고 기록을 반환하지 않는다(검증 순서·결제 단계는 그대로).
+- `OrderRecordRepository` 삭제.
+
+application
+- `ConfirmOrderWriter.save(ConfirmOrderLoad load, PointBill pointBill)`로 단순화.
+- `ConfirmOrderService`: `order.getRecord().orElseThrow()`로 `ConfirmOrderResult`의 `paymentAmount`·`paymentStatus`를 채운다. 응답 형태 불변.
+
+영속성
+- `OrderRecordJpaEntity`: `long orderId` 컬럼 필드를 `@OneToOne(fetch = LAZY) @JoinColumn(name = "order_id", nullable = false, foreignKey = @ForeignKey(name = "fk_order_records_order_id")) OrderJpaEntity order`로 바꾼다. `@UniqueConstraint(name = "uk_order_records_order_id", columnNames = "order_id")` 유지.
+- `OrderJpaEntity`: `@OneToOne(mappedBy = "order", cascade = ALL, orphanRemoval = true) OrderRecordJpaEntity record` 추가와 연결 메서드(`assignRecord` 등 package-private).
+- `OrderEntityMapper`: `toDomain`에서 기록 복원, `toNewEntity`·`apply`에서 도메인에 기록이 있고 엔티티에 없으면 새 기록 엔티티를 연결. `OrderRecordEntityMapper`는 필요 없으면 삭제하거나 `OrderEntityMapper`로 흡수(같은 `entity` 패키지라 package-private 생성자 접근 가능).
+- `OrderRecordRepositoryImpl`, `OrderRecordJpaRepository` 삭제(다른 사용처가 없을 때).
+- `JpaConfirmOrderWriter`: 주문 기록 저장 호출 제거, 주문 저장으로 cascade.
+- `JdbcOrderQueryDao` SQL은 테이블·컬럼이 같으므로 바꾸지 않는다.
+
+테스트
+- `OrderRecordRepositoryIntegrationTest` 삭제, 그 검증(저장·조회, 주문당 기록 하나)을 `OrderRepositoryIntegrationTest`로 이관: 확정 주문 저장 시 기록이 cascade 저장·복원되는지.
+- 새 테스트: `OrderTest` — `confirm()` 후 `getRecord()`가 사용자·총액·`PAID`를 담음, DRAFT는 기록 없음, `restore`가 CONFIRMED+기록 없음·DRAFT+기록 있음을 거절.
+- 강제 수정만 허용: 시그니처 변경(`restore` 인자, `confirm()` 반환, `save` 인자, `OrderConfirmation` 인자), CONFIRMED 주문을 기록 없이 만들던 테스트 준비 코드.
+- 오류 우선순위·롤백·동시성 결과 등 행위 기대값은 바꾸지 않는다. 바꿔야 하면 멈추고 보고한다.
+
+### 검증 (Docker 필요)
+
+```bash
+./gradlew :apps:commerce-api:compileJava :apps:commerce-api:compileTestJava :apps:commerce-api:checkstyleMain :apps:commerce-api:checkstyleTest
+./gradlew :apps:commerce-api:test --tests "com.loopers.architecture.*" --tests "com.loopers.domain.ordering.*" --tests "com.loopers.domain.pay.*" --tests "com.loopers.application.ordering.*" --tests "com.loopers.infrastructure.persistence.ordering.*" --tests "com.loopers.infrastructure.dao.ordering.*" --tests "com.loopers.infrastructure.query.ordering.*" --tests "com.loopers.interfaces.api.ordering.*"
+```
