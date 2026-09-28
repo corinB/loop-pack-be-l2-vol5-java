@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class OrderRecordTest {
 
-    @DisplayName("결제 기록 생성")
+    @DisplayName("주문 기록 생성")
     @Nested
     class Paid {
         @DisplayName("성공한 결제만 PAID 상태로 생성한다")
@@ -30,7 +30,7 @@ class OrderRecordTest {
         }
     }
 
-    @DisplayName("결제 기록 복원")
+    @DisplayName("주문 기록 복원")
     @Nested
     class Restore {
         @DisplayName("저장된 상태를 복원한다")

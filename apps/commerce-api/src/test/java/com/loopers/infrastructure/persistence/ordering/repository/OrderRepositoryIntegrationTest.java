@@ -53,7 +53,7 @@ class OrderRepositoryIntegrationTest {
         assertThat(orderRepository.findById(999L)).isEmpty();
     }
 
-    @DisplayName("확정된 주문을 저장하면 결제 기록이 cascade로 함께 저장되고 복원된다")
+    @DisplayName("확정된 주문을 저장하면 주문 기록이 cascade로 함께 저장되고 복원된다")
     @Test
     @Transactional
     void savesConfirmedOrder_withCascadedOrderRecord() {

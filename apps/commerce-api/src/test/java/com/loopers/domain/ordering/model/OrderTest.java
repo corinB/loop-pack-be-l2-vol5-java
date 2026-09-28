@@ -97,7 +97,7 @@ class OrderTest {
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
-        @DisplayName("CONFIRMED인데 결제 기록이 없으면 거절한다")
+        @DisplayName("CONFIRMED인데 주문 기록이 없으면 거절한다")
         @Test
         void rejectsRestore_whenConfirmedWithoutRecord() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
@@ -106,7 +106,7 @@ class OrderTest {
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
-        @DisplayName("DRAFT인데 결제 기록이 있으면 거절한다")
+        @DisplayName("DRAFT인데 주문 기록이 있으면 거절한다")
         @Test
         void rejectsRestore_whenDraftWithRecord() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));

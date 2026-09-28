@@ -39,13 +39,13 @@ public class OrderEntityMapper {
         }
     }
 
-    // 결제 기록 엔티티를 도메인으로 변환
+    // 주문 기록 엔티티를 도메인으로 변환
     private OrderRecord toRecordDomain(OrderRecordJpaEntity entity) {
         return OrderRecord.restore(entity.getId(), entity.getUserId(), entity.getAmount(), entity.getStatus(),
             entity.getCreatedAt());
     }
 
-    // 결제 기록 도메인을 신규 엔티티로 변환
+    // 주문 기록 도메인을 신규 엔티티로 변환
     private OrderRecordJpaEntity toNewRecordEntity(OrderRecord record) {
         return new OrderRecordJpaEntity(record.getUserId(), record.getAmount(), record.getStatus());
     }

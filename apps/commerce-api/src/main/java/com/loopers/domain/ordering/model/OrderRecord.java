@@ -3,7 +3,7 @@ package com.loopers.domain.ordering.model;
 import com.loopers.domain.shared.Money;
 import java.time.Instant;
 
-// 주문 결제 완료 기록
+// 주문 기록
 public final class OrderRecord {
     private final Long id;
     private final long userId;
@@ -31,7 +31,7 @@ public final class OrderRecord {
     public static OrderRecord restore(long id, long userId, long amount, OrderRecordStatus status,
                                     Instant createdAt) {
         if (id <= 0 || createdAt == null) {
-            throw new IllegalArgumentException("저장된 결제 기록 상태가 올바르지 않습니다.");
+            throw new IllegalArgumentException("저장된 주문 기록 상태가 올바르지 않습니다.");
         }
         return new OrderRecord(id, userId, amount, status, createdAt);
     }

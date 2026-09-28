@@ -26,10 +26,10 @@ public final class Order {
             throw new DomainException(DomainErrorCode.EMPTY_ORDER_ITEMS);
         }
         if (status == OrderStatus.CONFIRMED && record == null) {
-            throw new IllegalArgumentException("확정된 주문에는 결제 기록이 있어야 합니다.");
+            throw new IllegalArgumentException("확정된 주문에는 주문 기록이 있어야 합니다.");
         }
         if (status == OrderStatus.DRAFT && record != null) {
-            throw new IllegalArgumentException("확정되지 않은 주문에는 결제 기록이 있을 수 없습니다.");
+            throw new IllegalArgumentException("확정되지 않은 주문에는 주문 기록이 있을 수 없습니다.");
         }
         this.id = id;
         this.userId = userId;
