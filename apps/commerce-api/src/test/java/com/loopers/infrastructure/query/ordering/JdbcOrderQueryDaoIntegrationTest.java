@@ -9,8 +9,6 @@ import com.loopers.application.ordering.query.OrderQueryDao;
 import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
-import com.loopers.domain.ordering.model.OrderRecord;
-import com.loopers.domain.ordering.repository.OrderRecordRepository;
 import com.loopers.domain.ordering.repository.OrderRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
@@ -28,8 +26,6 @@ class JdbcOrderQueryDaoIntegrationTest {
     private OrderQueryDao orderQueryDao;
     @Autowired
     private OrderRepository orderRepository;
-    @Autowired
-    private OrderRecordRepository orderRecordRepository;
     @Autowired
     private JdbcClient jdbcClient;
     @Autowired
@@ -74,7 +70,8 @@ class JdbcOrderQueryDaoIntegrationTest {
     @Test
     void includesPaymentFields_whenOrderRecordExists() {
         Order saved = orderRepository.save(order(1L));
-        orderRecordRepository.save(OrderRecord.paid(saved.getId(), 1L, saved.getTotalAmount()));
+        saved.confirm();
+        orderRepository.save(saved);
 
         OrderView view = orderQueryDao.findOrder(saved.getId()).orElseThrow();
 

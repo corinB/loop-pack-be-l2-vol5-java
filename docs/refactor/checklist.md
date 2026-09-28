@@ -87,13 +87,13 @@
 - [x] `docs: OrderRecord를 Order 애그리거트에 포함하는 트레이드오프 정리` 커밋
 
 ### 커밋 B2 — 구현
-- [ ] 도메인: OrderRecord orderId 제거, Order에 record 필드·getRecord()·restore 불변식, confirm() void
-- [ ] OrderConfirmation·정책·ConfirmOrderWriter·ConfirmOrderService 정리
-- [ ] JPA @OneToOne 매핑(record가 FK 주인, cascade), 매퍼 갱신, 독립 저장소 삭제
-- [ ] 테스트 이관·강제 수정·새 테스트
-- [ ] 컴파일 + Checkstyle 통과
-- [ ] 관련 테스트 + ArchUnit 통과
-- [ ] `refactor: OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 편입` 커밋
+- [x] 도메인: OrderRecord orderId 제거, Order에 record 필드·getRecord()·restore 불변식, confirm() void
+- [x] OrderConfirmation·정책·ConfirmOrderWriter·ConfirmOrderService 정리
+- [x] JPA @OneToOne 매핑(record가 FK 주인, cascade), 매퍼 갱신, 독립 저장소 삭제
+- [x] 테스트 이관·강제 수정·새 테스트
+- [x] 컴파일 + Checkstyle 통과
+- [x] 관련 테스트 + ArchUnit 통과
+- [x] `refactor: OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 편입` 커밋
 
 ### 병합
 - [ ] `volume-3/refacto`로 fast-forward 병합

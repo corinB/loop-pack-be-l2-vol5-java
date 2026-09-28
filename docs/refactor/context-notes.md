@@ -107,3 +107,36 @@
 22. **도메인 `OrderRecord`에서 `orderId`를 뺀다.** 관계로 알 수 있고, id 없는 주문 확정 시 NPE 문제도 사라진다.
     `userId`·`amount`는 확정 시점 스냅샷으로, `status(PAID)`는 API 호환과 향후 상태 확장을 위해 유지한다.
 23. **`Order.restore`는 CONFIRMED ⇔ 기록 존재를 검사한다.** 테스트는 이관·강제 수정·새 테스트만 허용하고 행위 기대값은 바꾸지 않는다.
+
+## 커밋 B2 실행 기록
+
+- `OrderRecordJpaEntity`는 `orderId` 대신 FK 소유 쪽 `@OneToOne(fetch = LAZY) @JoinColumn(name = "order_id", ...)`을 갖고,
+  `OrderJpaEntity`는 반대편 `@OneToOne(mappedBy = "order", cascade = ALL, orphanRemoval = true)`을 갖는다. `OrderItemJpaEntity`의
+  기존 `assignOrder` 패턴을 그대로 따라 `OrderJpaEntity.assignRecord(record)`가 양쪽을 연결한다. Hibernate는 mappedBy 쪽
+  `@OneToOne`을 프록시로 지연 로딩하지 못해 주문을 조회할 때마다(엔티티가 관리 상태로 로드되는 시점에) 기록 조회 SELECT가
+  하나 더 나간다 — 트레이드오프 11에서 감수하기로 한 비용 그대로다. 별도 fetch join은 추가하지 않았다.
+- `OrderRecordEntityMapper`는 `OrderEntityMapper`로 흡수해 삭제했다(둘 다 `entity` 패키지라 package-private 생성자 접근에
+  문제가 없었다). `OrderEntityMapper.apply`는 상태 변경(`entity.apply(status)`)에 더해, 엔티티에 아직 기록이 없고 도메인에는
+  있으면(확정 저장 경로) 새 기록 엔티티를 만들어 `assignRecord`로 붙인다.
+- `OrderRepositoryImpl.save`는 `orderJpaRepository.save(entity)`를 `saveAndFlush`로 바꿨다. IDENTITY 채번은 보통 persist
+  시점에 즉시 insert가 나가 id가 채워지지만, 기존 엔티티를 갱신하는 확정 경로는 이미 관리 상태인 엔티티에 `assignRecord`로
+  새 자식을 매달아 `save()`(내부적으로 `merge()`)를 호출하는 구조라 새 기록의 id·`@PrePersist`가 채우는 `createdAt`이
+  메서드 반환 시점에 확실히 채워져 있다고 보장하기 어려웠다. `saveAndFlush`로 명시적으로 flush해 `mapper.toDomain`이
+  `OrderRecord.restore`(id>0·createdAt 필수)에 넘길 값을 항상 갖도록 했다. 최소 변경으로 단어 하나만 바꿨다.
+- `OrderRecordRepositoryIntegrationTest`를 삭제하고 그 검증(저장·조회, 주문당 기록 하나)을 `OrderRepositoryIntegrationTest`에
+  `savesConfirmedOrder_withCascadedOrderRecord`·`enforcesOneOrderRecordPerOrder` 두 테스트로 이관했다. 후자는
+  `order_records` 테이블에 대한 네이티브 COUNT 쿼리로 주문당 기록이 하나임을 확인한다(유니크 제약 위반 자체를 재현하는
+  대신, 도메인이 애초에 한 주문에 기록을 두 번 붙일 방법을 주지 않으므로 "하나만 생긴다"를 직접 확인하는 쪽으로 바꿨다).
+- 강제 수정: `OrderTest`·`OrderConfirmationPolicyTest`·`ConfirmOrderServiceTest`·`JpaConfirmOrderWriterTest`·
+  `OrderServiceTest`의 `Order.restore(...)` 호출에 `record` 인자(DRAFT는 `null`, CONFIRMED는 `OrderRecord.restore(...)`로
+  만든 값)를 추가했다. `JdbcOrderQueryDaoIntegrationTest`의 `includesPaymentFields_whenOrderRecordExists`는 삭제된
+  `OrderRecordRepository.save(OrderRecord.paid(...))` 대신 `order.confirm()` 후 `orderRepository.save(order)`로 바꿨다
+  (cascade 저장 확인을 겸한다). `OrderConfirmationPolicyTest.confirmedOrder`는 CONFIRMED 주문을 만들 때 기록을 함께
+  넘기도록 바꿨다.
+- 새 테스트: `OrderTest`에 `confirmHoldsPaidOrderRecord_withUserIdAndTotalAmount`(확정 전 `getRecord()`가 비어 있고,
+  확정 후 사용자·총액·PAID를 담음), `rejectsRestore_whenConfirmedWithoutRecord`, `rejectsRestore_whenDraftWithRecord`를
+  추가했다. 기존 `confirmReturnsPaidOrderRecord_...` 테스트는 `confirm()`이 더 이상 값을 반환하지 않으므로
+  `confirmHoldsPaidOrderRecord_...`로 대체했다(시그니처가 강제한 변경).
+- 지정된 검증 범위(architecture·domain.ordering·domain.pay·application.ordering·infrastructure.persistence/dao/query.ordering·
+  interfaces.api.ordering) 112개 테스트(기존 111 − `OrderRecordRepositoryIntegrationTest` 삭제로 3개 감소 + `OrderRepositoryIntegrationTest`
+  신규 2개 + `OrderTest`의 restore 불변식 신규 2개) 전부 통과했다. 오류 우선순위·롤백·동시성 결과 등 행위 기대값은 바꾸지 않았다.

@@ -26,7 +26,8 @@ public class OrderRepositoryImpl implements OrderRepository {
             entity = orderJpaRepository.findById(order.getId()).orElseThrow();
             mapper.apply(order, entity);
         }
-        return mapper.toDomain(orderJpaRepository.save(entity));
+        // IDENTITY 채번인 주문 기록의 id·생성시각(@PrePersist)을 즉시 반영해 도메인 복원에 쓰기 위해 flush한다
+        return mapper.toDomain(orderJpaRepository.saveAndFlush(entity));
     }
 
     // ID로 주문 조회

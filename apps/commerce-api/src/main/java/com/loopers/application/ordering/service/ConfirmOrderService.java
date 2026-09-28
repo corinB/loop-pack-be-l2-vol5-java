@@ -28,10 +28,10 @@ public class ConfirmOrderService implements ConfirmOrderUseCase {
         OrderConfirmation confirmation =
             OrderConfirmationPolicy.confirm(load.order(), load.productsByProductId(), load.wallet());
         Order order = confirmation.order();
-        OrderRecord orderRecord = confirmation.orderRecord();
+        OrderRecord record = order.getRecord().orElseThrow();
 
-        confirmOrderWriter.save(load, confirmation.pointBill(), orderRecord);
+        confirmOrderWriter.save(load, confirmation.pointBill());
 
-        return new ConfirmOrderResult(OrderResult.from(order), orderRecord.getAmount(), orderRecord.getStatus());
+        return new ConfirmOrderResult(OrderResult.from(order), record.getAmount(), record.getStatus());
     }
 }

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.ordering.repository.OrderRepository;
 import com.loopers.utils.DatabaseCleanUp;
@@ -58,5 +60,42 @@ class OrderRepositoryIntegrationTest {
     @Transactional
     void returnsEmpty_whenOrderDoesNotExist() {
         assertThat(orderRepository.findById(999L)).isEmpty();
+    }
+
+    @DisplayName("확정된 주문을 저장하면 결제 기록이 cascade로 함께 저장되고 복원된다")
+    @Test
+    @Transactional
+    void savesConfirmedOrder_withCascadedOrderRecord() {
+        Order order = orderRepository.save(Order.create(1L, List.of(OrderItem.create(1L, "상품", 1_000L, 2))));
+        order.confirm();
+        Order confirmed = orderRepository.save(order);
+        entityManager.flush();
+        entityManager.clear();
+
+        Order restored = orderRepository.findById(confirmed.getId()).orElseThrow();
+
+        OrderRecord record = restored.getRecord().orElseThrow();
+        assertThat(restored.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(record.getUserId()).isEqualTo(1L);
+        assertThat(record.getAmount()).isEqualTo(2_000L);
+        assertThat(record.getStatus()).isEqualTo(OrderRecordStatus.PAID);
+    }
+
+    @DisplayName("같은 주문에는 결제 기록을 하나만 저장한다")
+    @Test
+    @Transactional
+    void enforcesOneOrderRecordPerOrder() {
+        Order order = orderRepository.save(Order.create(1L, List.of(OrderItem.create(1L, "상품", 1_000L, 2))));
+        order.confirm();
+        orderRepository.save(order);
+        entityManager.flush();
+        entityManager.clear();
+
+        Number count = (Number) entityManager
+            .createNativeQuery("SELECT COUNT(*) FROM order_records WHERE order_id = ?1")
+            .setParameter(1, order.getId())
+            .getSingleResult();
+
+        assertThat(count.longValue()).isEqualTo(1L);
     }
 }

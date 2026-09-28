@@ -7,6 +7,8 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderConfirmation;
 import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.pay.model.PointBillType;
 import com.loopers.domain.pay.model.Wallet;
@@ -59,9 +61,9 @@ class OrderConfirmationPolicyTest {
 
             OrderConfirmation result = OrderConfirmationPolicy.confirm(order, Map.of(10L, product), wallet);
 
-            assertThat(result.orderRecord().getOrderId()).isEqualTo(order.getId());
-            assertThat(result.orderRecord().getUserId()).isEqualTo(order.getUserId());
-            assertThat(result.orderRecord().getAmount()).isEqualTo(order.getTotalAmount());
+            OrderRecord orderRecord = result.order().getRecord().orElseThrow();
+            assertThat(orderRecord.getUserId()).isEqualTo(order.getUserId());
+            assertThat(orderRecord.getAmount()).isEqualTo(order.getTotalAmount());
             assertThat(result.pointBill().getType()).isEqualTo(PointBillType.USE);
             assertThat(result.pointBill().getOrderId()).isEqualTo(order.getId());
             assertThat(result.pointBill().getAmount()).isEqualTo(order.getTotalAmount());
@@ -205,11 +207,12 @@ class OrderConfirmationPolicyTest {
     }
 
     private Order draftOrder(long id, List<OrderItem> items, long totalAmount) {
-        return Order.restore(id, 1L, OrderStatus.DRAFT, items, totalAmount, Instant.now());
+        return Order.restore(id, 1L, OrderStatus.DRAFT, items, totalAmount, Instant.now(), null);
     }
 
     private Order confirmedOrder(long id, List<OrderItem> items, long totalAmount) {
-        return Order.restore(id, 1L, OrderStatus.CONFIRMED, items, totalAmount, Instant.now());
+        OrderRecord record = OrderRecord.restore(1L, 1L, totalAmount, OrderRecordStatus.PAID, Instant.now());
+        return Order.restore(id, 1L, OrderStatus.CONFIRMED, items, totalAmount, Instant.now(), record);
     }
 
     private Product product(long id, int stock) {

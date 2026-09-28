@@ -72,7 +72,7 @@ class OrderTest {
         void restoresOrder_whenTotalAmountMatches() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 2, 2_000L));
 
-            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 2_000L, Instant.now());
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 2_000L, Instant.now(), null);
 
             assertThat(order.getTotalAmount()).isEqualTo(2_000L);
         }
@@ -82,7 +82,7 @@ class OrderTest {
         void rejectsRestore_whenTotalAmountDoesNotMatch() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 2, 2_000L));
 
-            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_999L, Instant.now()))
+            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_999L, Instant.now(), null))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -91,9 +91,28 @@ class OrderTest {
         void rejectsRestore_whenMetadataIsMissing() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
 
-            assertThatThrownBy(() -> Order.restore(0L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now()))
+            assertThatThrownBy(() -> Order.restore(0L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now(), null))
                 .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, null))
+            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @DisplayName("CONFIRMED인데 결제 기록이 없으면 거절한다")
+        @Test
+        void rejectsRestore_whenConfirmedWithoutRecord() {
+            List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
+
+            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.CONFIRMED, items, 1_000L, Instant.now(), null))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @DisplayName("DRAFT인데 결제 기록이 있으면 거절한다")
+        @Test
+        void rejectsRestore_whenDraftWithRecord() {
+            List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
+            OrderRecord record = OrderRecord.restore(1L, 1L, 1_000L, OrderRecordStatus.PAID, Instant.now());
+
+            assertThatThrownBy(() -> Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now(), record))
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -105,22 +124,24 @@ class OrderTest {
         @Test
         void confirmsDraftOrder() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
-            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now());
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 1_000L, Instant.now(), null);
 
             order.confirm();
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         }
 
-        @DisplayName("확정하면 주문의 id·사용자·총액을 담은 PAID 상태의 주문 기록을 반환한다")
+        @DisplayName("확정하면 사용자·총액을 담은 PAID 상태의 주문 기록을 보유하고 DRAFT는 기록이 없다")
         @Test
-        void confirmReturnsPaidOrderRecord_withOrderIdUserIdAndTotalAmount() {
+        void confirmHoldsPaidOrderRecord_withUserIdAndTotalAmount() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 2, 2_000L));
-            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 2_000L, Instant.now());
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, items, 2_000L, Instant.now(), null);
 
-            OrderRecord orderRecord = order.confirm();
+            assertThat(order.getRecord()).isEmpty();
 
-            assertThat(orderRecord.getOrderId()).isEqualTo(order.getId());
+            order.confirm();
+
+            OrderRecord orderRecord = order.getRecord().orElseThrow();
             assertThat(orderRecord.getUserId()).isEqualTo(order.getUserId());
             assertThat(orderRecord.getAmount()).isEqualTo(order.getTotalAmount());
             assertThat(orderRecord.getStatus()).isEqualTo(OrderRecordStatus.PAID);
@@ -130,7 +151,8 @@ class OrderTest {
         @Test
         void rejectsReconfirm_andKeepsConfirmedStatus() {
             List<OrderItem> items = List.of(OrderItem.restore(1L, "상품", 1_000L, 1, 1_000L));
-            Order order = Order.restore(1L, 1L, OrderStatus.CONFIRMED, items, 1_000L, Instant.now());
+            OrderRecord record = OrderRecord.restore(1L, 1L, 1_000L, OrderRecordStatus.PAID, Instant.now());
+            Order order = Order.restore(1L, 1L, OrderStatus.CONFIRMED, items, 1_000L, Instant.now(), record);
 
             assertThatThrownBy(order::confirm)
                 .isInstanceOf(DomainException.class)

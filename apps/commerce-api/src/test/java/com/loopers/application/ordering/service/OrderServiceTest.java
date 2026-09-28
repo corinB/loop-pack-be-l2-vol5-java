@@ -139,7 +139,7 @@ class OrderServiceTest {
     private static Order assignId(InvocationOnMock invocation) {
         Order order = invocation.getArgument(0);
         return Order.restore(1L, order.getUserId(), order.getStatus(), order.getItems(), order.getTotalAmount(),
-            Instant.now());
+            Instant.now(), null);
     }
 
     private Product product(long id, String name, long price) {

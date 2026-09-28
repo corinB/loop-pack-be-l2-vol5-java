@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -36,6 +37,8 @@ public class OrderJpaEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")
     private List<OrderItemJpaEntity> items = new ArrayList<>();
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private OrderRecordJpaEntity record;
 
     protected OrderJpaEntity() {}
 
@@ -48,6 +51,11 @@ public class OrderJpaEntity {
     void addItem(OrderItemJpaEntity item) {
         items.add(item);
         item.assignOrder(this);
+    }
+
+    void assignRecord(OrderRecordJpaEntity record) {
+        this.record = record;
+        record.assignOrder(this);
     }
 
     void apply(OrderStatus status) {
@@ -76,6 +84,10 @@ public class OrderJpaEntity {
 
     public List<OrderItemJpaEntity> getItems() {
         return items;
+    }
+
+    public OrderRecordJpaEntity getRecord() {
+        return record;
     }
 
     @PrePersist

@@ -18,6 +18,7 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
 import com.loopers.domain.ordering.model.OrderRecord;
+import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
@@ -54,7 +55,7 @@ class ConfirmOrderServiceTest {
             assertThat(result.paymentAmount()).isEqualTo(2_000L);
             assertThat(product.getStock()).isEqualTo(3);
             assertThat(wallet.getBalance()).isEqualTo(3_000L);
-            verify(writer).save(any(ConfirmOrderLoad.class), any(PointBill.class), any(OrderRecord.class));
+            verify(writer).save(any(ConfirmOrderLoad.class), any(PointBill.class));
         }
 
         @DisplayName("없는 주문이면 저장 없이 거절한다")
@@ -70,7 +71,7 @@ class ConfirmOrderServiceTest {
                 .isInstanceOf(ApplicationException.class)
                 .extracting("errorCode")
                 .isEqualTo(ApplicationErrorCode.ORDER_NOT_FOUND);
-            verify(writer, never()).save(any(), any(), any());
+            verify(writer, never()).save(any(), any());
         }
 
         @DisplayName("이미 확정된 주문은 저장 없이 거절한다")
@@ -89,7 +90,7 @@ class ConfirmOrderServiceTest {
                 .isInstanceOf(DomainException.class)
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.ORDER_ALREADY_CONFIRMED);
-            verify(writer, never()).save(any(), any(), any());
+            verify(writer, never()).save(any(), any());
         }
 
         @DisplayName("품목 상품이 삭제됐으면 저장 없이 거절한다")
@@ -109,7 +110,7 @@ class ConfirmOrderServiceTest {
                 .isInstanceOf(DomainException.class)
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.DELETED_PRODUCT);
-            verify(writer, never()).save(any(), any(), any());
+            verify(writer, never()).save(any(), any());
         }
 
         @DisplayName("재고가 부족하면 포인트 차감 없이 거절한다")
@@ -129,7 +130,7 @@ class ConfirmOrderServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.INSUFFICIENT_STOCK);
             assertThat(wallet.getBalance()).isEqualTo(10_000L);
-            verify(writer, never()).save(any(), any(), any());
+            verify(writer, never()).save(any(), any());
         }
 
         @DisplayName("포인트가 부족하면 저장 없이 거절한다")
@@ -148,7 +149,7 @@ class ConfirmOrderServiceTest {
                 .isInstanceOf(DomainException.class)
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.INSUFFICIENT_POINT);
-            verify(writer, never()).save(any(), any(), any());
+            verify(writer, never()).save(any(), any());
         }
 
         @DisplayName("현재 상품 가격이 바뀌어도 저장된 주문 합계로 결제한다")
@@ -172,11 +173,12 @@ class ConfirmOrderServiceTest {
     }
 
     private Order draftOrder(long id, long userId, List<OrderItem> items, long totalAmount) {
-        return Order.restore(id, userId, OrderStatus.DRAFT, items, totalAmount, Instant.now());
+        return Order.restore(id, userId, OrderStatus.DRAFT, items, totalAmount, Instant.now(), null);
     }
 
     private Order confirmedOrder(long id, long userId, List<OrderItem> items, long totalAmount) {
-        return Order.restore(id, userId, OrderStatus.CONFIRMED, items, totalAmount, Instant.now());
+        OrderRecord record = OrderRecord.restore(1L, userId, totalAmount, OrderRecordStatus.PAID, Instant.now());
+        return Order.restore(id, userId, OrderStatus.CONFIRMED, items, totalAmount, Instant.now(), record);
     }
 
     private Product product(long id, long price, int stock) {

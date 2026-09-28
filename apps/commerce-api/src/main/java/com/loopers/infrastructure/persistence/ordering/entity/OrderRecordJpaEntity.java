@@ -5,9 +5,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -22,8 +26,9 @@ public class OrderRecordJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "order_id", nullable = false)
-    private long orderId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false, foreignKey = @ForeignKey(name = "fk_order_records_order_id"))
+    private OrderJpaEntity order;
     @Column(name = "user_id", nullable = false)
     private long userId;
     @Column(nullable = false)
@@ -36,19 +41,22 @@ public class OrderRecordJpaEntity {
 
     protected OrderRecordJpaEntity() {}
 
-    OrderRecordJpaEntity(long orderId, long userId, long amount, OrderRecordStatus status) {
-        this.orderId = orderId;
+    OrderRecordJpaEntity(long userId, long amount, OrderRecordStatus status) {
         this.userId = userId;
         this.amount = amount;
         this.status = status;
+    }
+
+    void assignOrder(OrderJpaEntity order) {
+        this.order = order;
     }
 
     public Long getId() {
         return id;
     }
 
-    public long getOrderId() {
-        return orderId;
+    public OrderJpaEntity getOrder() {
+        return order;
     }
 
     public long getUserId() {

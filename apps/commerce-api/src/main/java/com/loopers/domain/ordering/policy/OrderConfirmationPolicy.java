@@ -4,7 +4,6 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderConfirmation;
 import com.loopers.domain.ordering.model.OrderItem;
-import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.shared.Money;
@@ -31,9 +30,9 @@ public final class OrderConfirmationPolicy {
         wallet.ensureSufficientBalance(paymentAmount);
 
         PointBill pointBill = pay(order, wallet, paymentAmount);
-        OrderRecord orderRecord = placeOrder(order, productsByProductId, quantityByProductId);
+        placeOrder(order, productsByProductId, quantityByProductId);
 
-        return new OrderConfirmation(order, productsByProductId, wallet, pointBill, orderRecord);
+        return new OrderConfirmation(order, productsByProductId, wallet, pointBill);
     }
 
     // 결제 단계: 지갑에서 포인트를 차감하고 영수증(PointBill)을 만든다
@@ -42,12 +41,12 @@ public final class OrderConfirmationPolicy {
     }
 
     // 주문 단계: 재고를 차감하고 주문을 확정해 주문 기록을 만든다
-    private static OrderRecord placeOrder(Order order, Map<Long, Product> productsByProductId,
-                                          Map<Long, Integer> quantityByProductId) {
+    private static void placeOrder(Order order, Map<Long, Product> productsByProductId,
+                                    Map<Long, Integer> quantityByProductId) {
         for (Map.Entry<Long, Integer> entry : quantityByProductId.entrySet()) {
             productsByProductId.get(entry.getKey()).decreaseStock(entry.getValue());
         }
-        return order.confirm();
+        order.confirm();
     }
 
     // 동일 상품 품목의 수량을 합산하고 초과 시 기존 계산 초과 오류를 사용한다
