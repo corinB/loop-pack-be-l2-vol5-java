@@ -45,11 +45,11 @@
 - [x] `refactor: interfaces 패키지를 컨텍스트·종류 구조로 재배치` 커밋
 
 ## 커밋 5 — 결과 문서
-- [ ] `./gradlew :apps:commerce-api:check` 전체 통과 (Docker 필요)
-- [ ] result.md 작성 (실제 결과·계획과의 차이·검증 수치)
-- [ ] CLAUDE.md "commerce-api package structure" 설명 갱신
-- [ ] AGENTS.md 32행 패키지 규칙 갱신
-- [ ] `docs: 패키지 리팩토링 결과와 구조 설명 갱신` 커밋
+- [x] `./gradlew :apps:commerce-api:check` 전체 통과 (Docker 필요) — 테스트 경량화 후 check로 확인
+- [x] result.md 작성 (실제 결과·계획과의 차이·검증 수치)
+- [x] CLAUDE.md "commerce-api package structure" 설명 갱신
+- [x] AGENTS.md 32행 패키지 규칙 갱신
+- [x] `docs: 패키지 리팩토링 결과와 구조 설명 갱신` 커밋
 
 ## 추가 작업 — OrderRecord (`volume-3/refacto-order-record`)
 
@@ -96,4 +96,14 @@
 - [x] `refactor: OrderRecord를 Order 애그리거트의 1:1 자식 엔티티로 편입` 커밋
 
 ### 병합
-- [ ] `volume-3/refacto`로 fast-forward 병합
+- [x] `volume-3/refacto`로 fast-forward 병합
+
+## 테스트 경량화 (`volume-3/refacto-test-slim`)
+
+- [x] 1단계 스트림 A(공용 spy로 컨텍스트 통합)
+- [x] 1단계 스트림 B(DB 정리·컨테이너 재사용)
+- [x] 1단계 스트림 C(태그 분리·Redis 제거·중복 테스트 정리)
+- [x] 2단계 `@IntegrationTest`/`@E2ETest` 공용 어노테이션, `slow`/`example` 태그 부착
+- [x] 레이어별 테스트 문서(`docs/test/`) 작성
+- [x] `./gradlew :apps:commerce-api:check` 전체 통과
+- [x] `volume-3/refacto`로 fast-forward 병합

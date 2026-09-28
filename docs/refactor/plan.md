@@ -4,10 +4,12 @@
 
 작업 브랜치: `volume-3/refacto` · 기준 브랜치: `volume-3/main` · 대상: `apps/commerce-api` (main + test)
 
-상태: 커밋 1(domain)~4(interfaces) 완료. 추가 작업 A1~A3(OrderRecord 이관·확정 흐름) 완료·병합, B1~B2(OrderRecord 애그리거트 편입) 완료(병합 전). 커밋 5(전체 check·결과 문서) 남음.
-커밋 4는 사용자 요청으로 ArchUnit·전체 테스트 없이 컴파일 + Checkstyle만 통과 확인했다(추후 커밋 5 전에 실행 필요). 커밋 5(결과 문서) 진행 예정.
-추가 작업 브랜치 `volume-3/refacto-order-record`에서는 커밋 A1(문서)·커밋 A2(OrderBill→OrderRecord 이관)·
-커밋 A3(확정 흐름을 결제 단계·주문 단계로 정리) 완료. fast-forward 병합은 아직이다.
+상태: 커밋 0~4(domain~interfaces) 완료. 추가 작업 A1~A3(OrderRecord 이관·확정 흐름) 완료·병합,
+B1~B2(OrderRecord를 Order 애그리거트에 편입) 완료·병합. 테스트 경량화([test-slimming.md](test-slimming.md))
+완료·병합. 커밋 5(결과 문서·구조 설명 갱신) 완료 — 결과는 [result.md](result.md) 참고.
+커밋 4는 당시 사용자 요청으로 ArchUnit·전체 테스트 없이 컴파일 + Checkstyle만 통과를 확인했는데,
+이 확인은 이후 테스트 경량화 작업 뒤의 전체 `check` 실행(BUILD SUCCESSFUL, 4분 33초, test 211건 + slowTest 17건,
+실패 0)으로 커버됐다.
 
 ## 배경
 

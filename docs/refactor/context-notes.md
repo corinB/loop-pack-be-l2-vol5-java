@@ -140,3 +140,29 @@
 - 지정된 검증 범위(architecture·domain.ordering·domain.pay·application.ordering·infrastructure.persistence/dao/query.ordering·
   interfaces.api.ordering) 112개 테스트(기존 111 − `OrderRecordRepositoryIntegrationTest` 삭제로 3개 감소 + `OrderRepositoryIntegrationTest`
   신규 2개 + `OrderTest`의 restore 불변식 신규 2개) 전부 통과했다. 오류 우선순위·롤백·동시성 결과 등 행위 기대값은 바꾸지 않았다.
+- 커밋 B2(`OrderEntityMapper` 흡수) 실행 중 확인한 구현 세부는 다음과 같다. `OrderRepositoryImpl.save`는 `orderJpaRepository.save(entity)`를
+  `saveAndFlush`로 바꿔, `assignRecord`로 갓 매단 자식 엔티티의 id·`@PrePersist`가 채우는 `createdAt`이 `mapper.toDomain` 호출
+  시점에 항상 채워져 있도록 보장했다(단어 하나만 바꾼 최소 변경). `OrderRecordJpaEntity`가 FK 주인인 `@OneToOne`을 갖고
+  `OrderJpaEntity`가 `mappedBy` 쪽을 가지므로, Hibernate가 `mappedBy` 쪽 `@OneToOne`을 프록시로 지연 로딩하지 못해 주문을
+  조회할 때마다 기록 조회 SELECT가 한 번 더 나간다(트레이드오프 11에서 감수하기로 한 비용). `Order.restore`는 CONFIRMED ⇔
+  기록 존재 불변식을 검사해 어기면 `IllegalArgumentException`(한국어 메시지)을 던진다.
+
+## 테스트 경량화 결정
+
+24. **다른 층에서 이미 검증하는 중복만 지운다.** R02 필수 시나리오(동시성 6건, 롤백 검증)는 모두 유지한다.
+25. **`@IntegrationTest`(MOCK)·`@E2ETest`(RANDOM_PORT) 공용 메타 어노테이션을 도입해 Spring 컨텍스트를 6개에서 2개로 줄인다.**
+    둘 다 같은 spy 집합(OrderRepository, ProductJpaRepository, JdbcLikeCountAggregationDao)을 타입 수준 `@MockitoSpyBean`으로
+    선언해 서로 다른 spy 조합이 만들던 컨텍스트 중복을 없앤다.
+26. **무거운 테스트는 지우지 않고 태그로 나눈다.** `slow`(동시성·잠금 테스트)와 `example`(스캐폴딩 테스트) 태그를 붙이고,
+    빠른 기본 실행 `test`는 두 태그를 제외, 새 `slowTest`는 두 태그만 실행, `check`는 둘 다 실행한다.
+27. **Redis는 테스트 컨테이너만 제거한다.** commerce-api가 Redis를 쓰지 않는데도 테스트마다 컨테이너가 떴기 때문이며,
+    운영 의존(Redis 헬스 체크 등)은 그대로 둔다.
+28. **로그 설정과 `-Xshare:off`는 바꾸지 않는다.**
+29. **DB 정리는 비어 있는 테이블을 TRUNCATE하지 않고, `@Transactional`로 롤백되는 클래스는 TRUNCATE 정리를 없앤다.**
+    트랜잭션 밖에서 커밋하는 잠금 테스트만 정리를 유지한다.
+30. **MySQL 테스트 컨테이너에 `withReuse(true)`를 추가한다.** 로컬의 `~/.testcontainers.properties`에
+    `testcontainers.reuse.enable=true`가 있을 때만 동작하고 CI에는 영향이 없다.
+31. **병렬로 실행한 Sonnet 에이전트들을 각각 git worktree로 분리했는데, git-ignored된
+    `apps/commerce-api/src/test/resources/docker-java.properties`가 worktree에는 없어 Testcontainers가
+    `BadRequestException (Status 400)`으로 Docker 연결에 실패했다.** 해당 파일을 각 worktree로 복사해 해결했다.
+32. **사용량 한도로 중간에 멈춘 스트림 B는, 재개한 세션이 남은 변경을 검토하고 테스트까지 확인한 뒤 커밋했다.**
