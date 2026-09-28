@@ -2,6 +2,8 @@
 
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
+> 후속 결정: 이 문서는 작성 당시의 패키지·클래스 이름을 기록한다. 이후 패키지 구조 리팩토링으로 경로가 `<layer>.<ctx>.<종류>` 구조로 바뀌었고([결정 기록](../../refactor/context-notes.md)), `OrderBill`은 ordering의 `OrderRecord`로 바뀌어 `Order` 애그리거트의 자식이 되었다([10번](trade_off/10-order-record-ownership.md)·[11번](trade_off/11-order-record-aggregate.md) 트레이드오프).
+
 ## 1. 구현 결과
 
 - `OrderConfirmationPolicy`가 주문 상태·상품별 총수량·삭제 여부·재고·잔액을 모두 검증한 다음 변경한다. 순수 도메인에서 업무 실패 후 메모리 상태도 보존한다.

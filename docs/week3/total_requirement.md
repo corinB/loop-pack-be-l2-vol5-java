@@ -66,7 +66,10 @@ R01은 삭제 후 기존 DRAFT 확정 거절을 확인하고, R02는 그 계약�
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 상태 |
 |---|---|---|---|---|---|
 | 1 | R01 | `r01-brand-bulk-delete/` | `volume-3/r01-brand-bulk-delete` | `volume-3/main` | 구현·검증 완료([결과](r01-brand-bulk-delete/result.md)), 병합 완료 |
-| 2 | R02 | `r02-order-consistency/` | `volume-3/r02-order-consistency` | `volume-3/main` | 구현·검증 완료([결과](r02-order-consistency/result.md)), check 247건 통과·검증 한계 기록, [PR #14](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/14) 제출·병합 대기 |
+| 2 | R02 | `r02-order-consistency/` | `volume-3/r02-order-consistency` | `volume-3/main` | 구현·검증 완료([결과](r02-order-consistency/result.md)), check 247건 통과·검증 한계 기록, [PR #14](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/14) 병합 완료 |
+| 3 | - | `../refactor/` | `volume-3/refacto` | `volume-3/main` | 패키지 구조 리팩토링·OrderRecord 전환·테스트 경량화 완료([결과](../refactor/result.md), [테스트 경량화 결과](../refactor/test-slimming.md)), PR 미제출 |
+
+R01·R02가 아닌 순서 3은 개별 요구사항이 아니라 두 요구사항 완료 후 진행한 공통 리팩토링·테스트 정리 작업이며, 별도 `r0n-` 폴더 대신 `../refactor/`에 문서를 둔다.
 
 R02는 최신 `origin/volume-3/main`에서 독립적으로 분기해 문서 준비·트레이드오프 문답과 결정까지 선행할 수 있다.
 R02 구현은 R01 리뷰·병합 후 최신 `volume-3/main`을 반영하고 관련 저장 경로와 삭제 후 확정 거절 계약을 확인한 뒤 시작한다.
