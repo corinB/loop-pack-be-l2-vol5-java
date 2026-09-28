@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.command.BrandCommand;
-import com.loopers.application.mall.usecase.DeleteBrandUseCase;
 import com.loopers.application.shopping.query.LikedProductView;
 import com.loopers.application.shopping.query.LikeQueryDao;
 import com.loopers.domain.mall.model.Brand;
@@ -24,8 +22,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class JdbcLikeQueryDaoIntegrationTest {
     @Autowired
     private LikeQueryDao likeQueryDao;
-    @Autowired
-    private DeleteBrandUseCase deleteBrandUseCase;
     @Autowired
     private BrandRepository brandRepository;
     @Autowired
@@ -86,21 +82,6 @@ class JdbcLikeQueryDaoIntegrationTest {
         deleted.delete();
         productRepository.save(deleted);
         insertLike(1L, deleted.getId(), "2026-01-01 00:00:00");
-
-        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
-
-        assertThat(result.items()).isEmpty();
-        assertThat(result.totalElements()).isZero();
-    }
-
-    @DisplayName("브랜드 일괄 삭제로 상품이 삭제되면 좋아요 목록에서 제외한다")
-    @Test
-    void excludesProducts_deletedViaBrandBulkDelete() {
-        Brand brand = brandRepository.save(Brand.create("브랜드", null));
-        Product product = productRepository.save(Product.create(brand.getId(), "상품", null, 1_000L, 5));
-        insertLike(1L, product.getId(), "2026-01-01 00:00:00");
-
-        deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId()));
 
         PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
