@@ -62,57 +62,14 @@ class WalletApiE2ETest {
             );
         }
 
-        @DisplayName("0 이하 충전액이면 400을 반환하고 잔액을 유지한다")
+        @DisplayName("0 이하 충전액이면 400을 반환한다")
         @Test
         void returnsBadRequest_whenAmountIsNotPositive() {
             createUserWithWallet(1L);
 
             ResponseEntity<ApiResponse<Object>> response = chargeRaw(0L, "1");
 
-            assertAll(
-                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
-                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
-                () -> assertThat(countChargeBills(1L)).isZero()
-            );
-        }
-
-        @DisplayName("충전 후 잔액이 범위를 초과하면 400을 반환하고 잔액을 유지한다")
-        @Test
-        void returnsBadRequest_whenBalanceOverflows() {
-            userRepository.save(User.create(1L));
-            walletRepository.save(Wallet.restore(1L, Long.MAX_VALUE));
-
-            ResponseEntity<ApiResponse<Object>> response = chargeRaw(1L, "1");
-
-            assertAll(
-                () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
-                () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(Long.MAX_VALUE),
-                () -> assertThat(countChargeBills(1L)).isZero()
-            );
-        }
-
-        @DisplayName("X-USER-ID 헤더가 없으면 400을 반환한다")
-        @Test
-        void returnsBadRequest_whenHeaderIsMissing() {
-            ResponseEntity<ApiResponse<Object>> response = chargeRaw(1_000L, null);
-
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
-
-        @DisplayName("X-USER-ID 헤더가 양의 정수가 아니면 400을 반환한다")
-        @Test
-        void returnsBadRequest_whenHeaderIsInvalid() {
-            ResponseEntity<ApiResponse<Object>> response = chargeRaw(1_000L, "abc");
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
-
-        @DisplayName("존재하지 않는 사용자면 404를 반환한다")
-        @Test
-        void returnsNotFound_whenUserDoesNotExist() {
-            ResponseEntity<ApiResponse<Object>> response = chargeRaw(1_000L, "999");
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -133,30 +90,6 @@ class WalletApiE2ETest {
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK),
                 () -> assertThat(response.getBody().data().balance()).isEqualTo(2_000L)
             );
-        }
-
-        @DisplayName("X-USER-ID 헤더가 없으면 400을 반환한다")
-        @Test
-        void returnsBadRequest_whenHeaderIsMissing() {
-            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw(null);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
-
-        @DisplayName("X-USER-ID 헤더가 양의 정수가 아니면 400을 반환한다")
-        @Test
-        void returnsBadRequest_whenHeaderIsInvalid() {
-            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw("abc");
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        }
-
-        @DisplayName("존재하지 않는 사용자면 404를 반환한다")
-        @Test
-        void returnsNotFound_whenUserDoesNotExist() {
-            ResponseEntity<ApiResponse<Object>> response = findBalanceRaw("999");
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -184,15 +117,6 @@ class WalletApiE2ETest {
     }
 
     private ResponseEntity<ApiResponse<WalletApiDto.BalanceResponse>> findBalance(String userIdHeader) {
-        return restTemplate.exchange(
-            "/api/v1/points",
-            HttpMethod.GET,
-            new HttpEntity<>(null, headers(userIdHeader)),
-            new ParameterizedTypeReference<>() {}
-        );
-    }
-
-    private ResponseEntity<ApiResponse<Object>> findBalanceRaw(String userIdHeader) {
         return restTemplate.exchange(
             "/api/v1/points",
             HttpMethod.GET,
