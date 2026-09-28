@@ -26,14 +26,14 @@
 - [x] `refactor: infrastructure 패키지를 종류·컨텍스트 구조로 재배치` 커밋
 
 ## 커밋 3 — application
-- [ ] main 파일을 `application.<ctx>.{usecase,service,command,result,query,dao}`로 `git mv`
-- [ ] 조회 모델 7개 이름을 `*View`로 변경 (파일명·선언·참조)
-- [ ] 테스트를 `application.<ctx>.service`로 `git mv`
-- [ ] package 선언과 infrastructure·interfaces·테스트의 import 갱신
-- [ ] 기존 feature 폴더(main·test) 제거 확인
-- [ ] 컴파일 + Checkstyle + ArchUnit 통과
-- [ ] 기존 패키지명·기존 타입명 `git grep` 잔여 0건
-- [ ] `refactor: application 패키지를 컨텍스트·종류 구조로 재배치하고 조회 모델명을 View로 통일` 커밋
+- [x] main 파일을 `application.<ctx>.{usecase,service,command,result,query,dao}`로 `git mv`
+- [x] 조회 모델 7개 이름을 `*View`로 변경 (파일명·선언·참조)
+- [x] 테스트를 `application.<ctx>.service`로 `git mv`
+- [x] package 선언과 infrastructure·interfaces·테스트의 import 갱신
+- [x] 기존 feature 폴더(main·test) 제거 확인
+- [x] 컴파일 + Checkstyle + ArchUnit 통과
+- [x] 기존 패키지명·기존 타입명 `git grep` 잔여 0건
+- [x] `refactor: application 패키지를 컨텍스트·종류 구조로 재배치하고 조회 모델명을 View로 통일` 커밋
 
 ## 커밋 4 — interfaces
 - [ ] main 파일을 `interfaces.api.<ctx>.{controller,dto}`로 `git mv`

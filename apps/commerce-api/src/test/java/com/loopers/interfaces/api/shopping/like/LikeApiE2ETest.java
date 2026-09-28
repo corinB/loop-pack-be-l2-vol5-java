@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.DeleteBrandUseCase;
-import com.loopers.application.shopping.like.LikeItem;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.application.shopping.query.LikedProductView;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
@@ -188,7 +188,7 @@ class LikeApiE2ETest {
             Product product = createProduct();
             register(product.getId(), String.valueOf(user.getId()));
 
-            ResponseEntity<ApiResponse<PageResult<LikeItem>>> response = restTemplate.exchange(
+            ResponseEntity<ApiResponse<PageResult<LikedProductView>>> response = restTemplate.exchange(
                 "/api/v1/users/" + user.getId() + "/likes",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,

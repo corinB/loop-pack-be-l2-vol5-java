@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.ordering.order;
 
-import com.loopers.application.ordering.order.OrderCommand;
+import com.loopers.application.ordering.command.OrderCommand;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.util.List;

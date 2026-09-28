@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.query.ordering;
 
-import com.loopers.application.ordering.order.OrderItemView;
+import com.loopers.application.ordering.query.OrderItemView;
 
 // 주문 품목 조회 결과 로우
 record OrderItemRow(long orderId, long productId, String productName, long unitPrice, int quantity, long amount) {

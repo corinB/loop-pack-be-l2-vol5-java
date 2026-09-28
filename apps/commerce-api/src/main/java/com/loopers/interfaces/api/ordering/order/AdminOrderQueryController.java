@@ -2,8 +2,8 @@ package com.loopers.interfaces.api.ordering.order;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.ordering.order.AdminOrderView;
-import com.loopers.application.ordering.order.OrderQueryDao;
+import com.loopers.application.ordering.query.AdminOrderView;
+import com.loopers.application.ordering.query.OrderQueryDao;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;

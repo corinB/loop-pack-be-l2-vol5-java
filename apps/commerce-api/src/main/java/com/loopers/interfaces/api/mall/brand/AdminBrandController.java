@@ -2,12 +2,12 @@ package com.loopers.interfaces.api.mall.brand;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.BrandDetail;
-import com.loopers.application.mall.brand.BrandQueryDao;
-import com.loopers.application.mall.brand.CreateBrandUseCase;
-import com.loopers.application.mall.brand.DeleteBrandUseCase;
-import com.loopers.application.mall.brand.UpdateBrandUseCase;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.query.BrandView;
+import com.loopers.application.mall.query.BrandQueryDao;
+import com.loopers.application.mall.usecase.CreateBrandUseCase;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.application.mall.usecase.UpdateBrandUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
@@ -37,7 +37,7 @@ public class AdminBrandController {
 
     // 브랜드 목록 조회
     @GetMapping
-    public ApiResponse<PageResult<BrandDetail>> findAll(
+    public ApiResponse<PageResult<BrandView>> findAll(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
@@ -46,7 +46,7 @@ public class AdminBrandController {
 
     // 브랜드 단건 조회
     @GetMapping("/{brandId}")
-    public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
+    public ApiResponse<BrandView> find(@PathVariable long brandId) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
         return ApiResponse.success(brandQueryDao.findById(brandId).orElseThrow(AdminBrandController::notFound));
     }

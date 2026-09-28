@@ -45,3 +45,13 @@
   된 `ProductJpaEntity`에 대한 기존 import가 중복이 되어 제거했다. QueryDSL이 생성하는 `Q*JpaEntity`도 원본
   엔티티와 같은 새 패키지에 생성되므로 `QueryDslProductQueryDao`의 `QBrandJpaEntity`·`QProductLikeCountJpaEntity`·
   `QProductJpaEntity` import를 새 경로로 맞췄다. 계획대로 접근제어 확대는 `UserJpaRepository` → `public` 한 건뿐이다.
+- 커밋 3(application) 실행 중 UseCase·Service·조회 View가 `usecase`/`service`/`command`/`result`/`query`/`dao`로
+  갈라지면서, 같은 feature 안에서만 서로 참조하던 타입 거의 전부에 명시적 import가 필요해졌다: 각 UseCase 인터페이스는
+  자신의 `Command`·`Result`를, `BrandService`·`ProductService`·`ConfirmOrderService`·`OrderService`·`WalletService`·
+  `LikeCountAggregationService`는 자신이 구현하는 UseCase 인터페이스와 `Command`·`Result`·(필요한 경우) `dao` 타입을,
+  `OrderView`·`OrderItemView`·`AdminProductView`는 자신이 감싸는 `Result` 타입을 새로 import했다. 테스트 쪽도 같은
+  이유로 `ConfirmOrderCommand`/`ConfirmOrderResult`/`ConfirmOrderWriter`/`ConfirmOrderLoad`,
+  `OrderCommand`/`OrderResult`, `WalletCommand`/`WalletResult`, `BrandCommand`, `LikeCountAggregationUseCase` 등을
+  새로 import했다(단, 테스트와 같은 패키지로 옮겨진 `ConfirmOrderService`/`OrderService`/`WalletService`는 같은
+  패키지라 import가 필요 없어 추가하지 않음). 조회 모델 7개 이름 변경은 단어 경계 치환으로 처리했고,
+  `findAdminProduct(s)`처럼 이름을 포함하는 메서드명은 그대로 유지됐다.

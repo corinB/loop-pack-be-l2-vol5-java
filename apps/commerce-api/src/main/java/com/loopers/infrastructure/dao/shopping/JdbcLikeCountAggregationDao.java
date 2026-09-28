@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.dao.shopping;
 
-import com.loopers.application.shopping.like.LikeCountAggregationDao;
+import com.loopers.application.shopping.dao.LikeCountAggregationDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;

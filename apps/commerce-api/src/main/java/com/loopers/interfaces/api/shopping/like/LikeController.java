@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.shopping.like;
 
-import com.loopers.application.shopping.like.LikeCommandDao;
+import com.loopers.application.shopping.dao.LikeCommandDao;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;

@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.query.pay;
 
-import com.loopers.application.pay.wallet.WalletQueryDao;
+import com.loopers.application.pay.query.WalletQueryDao;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;

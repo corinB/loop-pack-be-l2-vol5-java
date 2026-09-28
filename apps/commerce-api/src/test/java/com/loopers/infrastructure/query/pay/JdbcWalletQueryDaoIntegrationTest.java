@@ -2,7 +2,7 @@ package com.loopers.infrastructure.query.pay;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.application.pay.wallet.WalletQueryDao;
+import com.loopers.application.pay.query.WalletQueryDao;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;

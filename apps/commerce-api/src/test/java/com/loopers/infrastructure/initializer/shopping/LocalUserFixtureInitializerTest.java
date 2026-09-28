@@ -6,8 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.loopers.application.shopping.user.UserQueryDao;
-import com.loopers.application.shopping.user.UserQueryModel;
+import com.loopers.application.shopping.query.UserQueryDao;
+import com.loopers.application.shopping.query.UserView;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shopping.model.User;
@@ -32,7 +32,7 @@ class LocalUserFixtureInitializerTest {
             InMemoryUserRepository repository = new InMemoryUserRepository();
             InMemoryWalletRepository walletRepository = new InMemoryWalletRepository();
             UserQueryDao dao = id -> Optional.ofNullable(repository.users.get(id))
-                .map(user -> new UserQueryModel(user.getId()));
+                .map(user -> new UserView(user.getId()));
             LocalUserFixtureInitializer initializer = new LocalUserFixtureInitializer(repository, dao, walletRepository);
 
             // act
@@ -59,7 +59,7 @@ class LocalUserFixtureInitializerTest {
             Wallet existingWallet = Wallet.zero(1L);
             walletRepository.wallets.put(1L, existingWallet);
             UserQueryDao dao = mock(UserQueryDao.class);
-            given(dao.findById(1L)).willReturn(Optional.of(new UserQueryModel(1L)));
+            given(dao.findById(1L)).willReturn(Optional.of(new UserView(1L)));
             given(dao.findById(2L)).willReturn(Optional.empty());
             LocalUserFixtureInitializer initializer = new LocalUserFixtureInitializer(repository, dao, walletRepository);
 

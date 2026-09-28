@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.scheduler.shopping;
 
-import com.loopers.application.shopping.like.LikeCountAggregationUseCase;
+import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

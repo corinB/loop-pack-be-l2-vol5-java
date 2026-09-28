@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.query.mall;
 
-import com.loopers.application.mall.product.ProductLikeCountQueryDao;
+import com.loopers.application.mall.query.ProductLikeCountQueryDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;

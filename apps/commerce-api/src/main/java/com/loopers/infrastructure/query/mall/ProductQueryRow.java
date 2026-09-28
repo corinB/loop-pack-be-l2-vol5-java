@@ -1,27 +1,27 @@
 package com.loopers.infrastructure.query.mall;
 
-import com.loopers.application.mall.product.AdminProduct;
-import com.loopers.application.mall.product.BrandSummary;
-import com.loopers.application.mall.product.ProductDetail;
-import com.loopers.application.mall.product.ProductSummary;
+import com.loopers.application.mall.query.AdminProductView;
+import com.loopers.application.mall.query.BrandSummaryView;
+import com.loopers.application.mall.query.ProductDetailView;
+import com.loopers.application.mall.query.ProductSummaryView;
 import java.time.Instant;
 
 // QueryDSL 상품 조회 결과 행
 public record ProductQueryRow(long productId, String name, long price, long brandId, String brandName,
                               long likeCount, String description, int stock, Instant createdAt) {
-    ProductSummary toSummary() {
-        return new ProductSummary(productId, name, price, brand(), likeCount);
+    ProductSummaryView toSummary() {
+        return new ProductSummaryView(productId, name, price, brand(), likeCount);
     }
 
-    ProductDetail toDetail() {
-        return new ProductDetail(productId, name, price, brand(), likeCount, description, stock);
+    ProductDetailView toDetail() {
+        return new ProductDetailView(productId, name, price, brand(), likeCount, description, stock);
     }
 
-    AdminProduct toAdminProduct() {
-        return new AdminProduct(productId, name, price, brand(), likeCount, description, stock, createdAt);
+    AdminProductView toAdminProduct() {
+        return new AdminProductView(productId, name, price, brand(), likeCount, description, stock, createdAt);
     }
 
-    private BrandSummary brand() {
-        return new BrandSummary(brandId, brandName);
+    private BrandSummaryView brand() {
+        return new BrandSummaryView(brandId, brandName);
     }
 }

@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.DeleteBrandUseCase;
-import com.loopers.application.shopping.like.LikeItem;
-import com.loopers.application.shopping.like.LikeQueryDao;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.application.shopping.query.LikedProductView;
+import com.loopers.application.shopping.query.LikeQueryDao;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
@@ -50,16 +50,16 @@ class JdbcLikeQueryDaoIntegrationTest {
         insertLike(1L, newer.getId(), "2026-01-02 00:00:00");
         insertLikeCount(newer.getId(), 3L);
 
-        PageResult<LikeItem> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
+        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
         assertThat(result.totalElements()).isEqualTo(2);
-        assertThat(result.items()).extracting(LikeItem::productId).containsExactly(newer.getId(), older.getId());
-        LikeItem newerItem = result.items().get(0);
+        assertThat(result.items()).extracting(LikedProductView::productId).containsExactly(newer.getId(), older.getId());
+        LikedProductView newerItem = result.items().get(0);
         assertThat(newerItem.name()).isEqualTo("최근 상품");
         assertThat(newerItem.price()).isEqualTo(2_000L);
         assertThat(newerItem.brand().brandId()).isEqualTo(brand.getId());
         assertThat(newerItem.likeCount()).isEqualTo(3L);
-        LikeItem olderItem = result.items().get(1);
+        LikedProductView olderItem = result.items().get(1);
         assertThat(olderItem.likeCount()).isZero();
     }
 
@@ -72,9 +72,9 @@ class JdbcLikeQueryDaoIntegrationTest {
         insertLike(1L, first.getId(), "2026-01-01 00:00:00");
         insertLike(1L, second.getId(), "2026-01-01 00:00:00");
 
-        PageResult<LikeItem> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
+        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
-        assertThat(result.items()).extracting(LikeItem::productId)
+        assertThat(result.items()).extracting(LikedProductView::productId)
             .containsExactly(Math.max(first.getId(), second.getId()), Math.min(first.getId(), second.getId()));
     }
 
@@ -87,7 +87,7 @@ class JdbcLikeQueryDaoIntegrationTest {
         productRepository.save(deleted);
         insertLike(1L, deleted.getId(), "2026-01-01 00:00:00");
 
-        PageResult<LikeItem> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
+        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
         assertThat(result.items()).isEmpty();
         assertThat(result.totalElements()).isZero();
@@ -102,7 +102,7 @@ class JdbcLikeQueryDaoIntegrationTest {
 
         deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId()));
 
-        PageResult<LikeItem> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
+        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
         assertThat(result.items()).isEmpty();
         assertThat(result.totalElements()).isZero();
@@ -117,7 +117,7 @@ class JdbcLikeQueryDaoIntegrationTest {
             insertLike(1L, product.getId(), "2026-01-0" + (i + 1) + " 00:00:00");
         }
 
-        PageResult<LikeItem> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 2));
+        PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 2));
 
         assertThat(result.items()).hasSize(2);
         assertThat(result.totalElements()).isEqualTo(3);

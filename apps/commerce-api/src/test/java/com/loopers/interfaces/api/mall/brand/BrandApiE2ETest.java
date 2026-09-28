@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandDetail;
+import com.loopers.application.mall.query.BrandView;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.Map;
@@ -58,13 +58,13 @@ class BrandApiE2ETest {
                 new HttpEntity<>(new BrandApiDto.Request("변경", null)),
                 new ParameterizedTypeReference<>() {}
             );
-            ResponseEntity<ApiResponse<BrandDetail>> customerDetail = restTemplate.exchange(
+            ResponseEntity<ApiResponse<BrandView>> customerDetail = restTemplate.exchange(
                 "/api/v1/brands/" + brandId,
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
                 new ParameterizedTypeReference<>() {}
             );
-            ResponseEntity<ApiResponse<PageResult<BrandDetail>>> list = restTemplate.exchange(
+            ResponseEntity<ApiResponse<PageResult<BrandView>>> list = restTemplate.exchange(
                 "/api-admin/v1/brands",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,

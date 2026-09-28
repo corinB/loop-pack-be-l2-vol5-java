@@ -2,11 +2,11 @@ package com.loopers.interfaces.api.mall.product;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.product.ProductCriteria;
-import com.loopers.application.mall.product.ProductDetail;
-import com.loopers.application.mall.product.ProductQueryDao;
-import com.loopers.application.mall.product.ProductSort;
-import com.loopers.application.mall.product.ProductSummary;
+import com.loopers.application.mall.query.ProductCriteria;
+import com.loopers.application.mall.query.ProductDetailView;
+import com.loopers.application.mall.query.ProductQueryDao;
+import com.loopers.application.mall.query.ProductSort;
+import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
@@ -27,7 +27,7 @@ public class ProductQueryController {
 
     // 상품 목록 조회
     @GetMapping
-    public ApiResponse<PageResult<ProductSummary>> findAll(
+    public ApiResponse<PageResult<ProductSummaryView>> findAll(
         @RequestParam(required = false) Long brandId,
         @RequestParam(defaultValue = "latest") String sort,
         @RequestParam(defaultValue = "0") int page,
@@ -39,9 +39,9 @@ public class ProductQueryController {
 
     // 상품 단건 조회
     @GetMapping("/{productId}")
-    public ApiResponse<ProductDetail> find(@PathVariable long productId) {
+    public ApiResponse<ProductDetailView> find(@PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        ProductDetail product = productQueryDao.findProduct(productId)
+        ProductDetailView product = productQueryDao.findProduct(productId)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.PRODUCT_NOT_FOUND));
         return ApiResponse.success(product);
     }

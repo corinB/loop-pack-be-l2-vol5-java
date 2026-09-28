@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.pay.wallet;
 
-import com.loopers.application.pay.wallet.ChargeWalletUseCase;
+import com.loopers.application.pay.usecase.ChargeWalletUseCase;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.support.XUserId;
 import lombok.RequiredArgsConstructor;

@@ -3,7 +3,7 @@ package com.loopers.infrastructure.dao.shopping;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import com.loopers.application.shopping.like.LikeCommandDao;
+import com.loopers.application.shopping.dao.LikeCommandDao;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.utils.DatabaseCleanUp;

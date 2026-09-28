@@ -1,8 +1,8 @@
 package com.loopers.infrastructure.query.ordering;
 
-import com.loopers.application.ordering.order.AdminOrderView;
-import com.loopers.application.ordering.order.OrderItemView;
-import com.loopers.application.ordering.order.OrderView;
+import com.loopers.application.ordering.query.AdminOrderView;
+import com.loopers.application.ordering.query.OrderItemView;
+import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.OrderStatus;
 import com.loopers.domain.pay.model.OrderBillStatus;
 import java.time.Instant;

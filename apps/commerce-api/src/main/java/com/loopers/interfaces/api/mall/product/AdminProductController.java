@@ -2,15 +2,15 @@ package com.loopers.interfaces.api.mall.product;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.product.AdminProduct;
-import com.loopers.application.mall.product.CreateProductUseCase;
-import com.loopers.application.mall.product.DeleteProductUseCase;
-import com.loopers.application.mall.product.ProductCommand;
-import com.loopers.application.mall.product.ProductCriteria;
-import com.loopers.application.mall.product.ProductQueryDao;
-import com.loopers.application.mall.product.ProductSort;
-import com.loopers.application.mall.product.SetProductStockUseCase;
-import com.loopers.application.mall.product.UpdateProductUseCase;
+import com.loopers.application.mall.query.AdminProductView;
+import com.loopers.application.mall.usecase.CreateProductUseCase;
+import com.loopers.application.mall.usecase.DeleteProductUseCase;
+import com.loopers.application.mall.command.ProductCommand;
+import com.loopers.application.mall.query.ProductCriteria;
+import com.loopers.application.mall.query.ProductQueryDao;
+import com.loopers.application.mall.query.ProductSort;
+import com.loopers.application.mall.usecase.SetProductStockUseCase;
+import com.loopers.application.mall.usecase.UpdateProductUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
@@ -41,7 +41,7 @@ public class AdminProductController {
 
     // 상품 목록 조회
     @GetMapping
-    public ApiResponse<PageResult<AdminProduct>> findAll(
+    public ApiResponse<PageResult<AdminProductView>> findAll(
         @RequestParam(required = false) Long brandId,
         @RequestParam(defaultValue = "latest") String sort,
         @RequestParam(defaultValue = "0") int page,
@@ -53,23 +53,23 @@ public class AdminProductController {
 
     // 상품 단건 조회
     @GetMapping("/{productId}")
-    public ApiResponse<AdminProduct> find(@PathVariable long productId) {
+    public ApiResponse<AdminProductView> find(@PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
         return ApiResponse.success(productQueryDao.findAdminProduct(productId).orElseThrow(AdminProductController::notFound));
     }
 
     // 상품 생성
     @PostMapping
-    public ResponseEntity<ApiResponse<AdminProduct>> create(@RequestBody ProductApiDto.CreateRequest request) {
-        AdminProduct product = AdminProduct.from(createProductUseCase.execute(request.toCommand()));
+    public ResponseEntity<ApiResponse<AdminProductView>> create(@RequestBody ProductApiDto.CreateRequest request) {
+        AdminProductView product = AdminProductView.from(createProductUseCase.execute(request.toCommand()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(product));
     }
 
     // 상품 수정
     @PutMapping("/{productId}")
-    public ApiResponse<AdminProduct> update(@PathVariable long productId, @RequestBody ProductApiDto.UpdateRequest request) {
+    public ApiResponse<AdminProductView> update(@PathVariable long productId, @RequestBody ProductApiDto.UpdateRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        return ApiResponse.success(AdminProduct.from(updateProductUseCase.execute(request.toCommand(productId))));
+        return ApiResponse.success(AdminProductView.from(updateProductUseCase.execute(request.toCommand(productId))));
     }
 
     // 상품 삭제
@@ -82,9 +82,9 @@ public class AdminProductController {
 
     // 상품 재고 설정
     @PutMapping("/{productId}/stock")
-    public ApiResponse<AdminProduct> setStock(@PathVariable long productId, @RequestBody ProductApiDto.StockRequest request) {
+    public ApiResponse<AdminProductView> setStock(@PathVariable long productId, @RequestBody ProductApiDto.StockRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        return ApiResponse.success(AdminProduct.from(setProductStockUseCase.execute(request.toCommand(productId))));
+        return ApiResponse.success(AdminProductView.from(setProductStockUseCase.execute(request.toCommand(productId))));
     }
 
     private static ApplicationException notFound() {

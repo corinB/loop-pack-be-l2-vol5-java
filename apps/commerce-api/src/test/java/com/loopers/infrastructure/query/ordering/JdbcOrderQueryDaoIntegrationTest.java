@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.ordering.order.AdminOrderView;
-import com.loopers.application.ordering.order.OrderQueryDao;
-import com.loopers.application.ordering.order.OrderView;
+import com.loopers.application.ordering.query.AdminOrderView;
+import com.loopers.application.ordering.query.OrderQueryDao;
+import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
 import com.loopers.domain.ordering.repository.OrderRepository;

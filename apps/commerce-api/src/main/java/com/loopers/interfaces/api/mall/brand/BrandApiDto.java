@@ -1,7 +1,7 @@
 package com.loopers.interfaces.api.mall.brand;
 
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.BrandResult;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.result.BrandResult;
 
 // 브랜드 API 요청·응답 DTO 모음
 public final class BrandApiDto {

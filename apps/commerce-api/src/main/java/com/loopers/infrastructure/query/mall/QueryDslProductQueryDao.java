@@ -1,12 +1,12 @@
 package com.loopers.infrastructure.query.mall;
 
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.product.AdminProduct;
-import com.loopers.application.mall.product.ProductCriteria;
-import com.loopers.application.mall.product.ProductDetail;
-import com.loopers.application.mall.product.ProductQueryDao;
-import com.loopers.application.mall.product.ProductSort;
-import com.loopers.application.mall.product.ProductSummary;
+import com.loopers.application.mall.query.AdminProductView;
+import com.loopers.application.mall.query.ProductCriteria;
+import com.loopers.application.mall.query.ProductDetailView;
+import com.loopers.application.mall.query.ProductQueryDao;
+import com.loopers.application.mall.query.ProductSort;
+import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.infrastructure.persistence.mall.entity.QBrandJpaEntity;
 import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
 import com.loopers.infrastructure.persistence.shopping.entity.QProductLikeCountJpaEntity;
@@ -39,28 +39,28 @@ public class QueryDslProductQueryDao implements ProductQueryDao {
     // 상품 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
-    public PageResult<ProductSummary> findProducts(ProductCriteria criteria) {
+    public PageResult<ProductSummaryView> findProducts(ProductCriteria criteria) {
         return findPage(criteria, ProductQueryRow::toSummary);
     }
 
     // 관리자용 상품 목록 페이지 조회
     @Override
     @Transactional(readOnly = true)
-    public PageResult<AdminProduct> findAdminProducts(ProductCriteria criteria) {
+    public PageResult<AdminProductView> findAdminProducts(ProductCriteria criteria) {
         return findPage(criteria, ProductQueryRow::toAdminProduct);
     }
 
     // 상품 상세 조회
     @Override
     @Transactional(readOnly = true)
-    public Optional<ProductDetail> findProduct(long productId) {
+    public Optional<ProductDetailView> findProduct(long productId) {
         return findRow(productId).map(ProductQueryRow::toDetail);
     }
 
     // 관리자용 상품 상세 조회
     @Override
     @Transactional(readOnly = true)
-    public Optional<AdminProduct> findAdminProduct(long productId) {
+    public Optional<AdminProductView> findAdminProduct(long productId) {
         return findRow(productId).map(ProductQueryRow::toAdminProduct);
     }
 

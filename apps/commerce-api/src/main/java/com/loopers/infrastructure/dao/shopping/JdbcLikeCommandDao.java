@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.dao.shopping;
 
-import com.loopers.application.shopping.like.LikeCommandDao;
+import com.loopers.application.shopping.dao.LikeCommandDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;

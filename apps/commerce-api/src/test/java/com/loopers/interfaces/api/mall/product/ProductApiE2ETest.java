@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.DeleteBrandUseCase;
-import com.loopers.application.mall.product.AdminProduct;
-import com.loopers.application.mall.product.ProductDetail;
-import com.loopers.application.mall.product.ProductSummary;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.application.mall.query.AdminProductView;
+import com.loopers.application.mall.query.ProductDetailView;
+import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.mall.brand.BrandApiDto;
 import com.loopers.utils.DatabaseCleanUp;
@@ -50,38 +50,38 @@ class ProductApiE2ETest {
         @Test
         void managesAndQueriesProducts() {
             long brandId = createBrand();
-            AdminProduct expensive = createProduct(brandId, "비싼 상품", 2_000L, 5);
-            AdminProduct popular = createProduct(brandId, "인기 상품", 1_000L, 0);
+            AdminProductView expensive = createProduct(brandId, "비싼 상품", 2_000L, 5);
+            AdminProductView popular = createProduct(brandId, "인기 상품", 1_000L, 0);
             saveLikeCount(expensive.productId(), 1L);
             saveLikeCount(popular.productId(), 5L);
             alignCreatedAt(expensive.productId(), popular.productId());
 
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> sorted = getProducts("likes_desc");
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> priceSorted = getProducts("price_asc");
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> latest = getProducts("latest");
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> secondPage = restTemplate.exchange(
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> sorted = getProducts("likes_desc");
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> priceSorted = getProducts("price_asc");
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> latest = getProducts("latest");
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> secondPage = restTemplate.exchange(
                 "/api/v1/products?sort=likes_desc&page=1&size=1",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
                 new ParameterizedTypeReference<>() {}
             );
-            ResponseEntity<ApiResponse<ProductDetail>> detail = getProduct(expensive.productId());
-            ResponseEntity<ApiResponse<AdminProduct>> updated = updateProduct(expensive.productId());
-            ResponseEntity<ApiResponse<AdminProduct>> stocked = setStock(expensive.productId(), 0);
-            ResponseEntity<ApiResponse<AdminProduct>> adminDetail = restTemplate.exchange(
+            ResponseEntity<ApiResponse<ProductDetailView>> detail = getProduct(expensive.productId());
+            ResponseEntity<ApiResponse<AdminProductView>> updated = updateProduct(expensive.productId());
+            ResponseEntity<ApiResponse<AdminProductView>> stocked = setStock(expensive.productId(), 0);
+            ResponseEntity<ApiResponse<AdminProductView>> adminDetail = restTemplate.exchange(
                 "/api-admin/v1/products/" + expensive.productId(),
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
                 new ParameterizedTypeReference<>() {}
             );
-            ResponseEntity<ApiResponse<PageResult<AdminProduct>>> adminList = restTemplate.exchange(
+            ResponseEntity<ApiResponse<PageResult<AdminProductView>>> adminList = restTemplate.exchange(
                 "/api-admin/v1/products?brandId=" + brandId,
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
                 new ParameterizedTypeReference<>() {}
             );
             ResponseEntity<ApiResponse<Object>> deleted = deleteProduct(expensive.productId());
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> missingBrand = restTemplate.exchange(
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> missingBrand = restTemplate.exchange(
                 "/api/v1/products?brandId=999999",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
@@ -89,13 +89,13 @@ class ProductApiE2ETest {
             );
 
             assertAll(
-                () -> assertThat(sorted.getBody().data().items()).extracting(ProductSummary::productId)
+                () -> assertThat(sorted.getBody().data().items()).extracting(ProductSummaryView::productId)
                     .containsExactly(popular.productId(), expensive.productId()),
-                () -> assertThat(priceSorted.getBody().data().items()).extracting(ProductSummary::productId)
+                () -> assertThat(priceSorted.getBody().data().items()).extracting(ProductSummaryView::productId)
                     .containsExactly(popular.productId(), expensive.productId()),
-                () -> assertThat(latest.getBody().data().items()).extracting(ProductSummary::productId)
+                () -> assertThat(latest.getBody().data().items()).extracting(ProductSummaryView::productId)
                     .containsExactly(popular.productId(), expensive.productId()),
-                () -> assertThat(secondPage.getBody().data().items()).extracting(ProductSummary::productId)
+                () -> assertThat(secondPage.getBody().data().items()).extracting(ProductSummaryView::productId)
                     .containsExactly(expensive.productId()),
                 () -> assertThat(secondPage.getBody().data().totalElements()).isEqualTo(2L),
                 () -> assertThat(secondPage.getBody().data().totalPages()).isEqualTo(2),
@@ -118,12 +118,12 @@ class ProductApiE2ETest {
         @Test
         void excludesFromListAndDetail_afterBrandBulkDelete() {
             long brandId = createBrand();
-            AdminProduct product = createProduct(brandId, "상품", 1_000L, 5);
+            AdminProductView product = createProduct(brandId, "상품", 1_000L, 5);
 
             deleteBrandUseCase.execute(new BrandCommand.Delete(brandId));
 
-            ResponseEntity<ApiResponse<PageResult<ProductSummary>>> list = getProducts("latest");
-            ResponseEntity<ApiResponse<ProductDetail>> detail = getProduct(product.productId());
+            ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> list = getProducts("latest");
+            ResponseEntity<ApiResponse<ProductDetailView>> detail = getProduct(product.productId());
 
             assertAll(
                 () -> assertThat(list.getBody().data().items()).isEmpty(),
@@ -164,10 +164,10 @@ class ProductApiE2ETest {
         return response.getBody().data().brandId();
     }
 
-    private AdminProduct createProduct(long brandId, String name, long price, int stock) {
+    private AdminProductView createProduct(long brandId, String name, long price, int stock) {
         HttpHeaders headers = new HttpHeaders();
         headers.add("X-USER-ID", "not-used");
-        ResponseEntity<ApiResponse<AdminProduct>> response = restTemplate.exchange(
+        ResponseEntity<ApiResponse<AdminProductView>> response = restTemplate.exchange(
             "/api-admin/v1/products",
             HttpMethod.POST,
             new HttpEntity<>(new ProductApiDto.CreateRequest(brandId, name, null, price, stock), headers),
@@ -194,7 +194,7 @@ class ProductApiE2ETest {
             .update();
     }
 
-    private ResponseEntity<ApiResponse<PageResult<ProductSummary>>> getProducts(String sort) {
+    private ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> getProducts(String sort) {
         return restTemplate.exchange(
             "/api/v1/products?sort=" + sort,
             HttpMethod.GET,
@@ -203,7 +203,7 @@ class ProductApiE2ETest {
         );
     }
 
-    private ResponseEntity<ApiResponse<ProductDetail>> getProduct(long productId) {
+    private ResponseEntity<ApiResponse<ProductDetailView>> getProduct(long productId) {
         return restTemplate.exchange(
             "/api/v1/products/" + productId,
             HttpMethod.GET,
@@ -212,7 +212,7 @@ class ProductApiE2ETest {
         );
     }
 
-    private ResponseEntity<ApiResponse<AdminProduct>> updateProduct(long productId) {
+    private ResponseEntity<ApiResponse<AdminProductView>> updateProduct(long productId) {
         return restTemplate.exchange(
             "/api-admin/v1/products/" + productId,
             HttpMethod.PUT,
@@ -221,7 +221,7 @@ class ProductApiE2ETest {
         );
     }
 
-    private ResponseEntity<ApiResponse<AdminProduct>> setStock(long productId, int stock) {
+    private ResponseEntity<ApiResponse<AdminProductView>> setStock(long productId, int stock) {
         return restTemplate.exchange(
             "/api-admin/v1/products/" + productId + "/stock",
             HttpMethod.PUT,

@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.mall.product;
 
-import com.loopers.application.mall.product.ProductCommand;
+import com.loopers.application.mall.command.ProductCommand;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 

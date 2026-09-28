@@ -2,9 +2,9 @@ package com.loopers.interfaces.api.shopping.like;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
-import com.loopers.application.shopping.like.LikeItem;
-import com.loopers.application.shopping.like.LikeQueryDao;
-import com.loopers.application.shopping.user.UserQueryDao;
+import com.loopers.application.shopping.query.LikedProductView;
+import com.loopers.application.shopping.query.LikeQueryDao;
+import com.loopers.application.shopping.query.UserQueryDao;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
@@ -26,7 +26,7 @@ public class LikeQueryController {
 
     // 사용자 좋아요 목록 조회
     @GetMapping
-    public ApiResponse<PageResult<LikeItem>> findAll(
+    public ApiResponse<PageResult<LikedProductView>> findAll(
         @PathVariable long userId,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size

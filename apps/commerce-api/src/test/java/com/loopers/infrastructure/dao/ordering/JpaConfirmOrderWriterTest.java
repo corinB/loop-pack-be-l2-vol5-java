@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-import com.loopers.application.ordering.order.ConfirmOrderLoad;
+import com.loopers.application.ordering.dao.ConfirmOrderLoad;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.domain.ordering.model.Order;

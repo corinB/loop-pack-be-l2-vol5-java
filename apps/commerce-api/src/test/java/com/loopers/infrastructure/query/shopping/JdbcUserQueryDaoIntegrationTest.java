@@ -2,8 +2,8 @@ package com.loopers.infrastructure.query.shopping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.application.shopping.user.UserQueryDao;
-import com.loopers.application.shopping.user.UserQueryModel;
+import com.loopers.application.shopping.query.UserQueryDao;
+import com.loopers.application.shopping.query.UserView;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.fixtures.UserFixture;
 import jakarta.persistence.EntityManager;
@@ -43,8 +43,8 @@ class JdbcUserQueryDaoIntegrationTest {
             var second = userQueryDao.findById(2L);
 
             // assert
-            assertThat(first).contains(new UserQueryModel(1L));
-            assertThat(second).contains(new UserQueryModel(2L));
+            assertThat(first).contains(new UserView(1L));
+            assertThat(second).contains(new UserView(2L));
         }
 
         @DisplayName("없는 사용자는 빈 결과를 반환하고 기존 사용자 저장 상태를 유지한다")
@@ -60,7 +60,7 @@ class JdbcUserQueryDaoIntegrationTest {
 
             // assert
             assertThat(missing).isEmpty();
-            assertThat(userQueryDao.findById(1L)).contains(new UserQueryModel(1L));
+            assertThat(userQueryDao.findById(1L)).contains(new UserView(1L));
             assertThat(entityManager.createQuery("select count(u) from UserJpaEntity u", Long.class).getSingleResult())
                 .isEqualTo(1L);
         }

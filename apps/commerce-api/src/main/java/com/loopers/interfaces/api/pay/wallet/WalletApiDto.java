@@ -1,7 +1,7 @@
 package com.loopers.interfaces.api.pay.wallet;
 
-import com.loopers.application.pay.wallet.WalletCommand;
-import com.loopers.application.pay.wallet.WalletResult;
+import com.loopers.application.pay.command.WalletCommand;
+import com.loopers.application.pay.result.WalletResult;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 

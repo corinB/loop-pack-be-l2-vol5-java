@@ -1,7 +1,7 @@
 package com.loopers.interfaces.api.mall.brand;
 
-import com.loopers.application.mall.brand.BrandDetail;
-import com.loopers.application.mall.brand.BrandQueryDao;
+import com.loopers.application.mall.query.BrandView;
+import com.loopers.application.mall.query.BrandQueryDao;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
@@ -21,9 +21,9 @@ public class BrandQueryController {
 
     // 브랜드 단건 조회
     @GetMapping("/{brandId}")
-    public ApiResponse<BrandDetail> find(@PathVariable long brandId) {
+    public ApiResponse<BrandView> find(@PathVariable long brandId) {
         RequestInputValidator.requirePositiveId(brandId, "브랜드 ID");
-        BrandDetail detail = brandQueryDao.findById(brandId)
+        BrandView detail = brandQueryDao.findById(brandId)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.BRAND_NOT_FOUND));
         return ApiResponse.success(detail);
     }

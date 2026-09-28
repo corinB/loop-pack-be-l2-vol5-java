@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.dao.ordering;
 
-import com.loopers.application.ordering.order.ConfirmOrderLoad;
-import com.loopers.application.ordering.order.ConfirmOrderWriter;
+import com.loopers.application.ordering.dao.ConfirmOrderLoad;
+import com.loopers.application.ordering.dao.ConfirmOrderWriter;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.domain.mall.model.Product;

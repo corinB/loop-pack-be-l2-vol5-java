@@ -7,10 +7,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.reset;
 
 import com.loopers.application.common.PageResult;
-import com.loopers.application.mall.brand.BrandCommand;
-import com.loopers.application.mall.brand.DeleteBrandUseCase;
-import com.loopers.application.ordering.order.AdminOrderView;
-import com.loopers.application.ordering.order.OrderView;
+import com.loopers.application.mall.command.BrandCommand;
+import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.application.ordering.query.AdminOrderView;
+import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;

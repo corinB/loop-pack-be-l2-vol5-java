@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.query.shopping;
 
-import com.loopers.application.shopping.user.UserQueryDao;
-import com.loopers.application.shopping.user.UserQueryModel;
+import com.loopers.application.shopping.query.UserQueryDao;
+import com.loopers.application.shopping.query.UserView;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -17,10 +17,10 @@ public class JdbcUserQueryDao implements UserQueryDao {
     // ID로 사용자 조회
     @Override
     @Transactional(readOnly = true)
-    public Optional<UserQueryModel> findById(long userId) {
+    public Optional<UserView> findById(long userId) {
         return jdbcClient.sql("SELECT id FROM users WHERE id = :userId")
             .param("userId", userId)
-            .query((resultSet, rowNum) -> new UserQueryModel(resultSet.getLong("id")))
+            .query((resultSet, rowNum) -> new UserView(resultSet.getLong("id")))
             .optional();
     }
 }

@@ -2,7 +2,7 @@ package com.loopers.infrastructure.initializer.shopping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.application.shopping.user.UserQueryDao;
+import com.loopers.application.shopping.query.UserQueryDao;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;

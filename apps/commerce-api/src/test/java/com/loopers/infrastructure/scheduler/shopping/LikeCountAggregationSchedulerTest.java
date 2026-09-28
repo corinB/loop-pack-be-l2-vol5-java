@@ -4,7 +4,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.loopers.application.shopping.like.LikeCountAggregationUseCase;
+import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
