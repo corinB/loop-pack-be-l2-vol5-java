@@ -11,17 +11,30 @@
 
 통합 테스트는 실행 전 Docker가 떠 있어야 하며(`docker-compose -f ./docker/infra-compose.yml up`), `modules/jpa`의 `MySqlTestContainersConfig`를 통해 Testcontainers MySQL을 띄운다. 각 통합 테스트 클래스는 `@AfterEach`에서 `DatabaseCleanUp.truncateAllTables()`로 모든 테이블을 비운다.
 
+5개 통합 테스트 클래스는 모두 공용 메타 애노테이션 [`@IntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/support/test/IntegrationTest.java)(`@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean(OrderRepository, ProductJpaRepository, JdbcLikeCountAggregationDao)`)를 붙여 하나의 Spring 컨텍스트를 공유한다. 각 클래스는 필요한 스파이를 `@Autowired`로 주입받아 쓴다.
+
 실행 방법.
 
 ```bash
-# application 패키지 전체
+# 빠른 기본 실행(slow 태그 제외)
+./gradlew :apps:commerce-api:test
+
+# slow(ConfirmOrderConcurrencyIntegrationTest)·example 태그만 실행
+./gradlew :apps:commerce-api:slowTest
+
+# 전체(test + slowTest + Checkstyle + ArchUnit)
+./gradlew :apps:commerce-api:check
+
+# application 패키지만
 ./gradlew :apps:commerce-api:test --tests "com.loopers.application.*"
 
 # 클래스 단위
 ./gradlew :apps:commerce-api:test --tests "com.loopers.application.ordering.service.ConfirmOrderConcurrencyIntegrationTest"
 ```
 
-집계: 클래스 9개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 25개 — 단위 테스트 클래스 4개(15개 메서드), 통합 테스트 클래스 5개(10개 메서드).
+`ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`는 두 태스크를 모두 포함한다.
+
+집계: 클래스 9개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 26개 — 단위 테스트 클래스 4개(11개 메서드), 통합 테스트 클래스 5개(15개 메서드).
 
 ## 2. 컨텍스트별 테스트
 
@@ -29,17 +42,17 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [DeleteBrandRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/DeleteBrandRollbackIntegrationTest.java) | 통합 | MOCK + spy(ProductJpaRepository) | 필요 | 두 번째 상품 저장이 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상(과거 확정 주문 등)은 영향받지 않는다 | 1 | 별도 컨텍스트 분리, 측정 시간 미기록 |
+| [DeleteBrandRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/DeleteBrandRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 두 번째 상품 저장이 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상(과거 확정 주문 등)은 영향받지 않는다 | 1 | 측정 시간 미기록 |
 
 ### ordering
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [ConfirmOrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderServiceTest.java) | 단위 | none | 불필요 | 재고 차감·포인트 사용 후 기록/상태 저장, 없는 주문 거절, 이미 확정된 주문 거절, 삭제된 상품 거절, 재고 부족 거절, 포인트 부족 거절, 상품 가격 변동과 무관하게 저장된 합계로 결제 | 7 | 약 2.5초(대부분 Mockito 초기화) |
+| [ConfirmOrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderServiceTest.java) | 단위 | none | 불필요 | 상품 가격 변동과 무관하게 저장된 합계로 결제 | 1 | 미기록(단위 테스트 수준으로 빠름) |
 | [OrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/OrderServiceTest.java) | 단위 | none | 불필요 | 품목별 스냅샷·합계 저장, 동일 상품 수량 합산, 없는 상품 거절, 삭제된 상품 거절, 중복 수량 합산 오버플로 거절 | 5 | 약 0.19초 |
 | [ConfirmOrderIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 재고·잔액 차감 후 USE/PAID 기록을 남기고 CONFIRMED 저장, 두 번째 품목 재고 부족 시 전체 롤백, 포인트 부족 시 전체 롤백, 브랜드 일괄 삭제로 상품이 삭제되면 확정 거절, 이미 확정된 주문 재확정 거절 | 5 | 13.8초 |
-| [ConfirmOrderConcurrencyIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderConcurrencyIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 같은 주문 동시 재확정 시 1회만 성공, 재고 5에 8명이 동시 주문하면 재고만큼만 성공, 잔액이 허용하는 만큼만 동시 결제 성공, 충전과 결제 동시 실행 시 둘 다 성공, 관리자 재고 설정과 주문 확정 동시 실행 시 순차 실행과 동일한 결과, 두 상품을 반대 순서로 담은 두 주문이 동시에 확정돼도 데드락 없이 둘 다 성공 (R02 필수 6개 시나리오) | 6 | 23.1초 |
-| [ConfirmOrderSqlRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderSqlRollbackIntegrationTest.java) | 통합 | MOCK + spy(OrderRepository) | 필요 | 재고·잔액·기록까지 실제 SQL로 반영된 뒤 마지막 저장 단계에서 실패해도 확정 전체가 롤백된다 | 1 | 별도 컨텍스트 분리, 측정 시간 미기록 |
+| [ConfirmOrderConcurrencyIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderConcurrencyIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 같은 주문 동시 재확정 시 1회만 성공, 재고 5에 8명이 동시 주문하면 재고만큼만 성공, 잔액이 허용하는 만큼만 동시 결제 성공, 충전과 결제 동시 실행 시 둘 다 성공, 관리자 재고 설정과 주문 확정 동시 실행 시 순차 실행과 동일한 결과, 두 상품을 반대 순서로 담은 두 주문이 동시에 확정돼도 데드락 없이 둘 다 성공 (R02 필수 6개 시나리오) | 6 | `@Tag("slow")`, 23.1초 |
+| [ConfirmOrderSqlRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderSqlRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 재고·잔액·기록까지 실제 SQL로 반영된 뒤 마지막 저장 단계에서 실패해도 확정 전체가 롤백된다 | 1 | 측정 시간 미기록 |
 
 ### pay
 
@@ -51,7 +64,7 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK + spy(JdbcLikeCountAggregationDao) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백 | 2 | 별도 컨텍스트 분리, 측정 시간 미기록 |
+| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백 | 2 | 측정 시간 미기록 |
 
 ### support
 
@@ -67,31 +80,33 @@
 
 ## 3. 다른 레이어와 겹치는 검증
 
-`ConfirmOrderServiceTest`의 다음 6개 케이스는 다른 테스트와 중복되거나 실질적 검증력이 없다.
-
-| 케이스 | 문제 | 겹치는 테스트 |
-|---|---|---|
-| `rejectsExecute_whenStockIsInsufficient` | 도메인 정책 + 통합 테스트와 중복 | [OrderConfirmationPolicyTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/policy/OrderConfirmationPolicyTest.java), `ConfirmOrderIntegrationTest#rollsBackEverything_whenSecondItemStockIsInsufficient` |
-| `rejectsExecute_whenPointIsInsufficient` | 도메인 정책 + 통합 테스트와 중복 | `OrderConfirmationPolicyTest`, `ConfirmOrderIntegrationTest#rollsBackEverything_whenPointIsInsufficient` |
-| `rejectsExecute_whenOrderIsAlreadyConfirmed` | 도메인 정책 + 통합 테스트와 중복 | `OrderConfirmationPolicyTest`, `ConfirmOrderIntegrationTest#rejectsReconfirm_withoutAdditionalChangesOrRecords` |
-| `rejectsExecute_whenProductIsDeleted` | 도메인 정책 + 통합 테스트와 중복 | `OrderConfirmationPolicyTest`, `ConfirmOrderIntegrationTest#rejectsConfirm_whenProductDeletedViaBrandBulkDelete` |
-| `rejectsExecute_whenOrderDoesNotExist` | 목(mock)을 예외를 던지도록 스텁한 뒤 그대로 예외가 나오는지만 확인 — 실질적으로 아무것도 증명하지 못함 | 실제 커버리지는 [OrderApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/ordering/controller/OrderApiE2ETest.java)의 `Confirm#returnsNotFound_whenOrderDoesNotExist` |
-| `confirmsOrder_andSavesStockPointAndRecords` | 정책 해피패스 + 통합 테스트와 중복 | `OrderConfirmationPolicyTest`, `ConfirmOrderIntegrationTest#confirmsOrder_withStockPointAndRecords` |
-
-`usesStoredTotalAmount_ignoringCurrentProductPrice`는 다른 곳에서 검증되지 않는 고유 케이스이므로 유지한다.
+`ConfirmOrderServiceTest`에는 원래 다른 테스트와 중복되거나 실질적 검증력이 없는 6개 케이스(`rejectsExecute_whenStockIsInsufficient`, `rejectsExecute_whenPointIsInsufficient`, `rejectsExecute_whenOrderIsAlreadyConfirmed`, `rejectsExecute_whenProductIsDeleted`, `rejectsExecute_whenOrderDoesNotExist`, `confirmsOrder_andSavesStockPointAndRecords`)가 있었고, 각각 [OrderConfirmationPolicyTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/policy/OrderConfirmationPolicyTest.java)·`ConfirmOrderIntegrationTest`·[OrderApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/ordering/controller/OrderApiE2ETest.java)와 겹쳤다. 경량화로 모두 삭제했고, 다른 곳에서 검증되지 않는 고유 케이스인 `usesStoredTotalAmount_ignoringCurrentProductPrice`만 남았다.
 
 그 밖의 레이어 간 중복.
 
 - `ConfirmOrderIntegrationTest`의 상태 검증(재고·잔액·기록·주문 상태를 DB까지 확인)은 `OrderApiE2ETest`의 확정 관련 테스트가 HTTP 상태 코드·오류 코드 확인만으로 축소될 수 있게 하는 기준(reference) 역할을 한다.
-- `ConfirmOrderSqlRollbackIntegrationTest`는 `OrderApiE2ETest#returnsInternalServerError_whenSaveFailsAfterRealSql`의 상위 집합이며, 해당 E2E 테스트는 삭제 대상이다.
-- `WalletServiceTest#rejectsOverflow_withoutSavingAnything`, `#rejectsNonPositiveAmount_withoutSavingAnything`은 [WalletApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/pay/controller/WalletApiE2ETest.java)의 상태 검증 케이스를 이미 커버한다.
+- `ConfirmOrderSqlRollbackIntegrationTest`와 겹치던 `OrderApiE2ETest#returnsInternalServerError_whenSaveFailsAfterRealSql`은 삭제됐다.
+- `WalletServiceTest#rejectsOverflow_withoutSavingAnything`, `#rejectsNonPositiveAmount_withoutSavingAnything`과 겹치던 [WalletApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/pay/controller/WalletApiE2ETest.java)의 상태 검증 케이스도 삭제됐다.
 
 공백(gap): `Brand`/`Product`/`Like` 애플리케이션 서비스에는 서비스 단위 테스트가 없다. 해당 분기는 현재 E2E 테스트에서만 커버된다.
 
-## 4. 경량화로 바뀌는 것
+## 4. 경량화 결과
 
-- `ConfirmOrderServiceTest`의 위 6개 중복 케이스를 삭제한다(`usesStoredTotalAmount_ignoringCurrentProductPrice`만 유지).
-- 공용 메타 애노테이션 `@IntegrationTest`를 도입한다. `@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean`(`OrderRepository`, `ProductJpaRepository`, `JdbcLikeCountAggregationDao`)을 묶어, 현재 4개로 분리된 Spring 컨텍스트를 하나로 공유하게 한다.
-- `ConfirmOrderConcurrencyIntegrationTest`에 `slow` 태그를 붙여 `test` 태스크에서 제외하고 `slowTest` 태스크에서만 실행한다. 두 태스크 모두 `check`에는 포함된다.
-- `DatabaseCleanUp`이 빈 테이블은 건너뛰도록 한다.
-- MySQL Testcontainers를 재사용(reuse)하도록 한다.
+- `ConfirmOrderServiceTest`에서 위 6개 중복 케이스를 삭제했다. `usesStoredTotalAmount_ignoringCurrentProductPrice`만 남아 7개에서 1개로 줄었다.
+- 공용 메타 애노테이션 [`@IntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/support/test/IntegrationTest.java)를 도입했다. `@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean`(`OrderRepository`, `ProductJpaRepository`, `JdbcLikeCountAggregationDao`)을 묶어, 기존에 4개로 분리돼 있던 Spring 컨텍스트를 2개(공유 컨텍스트 + `DeleteBrandRollbackIntegrationTest` 등도 같은 컨텍스트 사용)로 줄였다. 각 통합 테스트 클래스는 필요한 스파이를 `@Autowired`로 받아 쓴다.
+- `ConfirmOrderConcurrencyIntegrationTest`에 `@Tag("slow")`를 붙여 `test` 태스크(`excludeTags("slow", "example")`)에서 제외하고, `slowTest` 태스크(`includeTags("slow", "example")`)에서만 실행하도록 했다. `check`는 `test`와 `slowTest`를 모두 실행한다.
+- `DatabaseCleanUp.truncateAllTables()`가 각 테이블을 `TRUNCATE`하기 전에 비어 있는지 확인하고, 비어 있으면 건너뛰도록 했다.
+- MySQL Testcontainers에 `withReuse(true)`를 적용했다(로컬에서 재사용을 활성화하려면 `~/.testcontainers.properties`에 `testcontainers.reuse.enable=true` 설정이 추가로 필요하다). 자세한 내용은 `docs/test/infrastructure.md`를 참고한다.
+- Redis 테스트 컨테이너를 제거했다.
+
+### 실행 방법
+
+```bash
+./gradlew :apps:commerce-api:test      # 빠른 기본(slow·example 태그 제외)
+./gradlew :apps:commerce-api:slowTest  # slow·example 태그만
+./gradlew :apps:commerce-api:check     # 전체(빌드 + test + slowTest + Checkstyle + ArchUnit)
+```
+
+### 결과
+
+경량화 후 `./gradlew :apps:commerce-api:check`는 BUILD SUCCESSFUL, 4분 33초로 끝났다. `test`는 211개, `slowTest`는 17개 테스트를 실행했고 실패는 0건이다. 경량화 이전 마지막 전체 `check`는 247개 테스트였다(`docs/week3/r02-order-consistency/result.md` 기준). 경량화 이전 전체 `check`의 실행 시간은 별도로 측정된 적이 없어 직접 비교할 수 없다.

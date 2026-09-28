@@ -66,7 +66,7 @@
 
 ## 3. 다른 레이어와 겹치는 검증
 
-도메인 정책 테스트(`OrderConfirmationPolicyTest`)와 애그리거트 테스트가 확정·삭제·잔액 규칙의 1차 근거이고, 상위 레이어의 아래 테스트들은 같은 규칙을 다시 검증하고 있어 삭제 대상이다.
+도메인 정책 테스트(`OrderConfirmationPolicyTest`)와 애그리거트 테스트가 확정·삭제·잔액 규칙의 1차 근거이고, 상위 레이어의 아래 테스트들은 같은 규칙을 다시 검증하고 있어 경량화 과정에서 삭제됐다.
 
 | 상위 레이어 테스트 | 대응하는 도메인 테스트 | 비고 |
 |---|---|---|
@@ -80,9 +80,19 @@
 
 위 표의 도메인 쪽 메서드 5개(`OrderConfirmationPolicyTest`)와 `BrandTest`/`WalletTest` 메서드는 모두 이 문서에서 실제 소스를 읽어 이름을 직접 확인했고, 표기된 이름과 실제 메서드명이 일치해 불일치 사례는 없었다. `ConfirmOrderServiceTest`/`BrandApiE2ETest`/`WalletApiE2ETest`는 application·interfaces 레이어 소관이라 이 문서 범위 밖이며, 이름 대조는 해당 레이어 문서(`application.md`, `interfaces.md`) 작성자가 재확인해야 한다.
 
-## 4. 경량화로 바뀌는 것
+## 4. 경량화 결과
 
-도메인 테스트 자체는 이번 경량화로 바뀌지 않는다. 오히려 이 테스트들이 상위 레이어의 중복 케이스(3절)를 안전하게 삭제할 수 있는 근거(base)가 된다. 마지막으로 측정한 실행 시간은 도메인 테스트 전체 합산 0.3초 미만이고, `DomainPurityArchitectureTest`만 약 3.6초가 걸리는데 이는 ArchUnit이 클래스를 임포트하는 비용이며 같은 비용을 쓰는 `LayerArchitectureTest`와 공유되어(한 번만 지불) 별도 절감 대상이 아니다.
+도메인 테스트 자체는 이번 경량화로 바뀌지 않았다. 오히려 이 테스트들이 상위 레이어의 중복 케이스(3절)를 안전하게 삭제할 수 있는 근거(base)가 됐다. 마지막으로 측정한 실행 시간은 도메인 테스트 전체 합산 0.3초 미만이고, `DomainPurityArchitectureTest`만 약 3.6초가 걸리는데 이는 ArchUnit이 클래스를 임포트하는 비용이며 같은 비용을 쓰는 `LayerArchitectureTest`와 공유되어(한 번만 지불) 별도 절감 대상이 아니다.
+
+경량화는 상위 레이어(application/interfaces)의 컨텍스트 통합(`@IntegrationTest`로 4개 → 2개), `slow` 태그 분리, `DatabaseCleanUp`의 빈 테이블 스킵, MySQL Testcontainers 재사용, Redis 테스트 컨테이너 제거 위주로 이뤄졌다. 자세한 내용은 `docs/test/application.md`, `docs/test/infrastructure.md`를 참고한다. 경량화 후 `./gradlew :apps:commerce-api:check`는 BUILD SUCCESSFUL, 4분 33초로 끝났다. `test`는 211개, `slowTest`는 17개 테스트를 실행했고 실패는 0건이다. 경량화 이전 마지막 전체 `check`는 247개 테스트였다(`docs/week3/r02-order-consistency/result.md` 기준). 경량화 이전 전체 `check`의 실행 시간은 별도로 측정된 적이 없어 직접 비교할 수 없다.
+
+### 실행 방법
+
+```bash
+./gradlew :apps:commerce-api:test      # 빠른 기본(slow·example 태그 제외)
+./gradlew :apps:commerce-api:slowTest  # slow·example 태그만
+./gradlew :apps:commerce-api:check     # 전체(빌드 + test + slowTest + Checkstyle + ArchUnit)
+```
 
 ## 5. 작성 규칙
 
