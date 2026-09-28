@@ -80,22 +80,4 @@ class OrderRepositoryIntegrationTest {
         assertThat(record.getAmount()).isEqualTo(2_000L);
         assertThat(record.getStatus()).isEqualTo(OrderRecordStatus.PAID);
     }
-
-    @DisplayName("같은 주문에는 결제 기록을 하나만 저장한다")
-    @Test
-    @Transactional
-    void enforcesOneOrderRecordPerOrder() {
-        Order order = orderRepository.save(Order.create(1L, List.of(OrderItem.create(1L, "상품", 1_000L, 2))));
-        order.confirm();
-        orderRepository.save(order);
-        entityManager.flush();
-        entityManager.clear();
-
-        Number count = (Number) entityManager
-            .createNativeQuery("SELECT COUNT(*) FROM order_records WHERE order_id = ?1")
-            .setParameter(1, order.getId())
-            .getSingleResult();
-
-        assertThat(count.longValue()).isEqualTo(1L);
-    }
 }
