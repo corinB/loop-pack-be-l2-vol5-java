@@ -2,6 +2,8 @@
 
 [← 전체 선택 현황](total_trade_off.md)
 
+> 후속 결정: 이 문서는 작성 당시의 패키지·클래스 이름을 기록한다. 이후 패키지 구조 리팩토링으로 경로가 `<layer>.<ctx>.<종류>` 구조로 바뀌었고([결정 기록](../../../refactor/context-notes.md)), `OrderBill`은 ordering의 `OrderRecord`로 바뀌어 `Order` 애그리거트의 자식이 되었다([10번](10-order-record-ownership.md)·[11번](11-order-record-aggregate.md) 트레이드오프).
+
 현재 상태: 채택안을 구현하고 최종 모듈 검사를 통과했다. 설계 당시 비교와 구분되는 실제 검증 범위·남은 한계는 [구현 결과](../result.md)를 따른다.
 
 ## 판단할 문제

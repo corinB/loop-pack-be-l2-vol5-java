@@ -2,6 +2,8 @@
 
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
+> 후속 결정: 이 문서는 작성 당시의 패키지·클래스 이름을 기록한다. 이후 패키지 구조 리팩토링으로 경로가 `<layer>.<ctx>.<종류>` 구조로 바뀌었다([결정 기록](../../refactor/context-notes.md)).
+
 ## 1. 구현 결과
 
 `plan.md`의 커밋 1~5를 그대로 따라 구현했다. 트레이드오프에서 합의한 설계와 실제 구현이 일치한다.

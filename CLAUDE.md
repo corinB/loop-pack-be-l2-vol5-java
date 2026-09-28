@@ -12,7 +12,8 @@ Key points worth restating because they're easy to violate accidentally:
 - Concurrency control is **no longer blanket-excluded**: R02 (`docs/week3/r02-order-consistency/`) explicitly brings locking/version-check/retry/concurrent-request testing into scope for order-confirm/stock/point consistency. Don't assume the old Week-2 "skip concurrency" rule still holds — check the specific requirement's `requirement.md` and `trade_off/` docs before adding or omitting it.
 - Each requirement (`R01`, `R02`, ...) gets its own folder under `docs/week3/<r-id>-<name>/` with a fixed doc set: `requirement.md` (scope/rules/scenarios), `trade_off/total_trade_off.md` + numbered topic files (design alternatives, decision, open questions), `plan.md` (commit-by-commit TDD plan, written before implementation), `result.md` (actual outcome/deviations, written after). Follow that structure for new requirements; don't skip straight to code without `requirement.md` + `trade_off/` + `plan.md` agreed first.
 - `volume-3/r01-brand-bulk-delete` (brand bulk-delete cascades to owned products in one transaction with full rollback on failure) is implemented, reviewed, and merged into `volume-3/main` — see [docs/week3/r01-brand-bulk-delete/result.md](docs/week3/r01-brand-bulk-delete/result.md).
-- Currently on `volume-3/r02-order-consistency`: order-confirm atomicity plus stock/point concurrency control, replacing `ConfirmOrderWriter`'s current JDBC-based save with JPA `PESSIMISTIC_WRITE` locked reads (order → the order's user's point → product ids ascending) across confirm, charge, product-stock-set, and brand bulk-delete. Trade-offs and [plan.md](docs/week3/r02-order-consistency/plan.md) (7 commits) are agreed; implementation not yet started as of this writing.
+- `volume-3/r02-order-consistency` (order-confirm atomicity plus stock/point concurrency control via JPA `PESSIMISTIC_WRITE` locked reads) is implemented and merged (PR #14).
+- Currently on `volume-3/refacto`: a package-structure refactor of `apps/commerce-api` from `layer.context.feature` to `layer.context.kind` (see [docs/refactor/plan.md](docs/refactor/plan.md) and [docs/refactor/result.md](docs/refactor/result.md)), which also carried `OrderBill` (pay) into ordering's `OrderRecord`, a 1:1 child entity of the `Order` aggregate (see R02 trade-offs [10](docs/week3/r02-order-consistency/trade_off/10-order-record-ownership.md) and [11](docs/week3/r02-order-consistency/trade_off/11-order-record-aggregate.md)), plus a test-slimming pass that cut redundant cross-layer coverage and tagged heavy tests (see [docs/refactor/test-slimming.md](docs/refactor/test-slimming.md)).
 - Never relax Checkstyle/ArchUnit rules or test expectations to make a check pass; fix the code instead.
 
 ## Commands
@@ -29,18 +30,23 @@ docker-compose -f ./docker/monitoring-compose.yml up
 # full check (build + tests + Checkstyle + ArchUnit) for commerce-api
 ./gradlew :apps:commerce-api:check
 
-# tests only
+# fast tests (excludes JUnit tags `slow` and `example`)
 ./gradlew :apps:commerce-api:test
 
+# heavy tests only (concurrency/locking tests tagged `slow`, plus `example` scaffolding tests)
+./gradlew :apps:commerce-api:slowTest
+
 # a single test class or method
-./gradlew :apps:commerce-api:test --tests "com.loopers.domain.shopping.user.UserTest"
-./gradlew :apps:commerce-api:test --tests "com.loopers.domain.shopping.user.UserTest.메서드이름"
+./gradlew :apps:commerce-api:test --tests "com.loopers.domain.shopping.model.UserTest"
+./gradlew :apps:commerce-api:test --tests "com.loopers.domain.shopping.model.UserTest.메서드이름"
 
 # Checkstyle only
 ./gradlew :apps:commerce-api:checkstyleMain :apps:commerce-api:checkstyleTest
 ```
 
-Integration tests use Testcontainers (MySQL) via `modules/jpa`'s `MySqlTestContainersConfig`, so Docker must be running for any test that touches the DB.
+`check` runs both `test` and `slowTest` (plus Checkstyle), so it is the only task that covers everything.
+
+Integration tests use Testcontainers (MySQL only — commerce-api tests do not start a Redis container) via `modules/jpa`'s `MySqlTestContainersConfig`, so Docker must be running for any test that touches the DB. To reuse the MySQL container across local runs, add `testcontainers.reuse.enable=true` to `~/.testcontainers.properties` (has no effect, and no CI impact, if absent). In a git worktree, Testcontainers needs `apps/commerce-api/src/test/resources/docker-java.properties` (git-ignored, `api.version=1.44`) copied in, or it fails to connect to Docker with `BadRequestException (Status 400)`.
 
 ## Architecture
 
@@ -53,15 +59,25 @@ Root `build.gradle.kts` applies shared config to all subprojects (Java 21 toolch
 
 ### `commerce-api` package structure
 
-Packages are organized **layer → bounded context → feature**, not feature-first. Contexts are `mall`, `shopping`, `ordering`, `pay` (business domains from the Loopers assignment), plus a legacy `example` context kept as reference-only scaffolding (do not extend it, do not delete it).
+Packages are organized **layer → bounded context → kind**, not feature-first (as of the `volume-3/refacto` package refactor — see [docs/refactor/plan.md](docs/refactor/plan.md)). Contexts are `mall`, `shopping`, `ordering` (order, with its `OrderRecord` 1:1 child), `pay` (wallet + point bill) (business domains from the Loopers assignment), plus a legacy `example` context kept as reference-only scaffolding (do not extend it, do not delete it).
 
 ```
 com.loopers
-├── interfaces.api.<context>.<feature>     # Request/Response DTOs, Controller, HTTP-facing validation
-├── application.<context>.<feature>        # UseCase interface + *Service impl, Command/Result, QueryDao + query records
-├── domain.<context>.<feature>             # pure domain model, Repository interface, domain exceptions
-└── infrastructure.<context>.<feature>     # JpaEntity, Spring Data JpaRepository, RepositoryImpl, EntityMapper, JdbcClient-based QueryDao impl
+├── interfaces.api.<context>.{controller,dto}          # Controller (HTTP-facing validation), Request/Response DTOs
+├── application.<context>.{usecase,service,command,result,query,dao}
+│                                                       # UseCase interface, *Service impl, Command, Result,
+│                                                       # QueryDao + query records, write-side dao contracts
+├── domain.<context>.{model,repository,policy}          # pure domain model, Repository interface, policy objects
+└── infrastructure.{persistence,query,dao,scheduler,initializer}.<context>[.<subkind>]
+                                                        # infrastructure is kind-first, then context:
+                                                        # persistence.<context>.{entity,jpa,repository} — JpaEntity + EntityMapper,
+                                                        # Spring Data JpaRepository, RepositoryImpl
+                                                        # query.<context> — JdbcClient/QueryDSL-based QueryDao impl
+                                                        # dao.<context> — write-side dao impl (e.g. ConfirmOrderWriter, LikeCommandDao)
+                                                        # scheduler.<context>, initializer.<context>
 ```
+
+Read models (application `query`) all end in `*View` (e.g. `BrandView`, `ProductSummaryView`, `UserView`); write results (application `result`) end in `*Result`. `dao` under `application.<context>` holds write-side contracts that `infrastructure.dao.<context>` implements (`ConfirmOrderWriter`, `LikeCommandDao`, `LikeCountAggregationDao`) — distinct from `query`'s read-only `QueryDao` contracts. EntityMappers live in the same `entity` package as their JpaEntity, since JpaEntity constructors are package-private and only the mapper calls them.
 
 Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPurityArchitectureTest`):
 - `domain` depends on nothing else in `com.loopers` (and, for the four real contexts + `domain.shared`, on no Spring/JPA/Servlet types, and not on `BaseEntity`).
@@ -71,12 +87,16 @@ Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPu
 
 Writes flow `interfaces → application UseCase → domain + infrastructure RepositoryImpl`. Reads bypass UseCase/Service entirely: a query-only Controller calls an `application` `QueryDao` contract directly. Simple or aggregate lookups are implemented with Spring JDBC `JdbcClient` (`JdbcBrandQueryDao`, `JdbcUserQueryDao`, `JdbcProductLikeCountQueryDao`); the one query that needs dynamic multi-condition filtering/sorting (product listing) is implemented with QueryDSL instead (`QueryDslProductQueryDao`, backed by `modules/jpa`'s `QueryDslConfig`). There is intentionally no query UseCase/Service layer.
 
-Domain classes split validation into two exception styles. Structural invariants checked at construction/`restore` time (non-null/positive id, non-null `createdAt`, positive foreign-key ids) throw a plain `IllegalArgumentException` with a Korean message — see `Brand.restore`, `Product`'s constructor (`brandId` check), `Like`'s constructor. Business-rule validation that carries a stable external error code (name/description length, price/stock rules, deleted-state guards) throws `DomainException` with a `DomainErrorCode` entry instead. `User` is the one outlier that uses `DomainException(INVALID_USER_ID)` for its structural id check — don't copy it as the template for new structural checks.
+Domain classes split validation into two exception styles. Structural invariants checked at construction/`restore` time (non-null/positive id, non-null `createdAt`, positive foreign-key ids) throw a plain `IllegalArgumentException` with a Korean message — see `Brand.restore`, `Product`'s constructor (`brandId` check). Business-rule validation that carries a stable external error code (name/description length, price/stock rules, deleted-state guards) throws `DomainException` with a `DomainErrorCode` entry instead. `User` is the one outlier that uses `DomainException(INVALID_USER_ID)` for its structural id check — don't copy it as the template for new structural checks.
 
-All four contexts now have full domain/infrastructure/application/interfaces implementations from Week 2: `mall` (brand, product), `shopping` (user, like — including the aggregation scheduler), `ordering` (order), `pay` (point, orderbill). Use `mall.brand`/`mall.product`/`shopping.user` as the cleanest reference for new work.
+All four contexts now have full domain/infrastructure/application/interfaces implementations from Week 2/3: `mall` (brand, product), `shopping` (user, like — including the aggregation scheduler), `ordering` (order, order record), `pay` (wallet, point bill). Use `domain.mall.model`/`application.mall.service`/`domain.shopping.model` as the cleanest reference for new work.
 
 Two exception hierarchies coexist by design (see `ApiControllerAdvice`): `DomainException`/`DomainErrorCode` for domain-layer business-rule failures, `ApplicationException`/`ApplicationErrorCode` for application-layer existence/cross-object checks, and the older `CoreException`/`ErrorType` from the `example` scaffolding — all three are mapped to the same `ApiResponse` contract via `ApiErrorMapper`.
 
 `@XUserId` (in `interfaces.api.support`) resolves the `X-USER-ID` header by calling `UserQueryDao.findById`: malformed header → 400 without calling the DAO, well-formed but unknown user → 404, otherwise the numeric user id is injected into the controller method. Write-side Services do not re-check user existence — callers are expected to supply a valid user id already resolved upstream.
 
 Checkstyle config is at [config/checkstyle/checkstyle.xml](config/checkstyle/checkstyle.xml), applied only to `commerce-api` (star imports and unused imports banned, zero warnings tolerated). `.editorconfig` caps line length at 130 outside `*Test.java` files, which are exempt.
+
+### Testing
+
+Spring-context tests should use the shared meta-annotations in `com.loopers.support.test`: `@IntegrationTest` (`MOCK` web environment) and `@E2ETest` (`RANDOM_PORT`). Both declare the same type-level `@MockitoSpyBean` set (`OrderRepository`, `ProductJpaRepository`, `JdbcLikeCountAggregationDao`), so all tests using them share just two Spring contexts instead of spinning up a new one per class-level spy combination — use them for any new Spring test rather than declaring `@SpringBootTest`/`@MockitoSpyBean` directly. Layer-specific testing conventions are documented per layer in `docs/test/{domain,application,infrastructure,interfaces}.md`.

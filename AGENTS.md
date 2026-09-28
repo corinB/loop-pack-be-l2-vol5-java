@@ -29,8 +29,13 @@ PR 01은 계획 정리·공통 기반·사용자 입력을 함께 다룬다. PR 
 - PR 05에서 Pay 소유의 OrderBill 저장·조회 구조를 먼저 준비하고 실제 결제 기록 생성은 PR 06에서 연결한다.
 - 선행 저장 구조는 fixture로 검증하며 Context 소유권을 유지한다. 준비용 공개 API·임시 상수 응답을 추가하지 않는다.
 
-- 패키지는 `interfaces`, `application`, `domain`, `infrastructure` 아래 Context → 기능 순서로 나눈다.
-- Context 이름은 `mall`, `shopping`, `ordering`, `pay`다. 예: `domain.mall.product`.
+- (2주차 당시 규칙, 역사적 기록) 패키지는 `interfaces`, `application`, `domain`, `infrastructure` 아래 Context → 기능 순서로 나눴다.
+  Context 이름은 `mall`, `shopping`, `ordering`, `pay`였다. 예: `domain.mall.product`.
+- 이후 `volume-3/refacto`에서 패키지 구조가 Context → 종류(kind) 순서로 바뀌었다. domain·application·interfaces는
+  `<layer>.<context>.<종류>` 순서를 따른다. 예: `domain.mall.model`, `application.mall.query`,
+  `interfaces.api.mall.controller`. infrastructure만 종류가 먼저다: `infrastructure.<종류>.<context>` 순서를 따른다.
+  예: `infrastructure.persistence.mall.entity`. 현재 구조와 결정 배경은 [CLAUDE.md](CLAUDE.md)와
+  [docs/refactor/](docs/refactor/)(`plan.md`, `context-notes.md`, `result.md`)를 참고한다.
 - `interfaces`는 HTTP 입력과 응답 변환을 담당하며 `infrastructure`에 직접 의존하지 않는다.
 - `application`은 유스케이스 순서와 트랜잭션을 조율하며 `interfaces`와 `infrastructure` 구현에 의존하지 않는다.
 - 신규 `domain`은 순수 Java로 상태·업무 규칙·repository 계약을 소유한다. Spring·JPA·HTTP와 다른 계층에 의존하지 않는다.
