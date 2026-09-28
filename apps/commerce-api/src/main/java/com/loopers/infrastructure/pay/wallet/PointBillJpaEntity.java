@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.pay.wallet;
 
-import com.loopers.domain.pay.wallet.PointBillType;
+import com.loopers.domain.pay.model.PointBillType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

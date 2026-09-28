@@ -3,8 +3,8 @@ package com.loopers.infrastructure.pay.orderbill;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.loopers.domain.pay.orderbill.OrderBill;
-import com.loopers.domain.pay.orderbill.OrderBillRepository;
+import com.loopers.domain.pay.model.OrderBill;
+import com.loopers.domain.pay.repository.OrderBillRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;

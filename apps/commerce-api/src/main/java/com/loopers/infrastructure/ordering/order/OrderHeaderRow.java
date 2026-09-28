@@ -3,8 +3,8 @@ package com.loopers.infrastructure.ordering.order;
 import com.loopers.application.ordering.order.AdminOrderView;
 import com.loopers.application.ordering.order.OrderItemView;
 import com.loopers.application.ordering.order.OrderView;
-import com.loopers.domain.ordering.order.OrderStatus;
-import com.loopers.domain.pay.orderbill.OrderBillStatus;
+import com.loopers.domain.ordering.model.OrderStatus;
+import com.loopers.domain.pay.model.OrderBillStatus;
 import java.time.Instant;
 import java.util.List;
 

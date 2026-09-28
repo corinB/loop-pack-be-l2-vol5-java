@@ -2,10 +2,10 @@ package com.loopers.infrastructure.mall.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.domain.mall.brand.Brand;
-import com.loopers.domain.mall.brand.BrandRepository;
-import com.loopers.domain.mall.product.Product;
-import com.loopers.domain.mall.product.ProductRepository;
+import com.loopers.domain.mall.model.Brand;
+import com.loopers.domain.mall.model.Product;
+import com.loopers.domain.mall.repository.BrandRepository;
+import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.support.concurrency.ConcurrentRequests;
 import com.loopers.support.concurrency.ConcurrentRequests.Outcome;
 import com.loopers.utils.DatabaseCleanUp;

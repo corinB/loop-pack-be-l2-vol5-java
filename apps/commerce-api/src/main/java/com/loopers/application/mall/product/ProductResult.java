@@ -1,6 +1,6 @@
 package com.loopers.application.mall.product;
 
-import com.loopers.domain.mall.product.Product;
+import com.loopers.domain.mall.model.Product;
 import java.time.Instant;
 
 // 상품 생성·수정 결과

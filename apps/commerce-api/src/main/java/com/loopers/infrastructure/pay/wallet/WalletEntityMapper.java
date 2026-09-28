@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.pay.wallet;
 
-import com.loopers.domain.pay.wallet.Wallet;
+import com.loopers.domain.pay.model.Wallet;
 import org.springframework.stereotype.Component;
 
 @Component

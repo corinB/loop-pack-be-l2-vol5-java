@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/refacto` · 기준 브랜치: `volume-3/main` · 대상: `apps/commerce-api` (main + test)
 
-상태: 계획 합의 완료, 구현 전.
+상태: 커밋 1(domain) 완료. 커밋 2(infrastructure)부터 진행 예정.
 
 ## 배경
 

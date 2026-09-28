@@ -3,8 +3,8 @@ package com.loopers.infrastructure.pay.wallet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.pay.wallet.WalletQueryDao;
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;

@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.pay.orderbill;
 
-import com.loopers.domain.pay.orderbill.OrderBillStatus;
+import com.loopers.domain.pay.model.OrderBillStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

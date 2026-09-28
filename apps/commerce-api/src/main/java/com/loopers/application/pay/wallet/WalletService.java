@@ -1,9 +1,9 @@
 package com.loopers.application.pay.wallet;
 
-import com.loopers.domain.pay.wallet.PointBill;
-import com.loopers.domain.pay.wallet.PointBillRepository;
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
+import com.loopers.domain.pay.model.PointBill;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.PointBillRepository;
+import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

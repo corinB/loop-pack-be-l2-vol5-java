@@ -3,11 +3,11 @@ package com.loopers.interfaces.api.pay.wallet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;

@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.pay.wallet;
 
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.WalletRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

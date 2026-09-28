@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.pay.orderbill;
 
-import com.loopers.domain.pay.orderbill.OrderBill;
-import com.loopers.domain.pay.orderbill.OrderBillRepository;
+import com.loopers.domain.pay.model.OrderBill;
+import com.loopers.domain.pay.repository.OrderBillRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

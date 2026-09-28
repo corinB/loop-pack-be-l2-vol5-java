@@ -2,9 +2,9 @@ package com.loopers.infrastructure.pay.wallet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.domain.pay.wallet.PointBill;
-import com.loopers.domain.pay.wallet.PointBillRepository;
-import com.loopers.domain.pay.wallet.PointBillType;
+import com.loopers.domain.pay.model.PointBill;
+import com.loopers.domain.pay.model.PointBillType;
+import com.loopers.domain.pay.repository.PointBillRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;

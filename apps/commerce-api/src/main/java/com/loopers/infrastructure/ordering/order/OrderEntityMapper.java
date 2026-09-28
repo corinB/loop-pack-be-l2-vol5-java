@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.ordering.order;
 
-import com.loopers.domain.ordering.order.Order;
-import com.loopers.domain.ordering.order.OrderItem;
+import com.loopers.domain.ordering.model.Order;
+import com.loopers.domain.ordering.model.OrderItem;
 import java.util.List;
 import org.springframework.stereotype.Component;
 

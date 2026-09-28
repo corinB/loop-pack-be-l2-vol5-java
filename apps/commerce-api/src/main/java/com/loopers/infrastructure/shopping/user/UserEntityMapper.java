@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.shopping.user;
 
-import com.loopers.domain.shopping.user.User;
+import com.loopers.domain.shopping.model.User;
 import org.springframework.stereotype.Component;
 
 @Component

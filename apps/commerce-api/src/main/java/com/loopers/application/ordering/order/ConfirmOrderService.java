@@ -1,10 +1,10 @@
 package com.loopers.application.ordering.order;
 
-import com.loopers.domain.ordering.order.Order;
-import com.loopers.domain.ordering.order.OrderConfirmation;
-import com.loopers.domain.ordering.order.OrderConfirmationPolicy;
-import com.loopers.domain.pay.orderbill.OrderBill;
-import com.loopers.domain.pay.orderbill.OrderBillStatus;
+import com.loopers.domain.ordering.model.Order;
+import com.loopers.domain.ordering.model.OrderConfirmation;
+import com.loopers.domain.ordering.policy.OrderConfirmationPolicy;
+import com.loopers.domain.pay.model.OrderBill;
+import com.loopers.domain.pay.model.OrderBillStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

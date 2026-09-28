@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.shopping.user.UserQueryDao;
 import com.loopers.application.shopping.user.UserQueryModel;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.fixtures.UserFixture;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;

@@ -10,10 +10,10 @@ import static org.mockito.Mockito.verify;
 
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
-import com.loopers.domain.mall.product.Product;
-import com.loopers.domain.mall.product.ProductRepository;
-import com.loopers.domain.ordering.order.Order;
-import com.loopers.domain.ordering.order.OrderRepository;
+import com.loopers.domain.mall.model.Product;
+import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.domain.ordering.model.Order;
+import com.loopers.domain.ordering.repository.OrderRepository;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;

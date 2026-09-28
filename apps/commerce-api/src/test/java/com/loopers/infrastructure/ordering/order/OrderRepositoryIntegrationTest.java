@@ -2,10 +2,10 @@ package com.loopers.infrastructure.ordering.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.domain.ordering.order.Order;
-import com.loopers.domain.ordering.order.OrderItem;
-import com.loopers.domain.ordering.order.OrderRepository;
-import com.loopers.domain.ordering.order.OrderStatus;
+import com.loopers.domain.ordering.model.Order;
+import com.loopers.domain.ordering.model.OrderItem;
+import com.loopers.domain.ordering.model.OrderStatus;
+import com.loopers.domain.ordering.repository.OrderRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import java.util.List;

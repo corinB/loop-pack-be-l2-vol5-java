@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.shopping.user;
 
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

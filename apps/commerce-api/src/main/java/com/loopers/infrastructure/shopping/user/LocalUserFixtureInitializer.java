@@ -1,10 +1,10 @@
 package com.loopers.infrastructure.shopping.user;
 
 import com.loopers.application.shopping.user.UserQueryDao;
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.WalletRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

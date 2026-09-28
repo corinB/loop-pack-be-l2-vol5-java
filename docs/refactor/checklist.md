@@ -7,13 +7,13 @@
 - [x] `docs: 패키지 구조 리팩토링 계획과 결정 사항 정리` 커밋
 
 ## 커밋 1 — domain
-- [ ] main 파일을 `domain.<ctx>.{model,repository,policy}`로 `git mv`
-- [ ] 테스트를 대상 클래스와 같은 패키지로 `git mv`
-- [ ] package 선언과 모든 참조 import 갱신 (application·infrastructure·interfaces·테스트 포함)
-- [ ] 기존 feature 폴더(main·test) 제거 확인
-- [ ] 컴파일 + Checkstyle + ArchUnit 통과
-- [ ] 기존 패키지명 `git grep` 잔여 0건
-- [ ] `refactor: domain 패키지를 컨텍스트·종류 구조로 재배치` 커밋
+- [x] main 파일을 `domain.<ctx>.{model,repository,policy}`로 `git mv`
+- [x] 테스트를 대상 클래스와 같은 패키지로 `git mv`
+- [x] package 선언과 모든 참조 import 갱신 (application·infrastructure·interfaces·테스트 포함)
+- [x] 기존 feature 폴더(main·test) 제거 확인
+- [x] 컴파일 + Checkstyle + ArchUnit 통과
+- [x] 기존 패키지명 `git grep` 잔여 0건
+- [x] `refactor: domain 패키지를 컨텍스트·종류 구조로 재배치` 커밋
 
 ## 커밋 2 — infrastructure
 - [ ] main 파일을 `infrastructure.{persistence,query,dao,scheduler,initializer}.<ctx>`로 `git mv`

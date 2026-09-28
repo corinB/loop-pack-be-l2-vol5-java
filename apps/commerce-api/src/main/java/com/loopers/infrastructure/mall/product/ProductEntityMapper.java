@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.mall.product;
 
-import com.loopers.domain.mall.product.Product;
+import com.loopers.domain.mall.model.Product;
 import org.springframework.stereotype.Component;
 
 @Component

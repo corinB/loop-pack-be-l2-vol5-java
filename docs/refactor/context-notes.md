@@ -33,4 +33,8 @@
 
 ## 작업 중 기록
 
-(레이어 작업 중 생긴 결정·예외를 여기에 추가한다.)
+- 커밋 1(domain) 실행 중 `OrderConfirmationPolicy`가 `ordering.policy`로 가면서, 같은 패키지에 있던
+  `Order`·`OrderItem`·`OrderStatus`·`OrderConfirmation`(모두 `ordering.model`로 이동)에 대한 명시적 import 4개를
+  추가로 붙여야 했다. `Brand`는 `Product`와 같은 패키지(`mall.model`)로 함께 이동해 기존 `import Product`가
+  중복(redundant) import가 되어 제거했다. `OrderConfirmation`은 `Order`와 같은 패키지로 갔지만 `Product`·`Wallet`·
+  `PointBill`은 다른 패키지로 갈라져 그 세 개만 import를 갱신했다.

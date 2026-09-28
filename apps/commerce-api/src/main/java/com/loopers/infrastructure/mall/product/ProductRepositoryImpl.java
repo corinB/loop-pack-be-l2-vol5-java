@@ -1,7 +1,7 @@
 package com.loopers.infrastructure.mall.product;
 
-import com.loopers.domain.mall.product.Product;
-import com.loopers.domain.mall.product.ProductRepository;
+import com.loopers.domain.mall.model.Product;
+import com.loopers.domain.mall.repository.ProductRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

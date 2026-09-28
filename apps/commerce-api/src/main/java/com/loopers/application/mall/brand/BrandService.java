@@ -2,8 +2,8 @@ package com.loopers.application.mall.brand;
 
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
-import com.loopers.domain.mall.brand.Brand;
-import com.loopers.domain.mall.brand.BrandRepository;
+import com.loopers.domain.mall.model.Brand;
+import com.loopers.domain.mall.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

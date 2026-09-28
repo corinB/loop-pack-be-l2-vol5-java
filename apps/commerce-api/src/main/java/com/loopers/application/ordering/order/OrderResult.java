@@ -1,7 +1,7 @@
 package com.loopers.application.ordering.order;
 
-import com.loopers.domain.ordering.order.Order;
-import com.loopers.domain.ordering.order.OrderStatus;
+import com.loopers.domain.ordering.model.Order;
+import com.loopers.domain.ordering.model.OrderStatus;
 import java.time.Instant;
 import java.util.List;
 

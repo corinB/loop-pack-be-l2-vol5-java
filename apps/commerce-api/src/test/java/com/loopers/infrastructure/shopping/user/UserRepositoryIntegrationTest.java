@@ -2,8 +2,8 @@ package com.loopers.infrastructure.shopping.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.fixtures.UserFixture;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;

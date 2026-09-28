@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.loopers.application.shopping.like.LikeCommandDao;
-import com.loopers.domain.mall.product.Product;
-import com.loopers.domain.mall.product.ProductRepository;
+import com.loopers.domain.mall.model.Product;
+import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

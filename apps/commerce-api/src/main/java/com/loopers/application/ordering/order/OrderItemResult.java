@@ -1,6 +1,6 @@
 package com.loopers.application.ordering.order;
 
-import com.loopers.domain.ordering.order.OrderItem;
+import com.loopers.domain.ordering.model.OrderItem;
 
 // 주문 품목 결과
 public record OrderItemResult(long productId, String productName, long unitPrice, int quantity, long amount) {

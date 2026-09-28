@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.pay.orderbill;
 
-import com.loopers.domain.pay.orderbill.OrderBill;
+import com.loopers.domain.pay.model.OrderBill;
 import org.springframework.stereotype.Component;
 
 @Component

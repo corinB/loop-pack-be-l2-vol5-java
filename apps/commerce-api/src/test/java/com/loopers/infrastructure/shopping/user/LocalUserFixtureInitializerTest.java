@@ -8,10 +8,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.loopers.application.shopping.user.UserQueryDao;
 import com.loopers.application.shopping.user.UserQueryModel;
-import com.loopers.domain.pay.wallet.Wallet;
-import com.loopers.domain.pay.wallet.WalletRepository;
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.pay.model.Wallet;
+import com.loopers.domain.pay.repository.WalletRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

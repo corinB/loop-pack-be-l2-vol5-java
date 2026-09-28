@@ -3,9 +3,9 @@ package com.loopers.infrastructure.shopping.user;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.shopping.user.UserQueryDao;
-import com.loopers.domain.pay.wallet.WalletRepository;
-import com.loopers.domain.shopping.user.User;
-import com.loopers.domain.shopping.user.UserRepository;
+import com.loopers.domain.pay.repository.WalletRepository;
+import com.loopers.domain.shopping.model.User;
+import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;

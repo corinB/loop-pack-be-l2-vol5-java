@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.ordering.order;
 
-import com.loopers.domain.ordering.order.OrderStatus;
+import com.loopers.domain.ordering.model.OrderStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

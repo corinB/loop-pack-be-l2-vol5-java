@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.mall.brand;
 
-import com.loopers.domain.mall.brand.Brand;
+import com.loopers.domain.mall.model.Brand;
 import com.loopers.infrastructure.mall.product.ProductEntityMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
