@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.pay.wallet;
+package com.loopers.interfaces.api.pay.dto;
 
 import com.loopers.application.pay.command.WalletCommand;
 import com.loopers.application.pay.result.WalletResult;

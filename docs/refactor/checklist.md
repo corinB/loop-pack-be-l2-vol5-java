@@ -36,13 +36,13 @@
 - [x] `refactor: application 패키지를 컨텍스트·종류 구조로 재배치하고 조회 모델명을 View로 통일` 커밋
 
 ## 커밋 4 — interfaces
-- [ ] main 파일을 `interfaces.api.<ctx>.{controller,dto}`로 `git mv`
-- [ ] E2E 테스트를 `interfaces.api.<ctx>.controller`로 `git mv`
-- [ ] package 선언과 import 갱신
-- [ ] 기존 feature 폴더(main·test) 제거 확인
-- [ ] 컴파일 + Checkstyle + ArchUnit 통과
-- [ ] 기존 패키지명 `git grep` 잔여 0건
-- [ ] `refactor: interfaces 패키지를 컨텍스트·종류 구조로 재배치` 커밋
+- [x] main 파일을 `interfaces.api.<ctx>.{controller,dto}`로 `git mv`
+- [x] E2E 테스트를 `interfaces.api.<ctx>.controller`로 `git mv`
+- [x] package 선언과 import 갱신
+- [x] 기존 feature 폴더(main·test) 제거 확인
+- [x] 컴파일 + Checkstyle 통과 (ArchUnit·테스트는 사용자 요청으로 이번 커밋에서 미실행)
+- [x] 기존 패키지명 `git grep` 잔여 0건
+- [x] `refactor: interfaces 패키지를 컨텍스트·종류 구조로 재배치` 커밋
 
 ## 커밋 5 — 결과 문서
 - [ ] `./gradlew :apps:commerce-api:check` 전체 통과 (Docker 필요)

@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.shopping.like;
+package com.loopers.interfaces.api.shopping.controller;
 
 import com.loopers.application.shopping.dao.LikeCommandDao;
 import com.loopers.application.support.error.ApplicationErrorCode;

@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.pay.wallet;
+package com.loopers.interfaces.api.pay.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -9,6 +9,7 @@ import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.pay.dto.WalletApiDto;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

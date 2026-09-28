@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.brand;
+package com.loopers.interfaces.api.mall.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import com.loopers.application.common.PageResult;
 import com.loopers.application.mall.query.BrandView;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.mall.dto.BrandApiDto;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;

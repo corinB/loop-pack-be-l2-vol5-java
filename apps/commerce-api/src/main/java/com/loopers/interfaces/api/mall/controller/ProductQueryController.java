@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.product;
+package com.loopers.interfaces.api.mall.controller;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;

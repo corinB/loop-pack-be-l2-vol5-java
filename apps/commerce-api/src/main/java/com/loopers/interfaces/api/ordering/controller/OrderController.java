@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.ordering.order;
+package com.loopers.interfaces.api.ordering.controller;
 
 import com.loopers.application.ordering.command.ConfirmOrderCommand;
 import com.loopers.application.ordering.result.ConfirmOrderResult;
@@ -6,6 +6,7 @@ import com.loopers.application.ordering.usecase.ConfirmOrderUseCase;
 import com.loopers.application.ordering.usecase.CreateOrderUseCase;
 import com.loopers.application.ordering.query.OrderView;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.ordering.dto.OrderApiDto;
 import com.loopers.interfaces.api.support.RequestInputValidator;
 import com.loopers.interfaces.api.support.XUserId;
 import lombok.RequiredArgsConstructor;

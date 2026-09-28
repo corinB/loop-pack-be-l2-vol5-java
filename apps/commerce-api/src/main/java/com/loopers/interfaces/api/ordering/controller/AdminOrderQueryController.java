@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.ordering.order;
+package com.loopers.interfaces.api.ordering.controller;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;

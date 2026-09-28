@@ -1,7 +1,8 @@
-package com.loopers.interfaces.api.pay.wallet;
+package com.loopers.interfaces.api.pay.controller;
 
 import com.loopers.application.pay.usecase.ChargeWalletUseCase;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.pay.dto.WalletApiDto;
 import com.loopers.interfaces.api.support.XUserId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;

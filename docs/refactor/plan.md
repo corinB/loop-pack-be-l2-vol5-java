@@ -4,7 +4,8 @@
 
 작업 브랜치: `volume-3/refacto` · 기준 브랜치: `volume-3/main` · 대상: `apps/commerce-api` (main + test)
 
-상태: 커밋 1(domain)·커밋 2(infrastructure)·커밋 3(application) 완료. 커밋 4(interfaces)부터 진행 예정.
+상태: 커밋 1(domain)·커밋 2(infrastructure)·커밋 3(application)·커밋 4(interfaces) 완료.
+커밋 4는 사용자 요청으로 ArchUnit·전체 테스트 없이 컴파일 + Checkstyle만 통과 확인했다(추후 커밋 5 전에 실행 필요). 커밋 5(결과 문서) 진행 예정.
 
 ## 배경
 

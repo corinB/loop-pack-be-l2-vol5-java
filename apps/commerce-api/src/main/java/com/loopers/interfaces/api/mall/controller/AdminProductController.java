@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.product;
+package com.loopers.interfaces.api.mall.controller;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;
@@ -14,6 +14,7 @@ import com.loopers.application.mall.usecase.UpdateProductUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.mall.dto.ProductApiDto;
 import com.loopers.interfaces.api.support.RequestInputValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

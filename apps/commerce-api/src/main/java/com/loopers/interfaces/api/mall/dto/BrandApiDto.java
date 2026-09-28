@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.brand;
+package com.loopers.interfaces.api.mall.dto;
 
 import com.loopers.application.mall.command.BrandCommand;
 import com.loopers.application.mall.result.BrandResult;

@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.product;
+package com.loopers.interfaces.api.mall.dto;
 
 import com.loopers.application.mall.command.ProductCommand;
 import com.loopers.domain.support.error.DomainErrorCode;

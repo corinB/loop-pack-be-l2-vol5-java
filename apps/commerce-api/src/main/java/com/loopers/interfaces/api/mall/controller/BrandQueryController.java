@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.brand;
+package com.loopers.interfaces.api.mall.controller;
 
 import com.loopers.application.mall.query.BrandView;
 import com.loopers.application.mall.query.BrandQueryDao;

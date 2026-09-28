@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.shopping.like;
+package com.loopers.interfaces.api.shopping.controller;
 
 import com.loopers.application.common.PageCriteria;
 import com.loopers.application.common.PageResult;

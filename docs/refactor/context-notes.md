@@ -55,3 +55,13 @@
   새로 import했다(단, 테스트와 같은 패키지로 옮겨진 `ConfirmOrderService`/`OrderService`/`WalletService`는 같은
   패키지라 import가 필요 없어 추가하지 않음). 조회 모델 7개 이름 변경은 단어 경계 치환으로 처리했고,
   `findAdminProduct(s)`처럼 이름을 포함하는 메서드명은 그대로 유지됐다.
+- 커밋 4(interfaces) 실행 중 사용자 요청으로 ArchUnit·전체 테스트는 실행하지 않고 컴파일(`compileJava`,
+  `compileTestJava`)과 Checkstyle(`checkstyleMain`, `checkstyleTest`)만 통과를 확인했다. ArchUnit 회귀 확인은
+  커밋 5 전 전체 `check` 실행 때로 미룬다. Controller와 DTO가 `controller`/`dto`로 갈라지면서, 같은 feature
+  안에서 암묵적으로(같은 패키지) DTO를 참조하던 `AdminBrandController`(`BrandApiDto`), `AdminProductController`
+  (`ProductApiDto`), `OrderController`(`OrderApiDto`), `WalletController`·`WalletQueryController`
+  (`WalletApiDto`)에 명시적 import를 추가했다. `BrandQueryController`·`ProductQueryController`·
+  `LikeController`·`LikeQueryController`는 자기 컨텍스트의 DTO를 쓰지 않아 추가 import가 없었다. 테스트 쪽도
+  같은 이유로 `BrandApiE2ETest`(`BrandApiDto`), `OrderApiE2ETest`(`OrderApiDto`), `WalletApiE2ETest`
+  (`WalletApiDto`)에 새 import를 추가했고, `ProductApiE2ETest`는 이미 있던 `BrandApiDto`의 cross-feature import
+  경로를 `mall.dto`로 갱신하면서 `ProductApiDto` import를 새로 추가했다.

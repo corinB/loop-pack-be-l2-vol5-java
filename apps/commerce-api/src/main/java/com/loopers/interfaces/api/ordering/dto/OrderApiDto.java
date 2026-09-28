@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.ordering.order;
+package com.loopers.interfaces.api.ordering.dto;
 
 import com.loopers.application.ordering.command.OrderCommand;
 import com.loopers.domain.support.error.DomainErrorCode;

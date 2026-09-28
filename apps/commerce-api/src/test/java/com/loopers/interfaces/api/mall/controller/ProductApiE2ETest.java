@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.mall.product;
+package com.loopers.interfaces.api.mall.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -10,7 +10,8 @@ import com.loopers.application.mall.query.AdminProductView;
 import com.loopers.application.mall.query.ProductDetailView;
 import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.interfaces.api.ApiResponse;
-import com.loopers.interfaces.api.mall.brand.BrandApiDto;
+import com.loopers.interfaces.api.mall.dto.BrandApiDto;
+import com.loopers.interfaces.api.mall.dto.ProductApiDto;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

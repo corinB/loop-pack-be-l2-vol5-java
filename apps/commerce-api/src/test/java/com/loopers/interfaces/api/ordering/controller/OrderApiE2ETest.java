@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.ordering.order;
+package com.loopers.interfaces.api.ordering.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -24,6 +24,7 @@ import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.interfaces.api.ApiResponse;
+import com.loopers.interfaces.api.ordering.dto.OrderApiDto;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import java.util.List;
