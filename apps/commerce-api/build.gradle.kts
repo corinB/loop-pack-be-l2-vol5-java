@@ -21,7 +21,6 @@ dependencies {
 
     // test-fixtures
     testImplementation(testFixtures(project(":modules:jpa")))
-    testImplementation(testFixtures(project(":modules:redis")))
     testImplementation("com.tngtech.archunit:archunit-junit5:${project.properties["archUnitVersion"]}")
 }
 
@@ -32,4 +31,31 @@ configure<CheckstyleExtension> {
     configFile = rootProject.file("config/checkstyle/checkstyle.xml")
     isIgnoreFailures = false
     maxWarnings = 0
+}
+
+tasks.named<Test>("test") {
+    useJUnitPlatform {
+        excludeTags("slow", "example")
+    }
+}
+
+// 오래 걸리거나 참고용인 테스트(slow, example 태그)를 별도로 묶어 실행하는 태스크
+val slowTest by tasks.registering(Test::class) {
+    description = "느리거나 예시용(slow, example 태그) 테스트만 실행한다"
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("slow", "example")
+    }
+    maxParallelForks = 1
+    systemProperty("file.encoding", "UTF-8")
+    systemProperty("user.timezone", "Asia/Seoul")
+    systemProperty("spring.profiles.active", "test")
+    jvmArgs("-Xshare:off")
+    shouldRunAfter(tasks.test)
+}
+
+tasks.named("check") {
+    dependsOn(slowTest)
 }
