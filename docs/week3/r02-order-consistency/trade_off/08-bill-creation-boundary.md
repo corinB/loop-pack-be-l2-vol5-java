@@ -2,6 +2,8 @@
 
 [← 전체 선택 현황](total_trade_off.md)
 
+> 후속 결정: 패키지 구조 리팩토링 중 [10번 주문 확정 기록 소유](10-order-record-ownership.md)에서 이 결정을 대체했다. `OrderBill`은 ordering의 `OrderRecord`로 이관되고 `Order.confirm()`이 이를 반환한다.
+
 현재 상태: 채택안을 구현하고 최종 모듈 검사를 통과했다. 설계 당시 비교와 구분되는 실제 검증 범위·남은 한계는 [구현 결과](../result.md)를 따른다.
 
 ## 판단할 문제

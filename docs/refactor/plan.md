@@ -203,3 +203,48 @@ ApiControllerAdviceTest, ContractClassificationTest, ExampleV1ApiE2ETest, `inter
 ```bash
 ./gradlew :apps:commerce-api:check
 ```
+
+## 추가 작업 — OrderBill을 ordering의 OrderRecord로 이관하고 확정 흐름 정리
+
+작업 브랜치: `volume-3/refacto-order-record` (`volume-3/refacto`의 커밋 4 `a9abf0d`에서 분기, 완료 후 fast-forward 병합)
+결정 근거: [R02 트레이드오프 10](../week3/r02-order-consistency/trade_off/10-order-record-ownership.md)
+
+| # | 커밋 제목 | 범위 |
+|---|---|---|
+| A1 | `docs: OrderBill을 ordering의 OrderRecord로 옮기는 트레이드오프 정리` | 트레이드오프 10 문서, 08·total_trade_off 링크, 이 절, 체크리스트, 결정 기록 |
+| A2 | `refactor: OrderBill을 ordering 컨텍스트의 OrderRecord로 이관` | 이관·이름·테이블 변경만, 동작 불변 |
+| A3 | `refactor: 주문 확정을 결제 단계와 주문 기록 단계로 나누고 Order.confirm이 OrderRecord를 반환` | 확정 흐름 변경 |
+
+### 커밋 A2 — 이관·이름 변경 (동작 불변)
+
+| 기존 | 변경 |
+|---|---|
+| `domain.pay.model.OrderBill` | `domain.ordering.model.OrderRecord` |
+| `domain.pay.model.OrderBillStatus` | `domain.ordering.model.OrderRecordStatus` (값 `PAID` 유지) |
+| `domain.pay.repository.OrderBillRepository` | `domain.ordering.repository.OrderRecordRepository` |
+| `infrastructure.persistence.pay.entity.OrderBillJpaEntity`, `OrderBillEntityMapper` | `infrastructure.persistence.ordering.entity.OrderRecordJpaEntity`, `OrderRecordEntityMapper` |
+| `infrastructure.persistence.pay.jpa.OrderBillJpaRepository` | `infrastructure.persistence.ordering.jpa.OrderRecordJpaRepository` |
+| `infrastructure.persistence.pay.repository.OrderBillRepositoryImpl` | `infrastructure.persistence.ordering.repository.OrderRecordRepositoryImpl` |
+| 테이블 `order_bills`, 제약 `uk_order_bills_order_id` | `order_records`, `uk_order_records_order_id` (JdbcOrderQueryDao SQL, 테스트 SQL 포함) |
+| 테스트 `domain.pay.model.OrderBillTest` | `domain.ordering.model.OrderRecordTest` |
+| 테스트 `persistence.pay.repository.OrderBillRepositoryIntegrationTest` | `persistence.ordering.repository.OrderRecordRepositoryIntegrationTest` |
+
+- 참조하는 모든 코드(ConfirmOrderWriter, JpaConfirmOrderWriter, ConfirmOrderService, ConfirmOrderResult, OrderView, AdminOrderView, JdbcOrderQueryDao, OrderHeaderRow, 테스트)를 갱신한다.
+- 이번 추가 작업에서는 변경 대상 코드 안의 `orderBill*` 변수·메서드명, 한국어 주석의 "결제 기록" 표현도 `orderRecord*`·"주문 기록"으로 맞춘다. 단, API JSON 필드(`paymentAmount`, `paymentStatus`)와 그에 대응하는 record 컴포넌트명은 바꾸지 않는다.
+- 도메인 에러 메시지 등 사용자에게 보이는 문구는 바꾸지 않는다.
+
+### 커밋 A3 — 확정 흐름
+
+- `Order.confirm()`이 `OrderRecord`를 반환한다 (`OrderRecord.paid(id, userId, totalAmount)`).
+- `OrderConfirmationPolicy.confirm(...)`: ① 전부 검증(주문 상태 → 상품별 재고 → 잔액, 현행 순서·오류 그대로) ② 결제 단계 `wallet.use(...)` → `PointBill`(영수증) ③ 주문 단계 재고 차감 → `order.confirm()` → `OrderRecord`. 단계는 private 메서드와 한국어 주석으로 구분한다.
+- `OrderConfirmation`에 `orderRecord`를 추가한다. `ConfirmOrderService`는 기록을 직접 만들지 않고 `confirmation.pointBill()`, `confirmation.orderRecord()`를 저장한다.
+- 테스트는 이름·시그니처 변경에 따른 수정과 `Order.confirm()` 반환값 검증 추가만 한다. 오류 우선순위·롤백·동시성 기대값은 바꾸지 않는다. 바꿔야 하면 멈추고 보고한다.
+
+### 검증 (Docker 필요)
+
+```bash
+./gradlew :apps:commerce-api:compileJava :apps:commerce-api:compileTestJava :apps:commerce-api:checkstyleMain :apps:commerce-api:checkstyleTest
+./gradlew :apps:commerce-api:test --tests "com.loopers.architecture.*" --tests "com.loopers.domain.ordering.*" --tests "com.loopers.domain.pay.*" --tests "com.loopers.application.ordering.*" --tests "com.loopers.infrastructure.persistence.ordering.*" --tests "com.loopers.infrastructure.dao.ordering.*" --tests "com.loopers.infrastructure.query.ordering.*" --tests "com.loopers.interfaces.api.ordering.*"
+```
+
+A2·A3 커밋마다 실행한다. `git grep -nwE "OrderBill|OrderBillStatus|OrderBillRepository|order_bills"` 결과가 `apps/`에서 0건이어야 한다.

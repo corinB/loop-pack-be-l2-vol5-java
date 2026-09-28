@@ -65,3 +65,15 @@
   같은 이유로 `BrandApiE2ETest`(`BrandApiDto`), `OrderApiE2ETest`(`OrderApiDto`), `WalletApiE2ETest`
   (`WalletApiDto`)에 새 import를 추가했고, `ProductApiE2ETest`는 이미 있던 `BrandApiDto`의 cross-feature import
   경로를 `mall.dto`로 갱신하면서 `ProductApiDto` import를 새로 추가했다.
+
+## 추가 작업 결정 — OrderRecord
+
+13. **OrderBill을 ordering의 OrderRecord로 옮긴다.** 결제 사실은 이미 `PointBill(USE)`이 기록하므로,
+    OrderBill을 "주문이 확정됐다는 주문의 사실"로 다시 정의했다. R02 트레이드오프 08번을 대체하며 근거는
+    [트레이드오프 10](../week3/r02-order-consistency/trade_off/10-order-record-ownership.md)에 있다.
+14. **필드·상태값(`PAID`)은 그대로, API JSON 불변, 테이블은 `order_records`로 바꾼다.**
+15. **`Order.confirm()`이 `OrderRecord`를 반환한다.** `Wallet.use()`가 `PointBill`을 반환하는 것과 대칭이다.
+16. **확정은 전부 검증한 뒤 결제 단계 → 주문 단계로 변경한다.** 검증 순서(주문 상태 → 재고 → 잔액)와 오류 우선순위는 유지한다.
+    영수증은 새 타입 없이 기존 `PointBill(USE)`이다.
+17. **별도 브랜치 `volume-3/refacto-order-record`에서 진행하고 관련 테스트 + ArchUnit만 돌린 뒤 fast-forward 병합한다.**
+    테스트는 이름·시그니처 변경에 따른 수정과 새 동작 검증 추가만 허용한다.

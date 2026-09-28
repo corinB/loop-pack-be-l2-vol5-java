@@ -50,3 +50,31 @@
 - [ ] CLAUDE.md "commerce-api package structure" 설명 갱신
 - [ ] AGENTS.md 32행 패키지 규칙 갱신
 - [ ] `docs: 패키지 리팩토링 결과와 구조 설명 갱신` 커밋
+
+## 추가 작업 — OrderRecord (`volume-3/refacto-order-record`)
+
+### 커밋 A1 — 문서
+- [x] R02 트레이드오프 10 작성, 08·total_trade_off에 연결
+- [x] plan.md 추가 작업 절, 체크리스트, 결정 기록 갱신
+- [x] `docs: OrderBill을 ordering의 OrderRecord로 옮기는 트레이드오프 정리` 커밋
+
+### 커밋 A2 — 이관·이름 변경
+- [ ] OrderBill·OrderBillStatus·OrderBillRepository와 infrastructure 3종을 ordering으로 `git mv` + 이름 변경
+- [ ] 테이블·제약명 `order_records`로 변경, JdbcOrderQueryDao·테스트 SQL 갱신
+- [ ] 참조 코드·테스트 갱신, 변수명·주석 정리
+- [ ] 컴파일 + Checkstyle 통과
+- [ ] 관련 테스트 + ArchUnit 통과
+- [ ] 기존 이름 `git grep` 잔여 0건
+- [ ] `refactor: OrderBill을 ordering 컨텍스트의 OrderRecord로 이관` 커밋
+
+### 커밋 A3 — 확정 흐름
+- [ ] `Order.confirm()`이 `OrderRecord` 반환
+- [ ] OrderConfirmationPolicy를 검증 → 결제 단계 → 주문 단계로 정리, OrderConfirmation에 orderRecord 추가
+- [ ] ConfirmOrderService가 기록을 만들지 않고 저장만
+- [ ] 테스트 최소 수정 + `Order.confirm()` 반환값 테스트 추가
+- [ ] 컴파일 + Checkstyle 통과
+- [ ] 관련 테스트 + ArchUnit 통과
+- [ ] `refactor: 주문 확정을 결제 단계와 주문 기록 단계로 나누고 Order.confirm이 OrderRecord를 반환` 커밋
+
+### 병합
+- [ ] `volume-3/refacto`로 fast-forward 병합
