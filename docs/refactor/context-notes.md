@@ -38,3 +38,10 @@
   추가로 붙여야 했다. `Brand`는 `Product`와 같은 패키지(`mall.model`)로 함께 이동해 기존 `import Product`가
   중복(redundant) import가 되어 제거했다. `OrderConfirmation`은 `Order`와 같은 패키지로 갔지만 `Product`·`Wallet`·
   `PointBill`은 다른 패키지로 갈라져 그 세 개만 import를 갱신했다.
+- 커밋 2(infrastructure) 실행 중 JpaEntity/EntityMapper가 `entity` 폴더로, JpaRepository가 `jpa` 폴더로,
+  RepositoryImpl이 `repository` 폴더로 갈라지면서 같은 feature 안에서만 서로 참조하던 타입들도 명시적 import가
+  필요해졌다: 각 `*JpaRepository`는 자신의 `*JpaEntity`를, 각 `*RepositoryImpl`은 자신의 `*JpaRepository`·
+  `*EntityMapper`·(필요한 경우) `*JpaEntity`를 새로 import했다. `BrandJpaEntity`·`BrandEntityMapper`는 같은 패키지가
+  된 `ProductJpaEntity`에 대한 기존 import가 중복이 되어 제거했다. QueryDSL이 생성하는 `Q*JpaEntity`도 원본
+  엔티티와 같은 새 패키지에 생성되므로 `QueryDslProductQueryDao`의 `QBrandJpaEntity`·`QProductLikeCountJpaEntity`·
+  `QProductJpaEntity` import를 새 경로로 맞췄다. 계획대로 접근제어 확대는 `UserJpaRepository` → `public` 한 건뿐이다.

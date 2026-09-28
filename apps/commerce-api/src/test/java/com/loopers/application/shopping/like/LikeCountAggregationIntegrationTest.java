@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 
-import com.loopers.infrastructure.shopping.like.JdbcLikeCountAggregationDao;
+import com.loopers.infrastructure.dao.shopping.JdbcLikeCountAggregationDao;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

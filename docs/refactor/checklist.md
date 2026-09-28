@@ -16,14 +16,14 @@
 - [x] `refactor: domain 패키지를 컨텍스트·종류 구조로 재배치` 커밋
 
 ## 커밋 2 — infrastructure
-- [ ] main 파일을 `infrastructure.{persistence,query,dao,scheduler,initializer}.<ctx>`로 `git mv`
-- [ ] `UserJpaRepository`만 `public`으로 변경 (그 외 접근제어 변경 없음)
-- [ ] 테스트를 매핑표대로 `git mv`
-- [ ] package 선언과 import 갱신
-- [ ] 기존 feature 폴더(main·test) 제거 확인
-- [ ] 컴파일 + Checkstyle + ArchUnit 통과
-- [ ] 기존 패키지명 `git grep` 잔여 0건
-- [ ] `refactor: infrastructure 패키지를 종류·컨텍스트 구조로 재배치` 커밋
+- [x] main 파일을 `infrastructure.{persistence,query,dao,scheduler,initializer}.<ctx>`로 `git mv`
+- [x] `UserJpaRepository`만 `public`으로 변경 (그 외 접근제어 변경 없음)
+- [x] 테스트를 매핑표대로 `git mv`
+- [x] package 선언과 import 갱신
+- [x] 기존 feature 폴더(main·test) 제거 확인
+- [x] 컴파일 + Checkstyle + ArchUnit 통과
+- [x] 기존 패키지명 `git grep` 잔여 0건
+- [x] `refactor: infrastructure 패키지를 종류·컨텍스트 구조로 재배치` 커밋
 
 ## 커밋 3 — application
 - [ ] main 파일을 `application.<ctx>.{usecase,service,command,result,query,dao}`로 `git mv`
