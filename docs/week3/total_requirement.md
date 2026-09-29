@@ -70,6 +70,7 @@ R01은 삭제 후 기존 DRAFT 확정 거절을 확인하고, R02는 그 계약�
 | 3 | - | `../refactor/` | `volume-3/refacto` | `volume-3/main` | 패키지 구조 리팩토링·OrderRecord 전환·테스트 경량화 완료([결과](../refactor/result.md), [테스트 경량화 결과](../refactor/test-slimming.md)), PR 미제출 |
 
 R01·R02가 아닌 순서 3은 개별 요구사항이 아니라 두 요구사항 완료 후 진행한 공통 리팩토링·테스트 정리 작업이며, 별도 `r0n-` 폴더 대신 `../refactor/`에 문서를 둔다.
+이후 트레이드오프 기반 최적화(R03~R06)는 [3주차 후속 리팩토링](../week3-2/total_requirement.md)에서 관리한다.
 
 R02는 최신 `origin/volume-3/main`에서 독립적으로 분기해 문서 준비·트레이드오프 문답과 결정까지 선행할 수 있다.
 R02 구현은 R01 리뷰·병합 후 최신 `volume-3/main`을 반영하고 관련 저장 경로와 삭제 후 확정 거절 계약을 확인한 뒤 시작한다.
