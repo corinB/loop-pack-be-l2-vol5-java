@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` · PR 대상: `volume-3/main`
 
-상태: 좋아요 등록·취소(커밋 1~6, 13)와 조회 전환(커밋 7~12) 구현·검증 완료. 커밋 1~12는 Sonnet 위임, 13은 직접 수정. 좋아요 집계(커밋 14~20)는 계획 합의, 구현 위임 전.
+상태: 좋아요 등록·취소(커밋 1~6, 13)와 조회 전환(커밋 7~12) 구현·검증 완료. 커밋 1~12는 Sonnet 위임, 13은 직접 수정. 좋아요 집계(커밋 14~20)도 구현·검증 완료(Sonnet 위임). R03 전체 구현 완료, `result.md` 작성 전.
 브랜치는 `volume-3/main`에 아직 병합되지 않은 `volume-3/refacto`에서 분기했다. refacto가 병합되면 main 기준으로 맞추고, 그 전에는 PR을 만들지 않는다.
 
 ## 문서와 진행 원칙
@@ -210,51 +210,60 @@ POST/DELETE 좋아요 → LikeService (REQUIRED)
 
 ### 커밋 14 — 좋아요 유니크 키 순서 변경
 
-- [ ] `LikeJpaEntity`의 `@UniqueConstraint(name = "uk_product_likes_user_product", columnNames = {"product_id", "user_id"})`로 바꾼다. 제약 이름은 유지한다.
-- [ ] 기존 `LikeStorageIntegrationTest`·좋아요 조회 테스트가 기대값 변경 없이 통과한다.
-- [ ] 커밋: `refactor: 좋아요 유니크 키를 상품·사용자 순서로 변경`
+- [x] `LikeJpaEntity`의 `@UniqueConstraint(name = "uk_product_likes_user_product", columnNames = {"product_id", "user_id"})`로 바꾼다. 제약 이름은 유지한다.
+- [x] 기존 `LikeStorageIntegrationTest`·좋아요 조회 테스트가 기대값 변경 없이 통과한다.
+- [x] 커밋: `refactor: 좋아요 유니크 키를 상품·사용자 순서로 변경`
 
 ### 커밋 15 — 좋아요 등록을 INSERT IGNORE로 바꾸고 추가·삭제 여부 반환
 
-- [ ] `LikeRepositoryIntegrationTest`를 먼저 고친다. 새 등록은 true, 같은 등록 반복은 false이고 행 1개·`created_at` 유지, 있는 좋아요 취소는 true, 없는 좋아요 취소는 false.
-- [ ] `LikeRepository`를 `boolean save`·`boolean delete`로 바꾸고, `LikeJpaRepository`의 등록을 native `INSERT IGNORE INTO product_likes (user_id, product_id, created_at) VALUES (:userId, :productId, :createdAt)`로 바꾼다. `LikeRepositoryImpl`은 영향받은 행 수 > 0을 반환한다.
-- [ ] **중단 조건:** 드라이버 기본 설정에서 중복 `INSERT IGNORE`가 0이 아닌 값을 돌려주면 구현을 멈추고 실제 값과 SQL을 보고한다. 설정이나 다른 방식으로 바꾸지 않는다.
-- [ ] 커밋: `refactor: 좋아요 등록을 INSERT IGNORE로 바꾸고 추가·삭제 여부를 반환`
+- [x] `LikeRepositoryIntegrationTest`를 먼저 고친다. 새 등록은 true, 같은 등록 반복은 false이고 행 1개·`created_at` 유지, 있는 좋아요 취소는 true, 없는 좋아요 취소는 false.
+- [x] `LikeRepository`를 `boolean save`·`boolean delete`로 바꾸고, `LikeJpaRepository`의 등록을 native `INSERT IGNORE INTO product_likes (user_id, product_id, created_at) VALUES (:userId, :productId, :createdAt)`로 바꾼다. `LikeRepositoryImpl`은 영향받은 행 수 > 0을 반환한다.
+- [x] **중단 조건:** 드라이버 기본 설정에서 중복 `INSERT IGNORE`가 0이 아닌 값을 돌려주면 구현을 멈추고 실제 값과 SQL을 보고한다. 설정이나 다른 방식으로 바꾸지 않는다.
+- [x] 커밋: `refactor: 좋아요 등록을 INSERT IGNORE로 바꾸고 추가·삭제 여부를 반환`
 
 ### 커밋 16 — 좋아요 변경 이벤트 발행
 
-- [ ] `LikeServiceTest`를 먼저 고친다. save가 true면 `(productId, +1)` 발행, false면 미발행. delete가 true면 `(productId, −1)` 발행, false면 미발행. 상품 없음·삭제된 상품이면 저장·발행 모두 없음.
-- [ ] `application/shopping/event/ProductLikeChangedEvent`를 추가하고, `LikeService`가 `ApplicationEventPublisher`로 발행한다.
-- [ ] 커밋: `feat: 좋아요가 실제로 바뀌면 상품 좋아요 변경 이벤트를 발행`
+- [x] `LikeServiceTest`를 먼저 고친다. save가 true면 `(productId, +1)` 발행, false면 미발행. delete가 true면 `(productId, −1)` 발행, false면 미발행. 상품 없음·삭제된 상품이면 저장·발행 모두 없음.
+- [x] `application/shopping/event/ProductLikeChangedEvent`를 추가하고, `LikeService`가 `ApplicationEventPublisher`로 발행한다.
+- [x] 커밋: `feat: 좋아요가 실제로 바뀌면 상품 좋아요 변경 이벤트를 발행`
 
 ### 커밋 17 — 좋아요 증감분 누적기
 
-- [ ] `LikeCountDeltaBufferTest`(POJO)를 먼저 쓴다. 같은 상품의 증감 누적, `drain`이 값을 돌려주고 비움, 합이 0인 상품 제외, `restore` 후 새 증감과 합산.
-- [ ] `LikeCountDeltaBuffer`를 추가한다(`@Component`, `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`).
-- [ ] 이벤트 연결 통합 테스트 1개(`@IntegrationTest`, 예: `LikeCountDeltaBufferIntegrationTest`)를 추가한다. `RegisterLikeUseCase`로 등록하면 커밋 후 +1, 같은 등록을 반복해도 추가 증감 없음, 취소하면 −1. 싱글톤 버퍼이므로 `@BeforeEach`·`@AfterEach`에서 `drain`으로 비운다. 테스트 전체를 트랜잭션으로 감싸지 않는다(`AFTER_COMMIT`이 동작해야 함).
-- [ ] 커밋: `feat: 커밋된 좋아요 변경을 상품별 증감분으로 메모리에 누적`
+- [x] `LikeCountDeltaBufferTest`(POJO)를 먼저 쓴다. 같은 상품의 증감 누적, `drain`이 값을 돌려주고 비움, 합이 0인 상품 제외, `restore` 후 새 증감과 합산.
+- [x] `LikeCountDeltaBuffer`를 추가한다(`@Component`, `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`).
+- [x] 이벤트 연결 통합 테스트 1개(`@IntegrationTest`, 예: `LikeCountDeltaBufferIntegrationTest`)를 추가한다. `RegisterLikeUseCase`로 등록하면 커밋 후 +1, 같은 등록을 반복해도 추가 증감 없음, 취소하면 −1. 싱글톤 버퍼이므로 `@BeforeEach`·`@AfterEach`에서 `drain`으로 비운다. 테스트 전체를 트랜잭션으로 감싸지 않는다(`AFTER_COMMIT`이 동작해야 함).
+- [x] 커밋: `feat: 커밋된 좋아요 변경을 상품별 증감분으로 메모리에 누적`
 
 ### 커밋 18 — 증감분 반영 유스케이스와 배치 upsert
 
-- [ ] `LikeCountDeltaFlushServiceTest`(Mockito)를 먼저 쓴다. 비어 있으면 DAO 미호출, 값이 있으면 그대로 `addDeltas` 호출, DAO가 실패하면 버퍼에 `restore`하고 예외 전파.
-- [ ] `LikeCountAggregationIntegrationTest`에 `addDeltas` 케이스를 추가한다. 행이 없으면 생성, 기존 값에 더함, 음수 결과는 0.
-- [ ] `FlushLikeCountDeltaUseCase`, `LikeCountDeltaFlushService`, `LikeCountAggregationDao.addDeltas`와 JDBC 배치 구현을 추가한다(배치는 `JdbcTemplate.batchUpdate` 등).
-- [ ] 커밋: `feat: 누적된 좋아요 증감분을 배치 upsert로 반영하는 유스케이스 추가`
+- [x] `LikeCountDeltaFlushServiceTest`(Mockito)를 먼저 쓴다. 비어 있으면 DAO 미호출, 값이 있으면 그대로 `addDeltas` 호출, DAO가 실패하면 버퍼에 `restore`하고 예외 전파.
+- [x] `LikeCountAggregationIntegrationTest`에 `addDeltas` 케이스를 추가한다. 행이 없으면 생성, 기존 값에 더함, 음수 결과는 0.
+- [x] `FlushLikeCountDeltaUseCase`, `LikeCountDeltaFlushService`, `LikeCountAggregationDao.addDeltas`와 JDBC 배치 구현을 추가한다(배치는 `JdbcTemplate.batchUpdate` 등).
+- [x] 커밋: `feat: 누적된 좋아요 증감분을 배치 upsert로 반영하는 유스케이스 추가`
 
 ### 커밋 19 — 스케줄러를 5초 delta 반영과 시작 시 전체 재집계로 전환
 
-- [ ] `LikeCountAggregationSchedulerTest`를 고친다. 반영 유스케이스에 위임하고, 실패를 전파하지 않는다.
-- [ ] `LikeCountStartupAggregatorTest`(POJO)를 추가한다. 초기화 시 전체 재집계를 1회 호출하고, 실패를 전파하지 않는다.
-- [ ] `LikeCountAggregationScheduler`를 `@Scheduled(fixedDelay = 5_000)` + `FlushLikeCountDeltaUseCase`로 바꾸고, `LikeCountStartupAggregator`를 추가한다. 둘 다 `@ConditionalOnProperty(name = "scheduler.like-count.enabled", havingValue = "true", matchIfMissing = true)`(test 프로필은 false).
-- [ ] 커밋: `refactor: 좋아요 집계를 5초 증감분 반영과 시작 시 전체 재집계로 전환`
+- [x] `LikeCountAggregationSchedulerTest`를 고친다. 반영 유스케이스에 위임하고, 실패를 전파하지 않는다.
+- [x] `LikeCountStartupAggregatorTest`(POJO)를 추가한다. 초기화 시 전체 재집계를 1회 호출하고, 실패를 전파하지 않는다.
+- [x] `LikeCountAggregationScheduler`를 `@Scheduled(fixedDelay = 5_000)` + `FlushLikeCountDeltaUseCase`로 바꾸고, `LikeCountStartupAggregator`를 추가한다. 둘 다 `@ConditionalOnProperty(name = "scheduler.like-count.enabled", havingValue = "true", matchIfMissing = true)`(test 프로필은 false).
+- [x] 커밋: `refactor: 좋아요 집계를 5초 증감분 반영과 시작 시 전체 재집계로 전환`
 
 ### 커밋 20 — 문서 갱신
 
-- [ ] `docs/test/*.md`의 좋아요·집계 테스트 목록과 개수를 갱신한다.
-- [ ] 커밋: `docs: 좋아요 집계 전환에 맞춰 레이어별 테스트 문서 갱신`
+- [x] `docs/test/*.md`의 좋아요·집계 테스트 목록과 개수를 갱신한다.
+- [x] 커밋: `docs: 좋아요 집계 전환에 맞춰 레이어별 테스트 문서 갱신`
 
 ### 검증
 
-- [ ] 커밋마다 `--tests "*Like*"`와 Checkstyle을 실행한다.
-- [ ] 마지막에 `./gradlew :apps:commerce-api:check`를 실행하고 건수·실패·skip을 기록한다.
-- [ ] 기록: 중복 `INSERT IGNORE`의 반환값, 배치 upsert SQL, 운영 코드의 JdbcClient가 `JdbcLikeCountAggregationDao`에만 있는지.
+- [x] 커밋마다 `--tests "*Like*"`와 Checkstyle을 실행한다.
+- [x] 마지막에 `./gradlew :apps:commerce-api:check`를 실행하고 건수·실패·skip을 기록한다.
+- [x] 기록: 중복 `INSERT IGNORE`의 반환값, 배치 upsert SQL, 운영 코드의 JdbcClient가 `JdbcLikeCountAggregationDao`에만 있는지.
+
+검증 기록(커밋 14~20 시점)
+- 중복 `INSERT IGNORE`: 드라이버 기본 설정에서 새 등록 1, 중복 0을 반환했다(임시 측정 후 삭제, `LikeRepositoryIntegrationTest`가 true/false로 고정).
+- 배치 upsert: `JdbcTemplate.batchUpdate`로 `INSERT INTO product_like_counts (product_id, like_count) VALUES (?, GREATEST(0, ?)) ON DUPLICATE KEY UPDATE like_count = GREATEST(0, like_count + ?)` 실행, 인자 `[productId, delta, delta]`.
+- `./gradlew :apps:commerce-api:check` BUILD SUCCESSFUL. test 236건, slowTest 17건, 실패·오류·skip 0건. Checkstyle·ArchUnit 통과(ArchUnit이 이벤트·리스너·`SmartInitializingSingleton` 배치를 막지 않음).
+- 운영 코드의 JdbcClient는 `JdbcLikeCountAggregationDao` 하나(배치용 `JdbcTemplate`도 함께 사용).
+- 계획과 다른 점: `JdbcLikeCountAggregationDao`가 `batchUpdate`를 위해 `JdbcTemplate`도 주입받는다. `LikeCountDeltaBufferIntegrationTest`는 브랜드·상품을 Repository로 준비한다. `docs/test` 개수는 수기 계산이다.
+- 확인한 한계: 반영 트랜잭션이 커밋 단계에서 실패하면 이미 꺼낸 증감분은 되돌려지지 않는다(`restore`는 `addDeltas` 예외만 처리). 다음 시작 시 전체 재집계가 보정한다.
+- 커밋 메시지 정리: 사용자 요청으로 브랜치의 모든 커밋에서 Co-Authored-By 줄을 제거했다(메시지만 재작성, 커밋별 트리 동일 확인).
