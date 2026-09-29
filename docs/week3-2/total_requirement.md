@@ -71,7 +71,7 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 선행 | 상태 |
 |---|---|---|---|---|---|---|
-| 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 진행 중(좋아요 등록·취소 구현, refacto에서 분기) |
+| 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 진행 중(등록·취소·조회 전환 완료, 집계 구현, refacto에서 분기) |
 | 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 문서 준비 |
 | 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 문서 준비 |
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 문서 준비 |
