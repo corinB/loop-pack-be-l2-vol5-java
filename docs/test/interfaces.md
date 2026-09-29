@@ -100,7 +100,7 @@ E2E 테스트는 DB에 붙으므로 실행 전 `docker-compose -f ./docker/infra
   - `OrderApiE2ETest.CustomerQuery#returnsOrderDetail`: 동일한 `GET /api/v1/orders/{id}` 경로를 `Confirm#preservesPaymentResult_afterBrandBulkDelete`와 `Confirm#exposesPaymentResult_inCustomerAndAdminQueries`가 이미 커버해 삭제했다.
   - `BrandApiE2ETest#deletesCascade_whenActiveProductExists`: `BrandRepositoryIntegrationTest`의 전파(propagation) 검증 및 `#managesBrand`와 중복이라 삭제했다.
   - `BrandApiE2ETest#deletesOnlyUndeletedProducts_whenMixedWithAlreadyDeletedProduct`: 이미 삭제된 상품과 미삭제 상품 모두 `deleted = true`를 단언해, 이 단언만으로는 "이미 삭제된 상품 상태를 실제로 그대로 유지했는지"와 "다시 삭제 처리해도 결과가 같은지"를 구분할 수 없었다(멱등 처리이든 재삭제이든 같은 값이 관찰됨). `BrandTest#keepsAlreadyDeletedProductState_whenBrandDeleted`가 도메인 레벨에서 상태를 더 명확히 구분해 검증하므로 삭제했다.
-  - `LikeApiE2ETest.Register#ignoresDuplicateRegistration`, `Cancel#ignoresCancelOfMissingRelation`: `JdbcLikeCommandDaoIntegrationTest`에서 같은 멱등성을 인프라 레벨로 이미 검증하므로 삭제했다.
+  - `LikeApiE2ETest.Register#ignoresDuplicateRegistration`, `Cancel#ignoresCancelOfMissingRelation`: `LikeRepositoryIntegrationTest`에서 같은 멱등성을 인프라 레벨로 이미 검증하므로 삭제했다.
   - `WalletApiE2ETest.Charge#returnsBadRequest_whenBalanceOverflows`: `WalletServiceTest`/`WalletTest`에서 동일 규칙을 상태 레벨로 검증하므로 삭제했다.
   - `WalletApiE2ETest`의 `Charge`/`FindBalance` 헤더 누락·형식오류 400(총 4개 테스트): `XUserIdArgumentResolverTest`가 리졸버 단위로 이미 촘촘히 커버하므로 삭제했다. `LikeApiE2ETest`는 헤더 누락/형식오류 각 1개씩만 남겨 컨트롤러 배선(wiring) 확인용으로 유지했다.
   - `OrderApiE2ETest.Create`, `WalletApiE2ETest.Charge`, `WalletApiE2ETest.FindBalance`의 없는 사용자 404: `XUserIdArgumentResolverTest`(리졸버가 `USER_NOT_FOUND`를 던짐) + `ApiControllerAdviceTest#mapsUserNotFoundToNotFound`(그 예외가 404로 매핑됨)의 조합으로 이미 커버되므로 삭제했다. `LikeApiE2ETest`는 1개만 유지했다.

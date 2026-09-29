@@ -13,7 +13,7 @@
 
 ### 테스트 규모
 
-대상 테스트 클래스 20개(단위 4개 + 통합/컨텍스트 16개), 총 테스트 케이스 44개.
+대상 테스트 클래스 20개(단위 4개 + 통합/컨텍스트 16개), 총 테스트 케이스 41개.
 
 ## 2. 종류·컨텍스트별 테스트
 
@@ -25,6 +25,7 @@
 | [`BrandFindForDeletionLockIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/BrandFindForDeletionLockIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | FOR UPDATE, innodb_lock_wait_timeout | `@AfterEach` TRUNCATE | `findForDeletion`이 브랜드 행뿐 아니라 딸린 상품 행까지 비관적 쓰기 잠금으로 보호하는지, 별도 커넥션으로 짧은 대기시간을 주고 잠금 대기 타임아웃(에러코드 1205)을 관찰 | 1 | 락/동시성 테스트, `slow` 태그 |
 | [`ProductRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/ProductRepositoryIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 상품 수정 후 flush/clear해도 이름·설명·가격·재고·생성시각 보존 | 1 | |
 | [`StockLostUpdateControlGroupTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/StockLostUpdateControlGroupTest.java) | mall | @IntegrationTest(공유) | 필요 | 잠금 없는 SELECT + 상수 UPDATE, `ConcurrentRequests` 유틸 | `@AfterEach` TRUNCATE | 잠금 없이 재고를 읽고 상수로 덮어쓰는 두 트랜잭션이 모두 성공해도 최종 재고가 어긋나는 갱신 유실을 재현 | 1 | 대조군(제품 코드를 전혀 호출하지 않음), 동시성 테스트, `slow` 태그 |
+| [`LikeRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/LikeRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | HQL `insert … on conflict do nothing`이 `insert … on duplicate key update`로 변환(중복 무시) | `@Transactional`(rollback) + `@AfterEach` TRUNCATE | 신규 저장 1행, 중복 저장은 예외 없이 1행이며 `created_at` 불변, 삭제 시 0행, 없는 관계 삭제는 예외 없음 | 4 | 수정 쿼리는 트랜잭션이 필요해 클래스에 `@Transactional` 적용 |
 | [`OrderRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/ordering/repository/OrderRepositoryIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 주문·품목 저장 후 flush/clear해도 스냅샷·합계 보존, 없는 주문 조회, 확정 시 `OrderRecord` cascade 저장/복원 | 3 | |
 | [`PointBillRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/PointBillRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 충전/사용 기록 저장 후 flush/clear해도 타입·금액·주문ID 보존 | 2 | |
 | [`WalletRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/WalletRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 지갑 저장·충전 후 flush/clear해도 잔액 보존, 없는 사용자 빈 결과 | 2 | |
@@ -46,7 +47,6 @@
 | 테스트 클래스 | 컨텍스트 | Spring 컨텍스트 | Docker | MySQL 고유 동작 | 정리 방식 | 검증 시나리오 | 테스트 수 | 비고 |
 |---|---|---|---|---|---|---|---|---|
 | [`JpaConfirmOrderWriterTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/dao/ordering/JpaConfirmOrderWriterTest.java) | ordering | 없음(Mockito 순수 단위) | 불필요 | - | 해당 없음 | 주문→지갑→상품ID 오름차순(중복 제거) 잠금 조회 순서, 상품재고→지갑잔액→사용기록→주문(기록 cascade) 저장 순서를 `InOrder`로 검증 | 2 | |
-| [`JdbcLikeCommandDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/dao/shopping/JdbcLikeCommandDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | `ON DUPLICATE KEY`류 멱등 처리(register/cancel), native SQL(`JdbcClient`) | `@AfterEach` TRUNCATE만 | 활성/삭제/미존재 상품 확인, 좋아요 등록(신규/중복 무시), 취소(존재/미존재 무시) | 7 | |
 
 ### scheduler
 
@@ -73,7 +73,7 @@
 - `BrandRepositoryIntegrationTest#findsBrandForDeletion_withAllUndeletedProducts`(미삭제 상품 누락 없이 조회)는 같은 클래스의 `#savesBrand_propagatesDeleteToAllProducts_andKeepsUnrelatedFields`(연결 상품 목록을 조회해 삭제 전파를 검증)가 `findForDeletion`으로 동일한 상품 목록을 조회하는 과정을 이미 거치므로 암묵적으로 커버되어 삭제했다.
 - `BrandRepositoryIntegrationTest#savesBrand_propagatesDeleteToAllProducts_andKeepsUnrelatedFields`(브랜드 저장 한 번으로 연결 상품까지 삭제 상태 전파)는 [`BrandApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/mall/controller/BrandApiE2ETest.java)`#deletesCascade_whenActiveProductExists`(활성 상품이 연결된 브랜드를 삭제하면 브랜드·상품이 함께 삭제)와 같은 cascade-delete 규칙을 검증한다. 인프라 레이어에서 이미 저장 단위의 전파를 직접 검증하므로, E2E 쪽 테스트는 HTTP 경로 자체 확인 외에는 중복이다(E2E 쪽 처리는 [interfaces.md](interfaces.md) 참고).
 - `JdbcLikeQueryDaoIntegrationTest#excludesProducts_deletedViaBrandBulkDelete`(브랜드 일괄 삭제로 상품이 삭제되면 좋아요 목록에서 제외)는 같은 클래스의 `#excludesDeletedProducts`(삭제된 상품은 목록과 전체 개수에서 제외)와 결과적으로 동일한 조건(상품이 삭제 상태)을 검증했다. 삭제 경로가 단건 삭제냐 브랜드 일괄 삭제냐만 다르고 쿼리 결과 검증은 중복이라 삭제했다.
-- `JdbcLikeCommandDaoIntegrationTest`의 `Register#ignoresDuplicateRegistration`(이미 등록된 관계는 다시 저장하지 않고 그대로 성공)과 `Cancel#ignoresCancelOfMissingRelation`(존재하지 않는 관계를 취소해도 예외 없이 성공)이 DAO 레벨에서 멱등성을 이미 검증하므로, [`LikeApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/shopping/controller/LikeApiE2ETest.java)의 대응 케이스는 HTTP 계층 확인 외에는 같은 멱등성 로직을 다시 검증하는 셈이었다. E2E 쪽은 삭제했다(자세한 내용은 [interfaces.md](interfaces.md) 참고).
+- `LikeRepositoryIntegrationTest`의 `Save#ignoresDuplicate_andKeepsCreatedAt`(이미 저장된 관계는 무시하고 기존 행을 바꾸지 않음)과 `Delete#ignoresMissingRelation`(존재하지 않는 관계를 삭제해도 예외 없음)이 저장소 레벨에서 멱등성을 이미 검증하므로, [`LikeApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/shopping/controller/LikeApiE2ETest.java)의 대응 케이스는 HTTP 계층 확인 외에는 같은 멱등성 로직을 다시 검증하는 셈이었다. E2E 쪽은 삭제했다(자세한 내용은 [interfaces.md](interfaces.md) 참고).
 - `JdbcOrderQueryDaoIntegrationTest`가 검증하는 목록 정렬(`returnsOrders_orderedByCreatedAtDescending`)·필터링(`excludesOtherUsersOrders`)은 [`OrderApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/ordering/controller/OrderApiE2ETest.java)의 `#returnsOnlyOwnOrders`(헤더로 지정한 사용자의 주문만 조회)가 같은 쿼리 결과를 HTTP 응답을 통해 다시 확인한다. E2E는 HTTP 경로 확인 목적으로 유지했다.
 
 ### 빈 자리

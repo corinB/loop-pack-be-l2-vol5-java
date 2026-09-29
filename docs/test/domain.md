@@ -10,7 +10,7 @@
 ./gradlew :apps:commerce-api:test --tests "com.loopers.domain.*"
 ```
 
-전체 규모는 테스트 클래스 12개, `@Test`/`@ParameterizedTest` 메서드 73개다(파라미터화 테스트의 개별 값 실행까지 펼치면 79회 실행). 클래스·시나리오별 상세는 2절 표를 참고한다.
+전체 규모는 테스트 클래스 13개, `@Test`/`@ParameterizedTest` 메서드 78개다(파라미터화 테스트의 개별 값 실행까지 펼치면 86회 실행). 클래스·시나리오별 상세는 2절 표를 참고한다.
 
 ## 2. 컨텍스트별 테스트
 
@@ -49,6 +49,7 @@
 | 테스트 클래스 | 중첩 그룹 | 검증 시나리오 | 테스트 수 |
 |---|---|---|---|
 | [UserTest](../../apps/commerce-api/src/test/java/com/loopers/domain/shopping/model/UserTest.java) | 없음 | 양수 ID로 사용자를 생성한다 / 저장된 양수 ID로 사용자를 복원한다 / 0 이하 ID로 사용자를 생성할 수 없다(파라미터화) / 0 이하 ID로 사용자를 복원할 수 없다(파라미터화) | 4 |
+| [LikeTest](../../apps/commerce-api/src/test/java/com/loopers/domain/shopping/model/LikeTest.java) | 없음 | 생성한 좋아요는 id와 likedAt이 비어 있다 / 저장된 값으로 좋아요를 복원한다 / userId가 양수가 아니면 생성할 수 없다(파라미터화) / productId가 양수가 아니면 생성할 수 없다(파라미터화) / 복원 시 id·userId·productId가 양수가 아니거나 likedAt이 없으면 거절한다 | 5 |
 
 ### support
 
