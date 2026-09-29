@@ -16,6 +16,8 @@ import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.domain.shopping.model.Like;
 import com.loopers.domain.shopping.repository.LikeRepository;
+import com.loopers.domain.support.error.DomainErrorCode;
+import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -43,15 +45,15 @@ class LikeServiceTest {
             verify(likeRepository, never()).save(any(Like.class));
         }
 
-        @DisplayName("삭제된 상품이면 PRODUCT_NOT_FOUND이고 저장하지 않는다")
+        @DisplayName("삭제된 상품이면 DELETED_PRODUCT이고 저장하지 않는다")
         @Test
-        void throwsProductNotFound_whenProductDeleted() {
+        void throwsDeletedProduct_whenProductDeleted() {
             given(productRepository.findById(10L)).willReturn(Optional.of(product(10L, true)));
 
             assertThatThrownBy(() -> service.execute(new LikeCommand.Register(1L, 10L)))
-                .isInstanceOfSatisfying(ApplicationException.class,
-                    e -> assertThat(e.getErrorCode())
-                        .isEqualTo(ApplicationErrorCode.PRODUCT_NOT_FOUND));
+                .isInstanceOf(DomainException.class)
+                .extracting("errorCode")
+                .isEqualTo(DomainErrorCode.DELETED_PRODUCT);
             verify(likeRepository, never()).save(any(Like.class));
         }
 
