@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` · PR 대상: `volume-3/main`
 
-상태: 문서 준비. 트레이드오프 문답 전이며 채택안은 없다.
+상태: 진행 중. 좋아요 등록·취소 트레이드오프를 결정하고 [구현 계획](plan.md)에 반영했다. 조회 전환·집계는 문답 전이다. 선택 현황은 [트레이드오프 전체 목록](trade_off/total_trade_off.md)을 따른다.
 기준 항목: 데이터 접근 기준(조회 QueryDSL·쓰기 JPA·배치 JDBC), 분석 항목 1(좋아요 전체 재집계), 항목 5(좋아요 등록 3단계).
 
 ## 1. 목적
@@ -63,8 +63,8 @@ JDBC로 남는 유일한 영역인 좋아요 집계는 매 주기 전체를 다�
 
 트레이드오프 문답으로 결정한다. 아래는 후보 목록이며 채택을 의미하지 않는다.
 
-- 좋아요 등록의 JPA 구현: HQL `insert … on conflict do nothing` / `REQUIRES_NEW` 분리 후 중복 예외 무시 / native `INSERT IGNORE`.
-- 좋아요 등록·취소를 현재처럼 Controller → dao로 둘지, UseCase·Service 경로로 옮길지.
+- ~~좋아요 등록의 JPA 구현~~ → 결정: [중복 등록·취소 처리](trade_off/02-like-duplicate.md).
+- ~~좋아요 등록·취소의 계층 위치~~ → 결정: [도메인 구조](trade_off/01-like-aggregate.md), [활성 상품 확인](trade_off/03-like-product-check.md).
 - 좋아요 집계 방식: 전체 재집계 유지(쿼리만 개선) / 변경된 상품만 재집계 / 등록·취소 시 즉시 ±1 반영.
 - 집계 방식에 따른 `product_like_counts` 행 생성 시점(첫 좋아요 시 / 상품 생성 시).
 - 테스트 코드의 데이터 준비·검증에서 JdbcClient 사용을 허용할지.
