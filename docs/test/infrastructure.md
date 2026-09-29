@@ -13,7 +13,7 @@
 
 ### 테스트 규모
 
-대상 테스트 클래스 20개(단위 4개 + 통합/컨텍스트 16개), 총 테스트 케이스 41개.
+대상 테스트 클래스 21개(단위 5개 + 통합/컨텍스트 16개), 총 테스트 케이스 43개.
 
 ## 2. 종류·컨텍스트별 테스트
 
@@ -25,7 +25,7 @@
 | [`BrandFindForDeletionLockIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/BrandFindForDeletionLockIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | FOR UPDATE, innodb_lock_wait_timeout | `@AfterEach` TRUNCATE | `findForDeletion`이 브랜드 행뿐 아니라 딸린 상품 행까지 비관적 쓰기 잠금으로 보호하는지, 별도 커넥션으로 짧은 대기시간을 주고 잠금 대기 타임아웃(에러코드 1205)을 관찰 | 1 | 락/동시성 테스트, `slow` 태그 |
 | [`ProductRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/ProductRepositoryIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 상품 수정 후 flush/clear해도 이름·설명·가격·재고·생성시각 보존 | 1 | |
 | [`StockLostUpdateControlGroupTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/StockLostUpdateControlGroupTest.java) | mall | @IntegrationTest(공유) | 필요 | 잠금 없는 SELECT + 상수 UPDATE, `ConcurrentRequests` 유틸 | `@AfterEach` TRUNCATE | 잠금 없이 재고를 읽고 상수로 덮어쓰는 두 트랜잭션이 모두 성공해도 최종 재고가 어긋나는 갱신 유실을 재현 | 1 | 대조군(제품 코드를 전혀 호출하지 않음), 동시성 테스트, `slow` 태그 |
-| [`LikeRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/LikeRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | HQL `insert … on conflict do nothing`이 `insert … on duplicate key update`로 변환(중복 무시) | `@Transactional`(rollback) + `@AfterEach` TRUNCATE | 신규 저장 1행, 중복 저장은 예외 없이 1행이며 `created_at` 불변, 삭제 시 0행, 없는 관계 삭제는 예외 없음 | 4 | 수정 쿼리는 트랜잭션이 필요해 클래스에 `@Transactional` 적용 |
+| [`LikeRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/LikeRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native `INSERT IGNORE`(중복 시 영향 행 0) | `@Transactional`(rollback) + `@AfterEach` TRUNCATE | 신규 저장은 true·1행, 중복 저장은 예외 없이 false·1행이며 `created_at` 불변, 삭제는 true·0행, 없는 관계 삭제는 false | 4 | 수정 쿼리는 트랜잭션이 필요해 클래스에 `@Transactional` 적용 |
 | [`OrderRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/ordering/repository/OrderRepositoryIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 주문·품목 저장 후 flush/clear해도 스냅샷·합계 보존, 없는 주문 조회, 확정 시 `OrderRecord` cascade 저장/복원 | 3 | |
 | [`PointBillRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/PointBillRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 충전/사용 기록 저장 후 flush/clear해도 타입·금액·주문ID 보존 | 2 | |
 | [`WalletRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/WalletRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 지갑 저장·충전 후 flush/clear해도 잔액 보존, 없는 사용자 빈 결과 | 2 | |
@@ -52,7 +52,8 @@
 
 | 테스트 클래스 | 컨텍스트 | Spring 컨텍스트 | Docker | MySQL 고유 동작 | 정리 방식 | 검증 시나리오 | 테스트 수 | 비고 |
 |---|---|---|---|---|---|---|---|---|
-| [`LikeCountAggregationSchedulerTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/scheduler/shopping/LikeCountAggregationSchedulerTest.java) | shopping | 없음(Mockito 순수 단위) | 불필요 | - | 해당 없음 | UseCase에 실행 위임, 집계 실패가 전파되지 않아 다음 주기 실행 유지 | 2 | |
+| [`LikeCountAggregationSchedulerTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/scheduler/shopping/LikeCountAggregationSchedulerTest.java) | shopping | 없음(Mockito 순수 단위) | 불필요 | - | 해당 없음 | 증감분 반영 UseCase에 실행 위임, 반영 실패가 전파되지 않아 다음 주기 실행 유지 | 2 | |
+| [`LikeCountStartupAggregatorTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/scheduler/shopping/LikeCountStartupAggregatorTest.java) | shopping | 없음(Mockito 순수 단위) | 불필요 | - | 해당 없음 | 초기화 시 전체 재집계를 1회 호출, 재집계 실패가 전파되지 않아 시작을 막지 않음 | 2 | |
 
 ### initializer
 
