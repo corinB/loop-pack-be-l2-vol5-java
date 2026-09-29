@@ -11,11 +11,10 @@ import org.springframework.data.repository.query.Param;
 public interface LikeJpaRepository extends JpaRepository<LikeJpaEntity, Long> {
     // 이미 있는 (userId, productId)는 무시하고 삽입
     @Modifying
-    @Query("""
-        insert into LikeJpaEntity (userId, productId, createdAt)
-        values (:userId, :productId, :createdAt)
-        on conflict do nothing
-        """)
+    @Query(value = """
+        INSERT IGNORE INTO product_likes (user_id, product_id, created_at)
+        VALUES (:userId, :productId, :createdAt)
+        """, nativeQuery = true)
     int insertIfAbsent(@Param("userId") long userId, @Param("productId") long productId,
                        @Param("createdAt") Instant createdAt);
 

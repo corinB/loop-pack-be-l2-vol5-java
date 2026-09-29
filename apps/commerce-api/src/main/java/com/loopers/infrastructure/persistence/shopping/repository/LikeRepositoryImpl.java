@@ -15,13 +15,13 @@ public class LikeRepositoryImpl implements LikeRepository {
 
     // 좋아요 저장 (중복이면 무시)
     @Override
-    public void save(Like like) {
-        likeJpaRepository.insertIfAbsent(like.getUserId(), like.getProductId(), Instant.now());
+    public boolean save(Like like) {
+        return likeJpaRepository.insertIfAbsent(like.getUserId(), like.getProductId(), Instant.now()) > 0;
     }
 
-    // 좋아요 삭제
+    // 좋아요 삭제 (실제로 지웠으면 true)
     @Override
-    public void delete(long userId, long productId) {
-        likeJpaRepository.deleteByUserIdAndProductId(userId, productId);
+    public boolean delete(long userId, long productId) {
+        return likeJpaRepository.deleteByUserIdAndProductId(userId, productId) > 0;
     }
 }

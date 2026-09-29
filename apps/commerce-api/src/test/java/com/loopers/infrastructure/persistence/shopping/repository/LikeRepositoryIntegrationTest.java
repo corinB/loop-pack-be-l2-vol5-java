@@ -1,7 +1,6 @@
 package com.loopers.infrastructure.persistence.shopping.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.loopers.domain.shopping.model.Like;
 import com.loopers.domain.shopping.repository.LikeRepository;
@@ -37,19 +36,21 @@ class LikeRepositoryIntegrationTest {
         @DisplayName("관계가 없으면 새로 저장한다")
         @Test
         void savesNewRelation() {
-            likeRepository.save(Like.create(1L, 10L));
+            boolean saved = likeRepository.save(Like.create(1L, 10L));
 
+            assertThat(saved).isTrue();
             assertThat(countLikes(1L, 10L)).isEqualTo(1L);
         }
 
-        @DisplayName("이미 저장된 관계는 예외 없이 무시하고 기존 행을 바꾸지 않는다")
+        @DisplayName("이미 저장된 관계는 예외 없이 false를 반환하고 기존 행을 바꾸지 않는다")
         @Test
         void ignoresDuplicate_andKeepsCreatedAt() {
             likeRepository.save(Like.create(1L, 10L));
             Instant before = createdAt(1L, 10L);
 
-            assertThatNoException().isThrownBy(() -> likeRepository.save(Like.create(1L, 10L)));
+            boolean saved = likeRepository.save(Like.create(1L, 10L));
 
+            assertThat(saved).isFalse();
             assertThat(countLikes(1L, 10L)).isEqualTo(1L);
             assertThat(createdAt(1L, 10L)).isEqualTo(before);
         }
@@ -58,20 +59,21 @@ class LikeRepositoryIntegrationTest {
     @DisplayName("좋아요 삭제")
     @Nested
     class Delete {
-        @DisplayName("존재하는 관계를 제거한다")
+        @DisplayName("존재하는 관계를 제거하고 true를 반환한다")
         @Test
         void removesExistingRelation() {
             likeRepository.save(Like.create(1L, 10L));
 
-            likeRepository.delete(1L, 10L);
+            boolean deleted = likeRepository.delete(1L, 10L);
 
+            assertThat(deleted).isTrue();
             assertThat(countLikes(1L, 10L)).isZero();
         }
 
-        @DisplayName("존재하지 않는 관계를 삭제해도 예외가 없다")
+        @DisplayName("존재하지 않는 관계를 삭제하면 예외 없이 false를 반환한다")
         @Test
         void ignoresMissingRelation() {
-            assertThatNoException().isThrownBy(() -> likeRepository.delete(1L, 10L));
+            assertThat(likeRepository.delete(1L, 10L)).isFalse();
         }
     }
 
