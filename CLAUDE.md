@@ -73,12 +73,12 @@ com.loopers
                                                         # infrastructure is kind-first, then context:
                                                         # persistence.<context>.{entity,jpa,repository} — JpaEntity + EntityMapper,
                                                         # Spring Data JpaRepository, RepositoryImpl
-                                                        # query.<context> — JdbcClient/QueryDSL-based QueryDao impl
-                                                        # dao.<context> — write-side dao impl (e.g. ConfirmOrderWriter, LikeCommandDao)
+                                                        # query.<context> — QueryDSL-based QueryDao impl
+                                                        # dao.<context> — write-side/batch dao impl (e.g. ConfirmOrderWriter, JdbcLikeCountAggregationDao)
                                                         # scheduler.<context>, initializer.<context>
 ```
 
-Read models (application `query`) all end in `*View` (e.g. `BrandView`, `ProductSummaryView`, `UserView`); write results (application `result`) end in `*Result`. `dao` under `application.<context>` holds write-side contracts that `infrastructure.dao.<context>` implements (`ConfirmOrderWriter`, `LikeCommandDao`, `LikeCountAggregationDao`) — distinct from `query`'s read-only `QueryDao` contracts. EntityMappers live in the same `entity` package as their JpaEntity, since JpaEntity constructors are package-private and only the mapper calls them.
+Read models (application `query`) all end in `*View` (e.g. `BrandView`, `ProductSummaryView`, `UserView`); write results (application `result`) end in `*Result`. `dao` under `application.<context>` holds write-side contracts that `infrastructure.dao.<context>` implements (`ConfirmOrderWriter`, `LikeCountAggregationDao`) — distinct from `query`'s read-only `QueryDao` contracts. EntityMappers live in the same `entity` package as their JpaEntity, since JpaEntity constructors are package-private and only the mapper calls them.
 
 Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPurityArchitectureTest`):
 - `domain` depends on nothing else in `com.loopers` (and, for the four real contexts + `domain.shared`, on no Spring/JPA/Servlet types, and not on `BaseEntity`).
@@ -86,7 +86,7 @@ Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPu
 - `interfaces` must not depend on `infrastructure`.
 - `infrastructure` must not depend on `interfaces`, nor on any `application.*Service` class (it may depend on `application` QueryDao contracts and query-record types).
 
-Writes flow `interfaces → application UseCase → domain + infrastructure RepositoryImpl`. Reads bypass UseCase/Service entirely: a query-only Controller calls an `application` `QueryDao` contract directly. Simple or aggregate lookups are implemented with Spring JDBC `JdbcClient` (`JdbcBrandQueryDao`, `JdbcUserQueryDao`, `JdbcProductLikeCountQueryDao`); the one query that needs dynamic multi-condition filtering/sorting (product listing) is implemented with QueryDSL instead (`QueryDslProductQueryDao`, backed by `modules/jpa`'s `QueryDslConfig`). There is intentionally no query UseCase/Service layer.
+Writes flow `interfaces → application UseCase → domain + infrastructure RepositoryImpl`. Reads bypass UseCase/Service entirely: a query-only Controller calls an `application` `QueryDao` contract directly. All QueryDao implementations use QueryDSL (`QueryDsl*QueryDao`, backed by `modules/jpa`'s `QueryDslConfig`) with `Projections.constructor` into Views or infra Row records — never entity selects (R03, [trade-off 04](docs/week3-2/r03-jdbc-and-like-aggregation/trade_off/04-query-conversion.md)). Writes use JPA; `JdbcClient` remains only in the batch like-count aggregation DAO, and in tests for data setup/verification. Likes are written through `RegisterLikeUseCase`/`CancelLikeUseCase` → `LikeRepository` (independent `Like` aggregate, duplicate insert absorbed by HQL `on conflict do nothing`). There is intentionally no query UseCase/Service layer.
 
 Domain classes split validation into two exception styles. Structural invariants checked at construction/`restore` time (non-null/positive id, non-null `createdAt`, positive foreign-key ids) throw a plain `IllegalArgumentException` with a Korean message — see `Brand.restore`, `Product`'s constructor (`brandId` check). Business-rule validation that carries a stable external error code (name/description length, price/stock rules, deleted-state guards) throws `DomainException` with a `DomainErrorCode` entry instead. `User` is the one outlier that uses `DomainException(INVALID_USER_ID)` for its structural id check — don't copy it as the template for new structural checks.
 
