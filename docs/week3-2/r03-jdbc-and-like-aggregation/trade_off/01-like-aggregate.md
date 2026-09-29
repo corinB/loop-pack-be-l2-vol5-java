@@ -57,6 +57,11 @@ flowchart TB
 
 > **미채택 — DAO 유지:** 변경 범위는 가장 작다. 하지만 쓰기 중 유일하게 UseCase를 거치지 않는 예외 경로가 남는다.
 
+## 구현 후 조정 — UseCase 형식
+
+처음 구현에서는 `RegisterLikeUseCase.register(long, long)`과 `CancelLikeUseCase.cancel(long, long)`으로 만들었다. `LikeService` 하나가 두 UseCase를 구현하는데, 둘 다 `execute(long, long)`이면 시그니처가 겹치기 때문이다.
+다른 UseCase는 모두 `execute(XxxCommand)` 형식이므로 사용자 판단에 따라 `LikeCommand.Register`·`LikeCommand.Cancel` record를 추가하고 `execute(LikeCommand.Register)`·`execute(LikeCommand.Cancel)`로 맞춘다. `BrandCommand`와 같은 방식이다.
+
 ## 남은 사항
 
 좋아요 수 집계(`product_like_counts`)를 등록·취소 시점에 함께 갱신할지는 R03의 집계 주제에서 정한다. 그 결정에 따라 `LikeRepository.save`가 "새로 저장했는지"를 알려줘야 할 수 있다.

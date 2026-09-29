@@ -67,5 +67,10 @@ flowchart TB
 
 ## 남은 사항
 
-- HQL `on conflict do nothing`이 MySQL에서 실행되지 않거나, 중복일 때 예외가 나거나, 기존 행을 바꾸면 대체안(native `ON DUPLICATE KEY UPDATE id = id` / native `INSERT IGNORE`)을 사용자에게 다시 묻는다. 구현 중에 임의로 바꾸지 않는다.
-- 실제로 생성된 SQL은 구현 후 [구현 계획](../plan.md) 체크리스트에 기록한다.
+- ~~HQL on conflict의 MySQL 동작 확인~~ → 해소. Hibernate가 생성한 SQL은 다음과 같다.
+  ```sql
+  insert into product_likes(user_id,product_id,created_at) values (?,?,?) as excluded(user_id,product_id,created_at)
+  on duplicate key update user_id=product_likes.user_id
+  ```
+  중복이면 값이 바뀌지 않는 갱신이 되고, 통합 테스트에서 행 1개와 `created_at` 유지를 확인했다. 대체안은 필요 없다.
+- `on duplicate key update`는 `uk_product_likes_user_product`뿐 아니라 **모든 유일 키 충돌**에 반응한다. 지금 `product_likes`의 유일 키는 PK(IDENTITY)와 이 제약뿐이라 문제가 없다. 유일 키를 추가할 때는 이 동작을 다시 확인한다.
