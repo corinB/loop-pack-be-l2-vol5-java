@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.scheduler.shopping;
 
-import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
+import com.loopers.application.shopping.usecase.FlushLikeCountDeltaUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "scheduler.like-count.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
-// 좋아요 수 주기적 집계 스케줄러
+// 누적된 좋아요 증감분을 주기적으로 반영하는 스케줄러
 public class LikeCountAggregationScheduler {
-    private final LikeCountAggregationUseCase aggregationUseCase;
+    private final FlushLikeCountDeltaUseCase flushUseCase;
 
-    // 주기적으로 좋아요 수 집계 실행
-    @Scheduled(initialDelay = 0, fixedDelay = 10_000)
-    public void aggregate() {
+    // 5초마다 좋아요 증감분 반영 실행
+    @Scheduled(fixedDelay = 5_000)
+    public void flush() {
         try {
-            aggregationUseCase.execute();
+            flushUseCase.execute();
         } catch (RuntimeException exception) {
-            log.error("상품 좋아요 수 전체 집계에 실패했습니다. 다음 주기에 다시 시도합니다.", exception);
+            log.error("상품 좋아요 증감분 반영에 실패했습니다. 다음 주기에 다시 시도합니다.", exception);
         }
     }
 }
