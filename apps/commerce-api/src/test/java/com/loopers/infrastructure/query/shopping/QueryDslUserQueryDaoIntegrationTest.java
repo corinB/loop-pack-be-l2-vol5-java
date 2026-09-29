@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @IntegrationTest
 @Transactional
-class JdbcUserQueryDaoIntegrationTest {
+class QueryDslUserQueryDaoIntegrationTest {
     @Autowired
     private UserQueryDao userQueryDao;
 
