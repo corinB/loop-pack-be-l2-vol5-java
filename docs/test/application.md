@@ -64,7 +64,7 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [LikeServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeServiceTest.java) | 단위 | none | 불필요 | 등록 시 상품이 없으면 PRODUCT_NOT_FOUND·삭제된 상품이면 PRODUCT_NOT_FOUND로 거절하며 저장하지 않음, 활성 상품이면 해당 사용자·상품으로 저장, 취소는 상품 조회 없이 삭제 호출 | 4 | 미기록(단위 테스트 수준으로 빠름) |
+| [LikeServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeServiceTest.java) | 단위 | none | 불필요 | 등록 시 상품이 없으면 PRODUCT_NOT_FOUND·삭제된 상품이면 DELETED_PRODUCT로 거절하며 저장하지 않음, 활성 상품이면 해당 사용자·상품으로 저장, 취소는 상품 조회 없이 삭제 호출 | 4 | 미기록(단위 테스트 수준으로 빠름) |
 | [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백 | 2 | 측정 시간 미기록 |
 
 ### support

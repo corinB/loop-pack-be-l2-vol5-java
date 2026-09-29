@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` · PR 대상: `volume-3/main`
 
-상태: 좋아요 등록·취소 커밋 1~5 구현·검증 완료(Sonnet 위임, check 통과). 구현 후 조정(커밋 6)과 조회 전환(커밋 7~11)은 계획 합의, 구현 위임 전. 집계 절은 트레이드오프 문답 후 추가한다.
+상태: 좋아요 등록·취소(커밋 1~6, 13)와 조회 전환(커밋 7~12) 구현·검증 완료. 커밋 1~12는 Sonnet 위임, 13은 직접 수정. 집계 절은 트레이드오프 문답 후 추가한다.
 브랜치는 `volume-3/main`에 아직 병합되지 않은 `volume-3/refacto`에서 분기했다. refacto가 병합되면 main 기준으로 맞추고, 그 전에는 PR을 만들지 않는다.
 
 ## 문서와 진행 원칙
@@ -32,7 +32,7 @@
 POST   /api/v1/products/{productId}/likes
   LikeController.register → LikeService.register (REQUIRED)
     → ProductRepository.findById         없으면 ApplicationException(PRODUCT_NOT_FOUND) → 404
-    → product.isDeleted()                 삭제면 ApplicationException(PRODUCT_NOT_FOUND) → 404 (커밋 6에서 ensureActive·DELETED_PRODUCT에서 조정)
+    → Product.ensureActive                삭제면 DomainException(DELETED_PRODUCT)   → 404 "Not Found" (응답은 PRODUCT_NOT_FOUND와 같음)
     → LikeRepository.save(Like.create)    insert … on conflict do nothing (0 또는 1행)
 
 DELETE /api/v1/products/{productId}/likes
@@ -94,12 +94,21 @@ DELETE /api/v1/products/{productId}/likes
 
 결정: [UseCase 형식](trade_off/01-like-aggregate.md#구현-후-조정--usecase-형식), [PRODUCT_NOT_FOUND로 되돌리기](trade_off/03-like-product-check.md#구현-후-조정--product_not_found로-되돌리기).
 
-- [ ] `LikeServiceTest`를 먼저 고친다. 삭제된 상품이면 `ApplicationException(PRODUCT_NOT_FOUND)`이고 save를 호출하지 않는지 확인한다. 호출은 `execute(LikeCommand.Register)`·`execute(LikeCommand.Cancel)`로 바꾼다.
-- [ ] `application/shopping/command/LikeCommand`(`Register(long userId, long productId)`, `Cancel(long userId, long productId)` record)를 추가한다. 참고: `application/mall/command/BrandCommand`.
-- [ ] `RegisterLikeUseCase`·`CancelLikeUseCase`를 `execute(LikeCommand.*)`로 바꾸고, `LikeService`와 `LikeController`를 맞춘다.
-- [ ] `LikeService.register`는 `productRepository.findById(productId).filter(product -> !product.isDeleted())`가 비면 `ApplicationException(PRODUCT_NOT_FOUND)`를 던진다. `ensureActive`는 호출하지 않는다.
-- [ ] `LikeApiE2ETest`의 삭제된 상품 케이스에 응답 본문 에러 코드가 `PRODUCT_NOT_FOUND`인지 확인하는 단언 하나를 추가한다. 회귀를 막기 위한 것이며, 새 테스트 메서드는 만들지 않는다. 기존 E2E의 코드 단언 방식을 참고한다.
-- [ ] 커밋: `refactor: 좋아요 유스케이스를 커맨드 형식으로 맞추고 삭제 상품 응답 코드를 유지`
+- [x] `LikeServiceTest`를 먼저 고친다. 삭제된 상품이면 `ApplicationException(PRODUCT_NOT_FOUND)`이고 save를 호출하지 않는지 확인한다. 호출은 `execute(LikeCommand.Register)`·`execute(LikeCommand.Cancel)`로 바꾼다.
+- [x] `application/shopping/command/LikeCommand`(`Register(long userId, long productId)`, `Cancel(long userId, long productId)` record)를 추가한다. 참고: `application/mall/command/BrandCommand`.
+- [x] `RegisterLikeUseCase`·`CancelLikeUseCase`를 `execute(LikeCommand.*)`로 바꾸고, `LikeService`와 `LikeController`를 맞춘다.
+- [x] `LikeService.register`는 `productRepository.findById(productId).filter(product -> !product.isDeleted())`가 비면 `ApplicationException(PRODUCT_NOT_FOUND)`를 던진다. `ensureActive`는 호출하지 않는다.
+- [x] `LikeApiE2ETest`의 삭제된 상품 케이스에 응답 본문 에러 코드가 `PRODUCT_NOT_FOUND`인지 확인하는 단언 하나를 추가한다. 회귀를 막기 위한 것이며, 새 테스트 메서드는 만들지 않는다. 기존 E2E의 코드 단언 방식을 참고한다.
+- [x] 커밋: `refactor: 좋아요 유스케이스를 커맨드 형식으로 맞추고 삭제 상품 응답 코드를 유지`
+- 실제: E2E에 추가한 단언은 `errorCode == "Not Found"`다. `ApiErrorMapper`가 두 코드를 모두 `ErrorType.NOT_FOUND`로 바꾸므로 응답 코드는 원래 바뀐 적이 없었다. 삭제 확인 방식은 커밋 13에서 되돌린다.
+
+### 커밋 13 — 삭제 상품 확인을 ensureActive로 되돌림
+
+결정: [PRODUCT_NOT_FOUND로 되돌렸다가 철회](trade_off/03-like-product-check.md#구현-후-조정--product_not_found로-되돌렸다가-철회).
+
+- [x] `LikeServiceTest`의 삭제된 상품 케이스를 `DomainException(DELETED_PRODUCT)` 기대로 먼저 바꾸고 실패를 확인했다.
+- [x] `LikeService.register`를 `findById` → `PRODUCT_NOT_FOUND`, `product.ensureActive()`로 되돌렸다. E2E의 `"Not Found"` 단언은 그대로 통과한다.
+- [x] 커밋: `refactor: 좋아요 등록의 삭제 상품 확인을 ensureActive로 되돌림` (`9ac90c4`)
 
 ## 조회 DAO의 QueryDSL 전환
 
@@ -116,46 +125,52 @@ DELETE /api/v1/products/{productId}/likes
 
 ### 커밋 7 — 상품 쓰기 응답을 조회 경로로 만들고 좋아요 수 조회 DAO 제거
 
-- [ ] `CreateProductUseCase`·`UpdateProductUseCase`·`SetProductStockUseCase`가 상품 id(`long`)를 반환하도록 바꾼다. `ProductService`에서 `ProductLikeCountQueryDao` 의존과 `result(...)`를 제거한다. 브랜드 활성 확인(`findBrand` → `brand.ensureActive()`)은 업무 규칙이므로 유지한다.
-- [ ] `AdminProductController`의 생성·수정·재고 설정이 UseCase의 id로 `productQueryDao.findAdminProduct(id)`를 호출해 응답을 만든다. 비어 있으면 기존 `notFound()`를 쓴다. 생성은 기존처럼 201이다.
-- [ ] 쓰이지 않게 된 `ProductResult`, `AdminProductView.from(ProductResult)`, `application/mall/query/ProductLikeCountQueryDao`, `infrastructure/query/mall/JdbcProductLikeCountQueryDao`를 삭제한다.
-- [ ] 관련 단위 테스트(`ProductServiceTest` 등이 있으면)를 반환값 변경에 맞춘다. 관리자 상품 E2E 기대값은 바꾸지 않고 통과해야 한다.
-- [ ] 커밋: `refactor: 상품 쓰기 응답을 조회 경로로 만들고 좋아요 수 조회 DAO 제거`
+- [x] `CreateProductUseCase`·`UpdateProductUseCase`·`SetProductStockUseCase`가 상품 id(`long`)를 반환하도록 바꾼다. `ProductService`에서 `ProductLikeCountQueryDao` 의존과 `result(...)`를 제거한다. 브랜드 활성 확인(`findBrand` → `brand.ensureActive()`)은 업무 규칙이므로 유지한다.
+- [x] `AdminProductController`의 생성·수정·재고 설정이 UseCase의 id로 `productQueryDao.findAdminProduct(id)`를 호출해 응답을 만든다. 비어 있으면 기존 `notFound()`를 쓴다. 생성은 기존처럼 201이다.
+- [x] 쓰이지 않게 된 `ProductResult`, `AdminProductView.from(ProductResult)`, `application/mall/query/ProductLikeCountQueryDao`, `infrastructure/query/mall/JdbcProductLikeCountQueryDao`를 삭제한다.
+- [x] 관련 단위 테스트(`ProductServiceTest` 등이 있으면)를 반환값 변경에 맞춘다. 관리자 상품 E2E 기대값은 바꾸지 않고 통과해야 한다.
+- [x] 커밋: `refactor: 상품 쓰기 응답을 조회 경로로 만들고 좋아요 수 조회 DAO 제거`
 
 ### 커밋 8 — mall 조회 DAO 전환
 
-- [ ] `JdbcBrandQueryDao` → `QueryDslBrandQueryDao`(단건, 페이지, `COUNT`). `BrandApiE2ETest`·관리자 브랜드 E2E가 기대값 변경 없이 통과한다.
-- [ ] 커밋: `refactor: 브랜드 조회 DAO를 QueryDSL로 전환`
+- [x] `JdbcBrandQueryDao` → `QueryDslBrandQueryDao`(단건, 페이지, `COUNT`). `BrandApiE2ETest`·관리자 브랜드 E2E가 기대값 변경 없이 통과한다.
+- [x] 커밋: `refactor: 브랜드 조회 DAO를 QueryDSL로 전환`
 
 ### 커밋 9 — pay 조회 DAO 전환
 
-- [ ] `JdbcWalletQueryDao` → `QueryDslWalletQueryDao`. `JdbcWalletQueryDaoIntegrationTest` → `QueryDslWalletQueryDaoIntegrationTest`(이름만 변경).
-- [ ] 커밋: `refactor: 지갑 조회 DAO를 QueryDSL로 전환`
+- [x] `JdbcWalletQueryDao` → `QueryDslWalletQueryDao`. `JdbcWalletQueryDaoIntegrationTest` → `QueryDslWalletQueryDaoIntegrationTest`(이름만 변경).
+- [x] 커밋: `refactor: 지갑 조회 DAO를 QueryDSL로 전환`
 
 ### 커밋 10 — shopping 조회 DAO 전환
 
-- [ ] `JdbcUserQueryDao` → `QueryDslUserQueryDao`. `@XUserId` resolver가 모든 요청에서 호출하므로 조회는 id 한 컬럼만 가져온다.
-- [ ] `JdbcLikeQueryDao` → `QueryDslLikeQueryDao`(`product_likes` ⋈ `products` ⋈ `brands` ⟕ `product_like_counts`, 정렬 `created_at DESC, product_id DESC`, `COUNT`).
-- [ ] 두 통합 테스트는 이름만 변경한다.
-- [ ] 커밋: `refactor: 사용자·좋아요 조회 DAO를 QueryDSL로 전환`
+- [x] `JdbcUserQueryDao` → `QueryDslUserQueryDao`. `@XUserId` resolver가 모든 요청에서 호출하므로 조회는 id 한 컬럼만 가져온다.
+- [x] `JdbcLikeQueryDao` → `QueryDslLikeQueryDao`(`product_likes` ⋈ `products` ⋈ `brands` ⟕ `product_like_counts`, 정렬 `created_at DESC, product_id DESC`, `COUNT`).
+- [x] 두 통합 테스트는 이름만 변경한다.
+- [x] 커밋: `refactor: 사용자·좋아요 조회 DAO를 QueryDSL로 전환`
 
 ### 커밋 11 — ordering 조회 DAO 전환
 
-- [ ] `JdbcOrderQueryDao` → `QueryDslOrderQueryDao`. 사용자별·관리자 목록(헤더 페이지 + 품목 `IN`), 단건(헤더 + 품목), `COUNT`를 옮긴다. 주문 기록은 LEFT JOIN으로 유지한다.
-- [ ] `JdbcOrderQueryDaoIntegrationTest` → `QueryDslOrderQueryDaoIntegrationTest`(이름만 변경).
-- [ ] 커밋: `refactor: 주문 조회 DAO를 QueryDSL로 전환`
+- [x] `JdbcOrderQueryDao` → `QueryDslOrderQueryDao`. 사용자별·관리자 목록(헤더 페이지 + 품목 `IN`), 단건(헤더 + 품목), `COUNT`를 옮긴다. 주문 기록은 LEFT JOIN으로 유지한다.
+- [x] `JdbcOrderQueryDaoIntegrationTest` → `QueryDslOrderQueryDaoIntegrationTest`(이름만 변경).
+- [x] 커밋: `refactor: 주문 조회 DAO를 QueryDSL로 전환`
 
 ### 커밋 12 — 테스트 문서 갱신
 
-- [ ] `docs/test/*.md`에서 바뀐 클래스 이름과 삭제된 DAO를 반영한다.
-- [ ] 커밋: `docs: 조회 DAO 전환에 맞춰 레이어별 테스트 문서 갱신`
+- [x] `docs/test/*.md`에서 바뀐 클래스 이름과 삭제된 DAO를 반영한다.
+- [x] 커밋: `docs: 조회 DAO 전환에 맞춰 레이어별 테스트 문서 갱신`
 
 ### 검증
 
-- [ ] 커밋마다 해당 컨텍스트 테스트(`--tests "*Brand*"` 등)를 실행한다.
-- [ ] 마지막에 `./gradlew :apps:commerce-api:check`를 실행하고 건수·실패·skip을 기록한다.
-- [ ] 운영 코드의 JdbcClient가 `JdbcLikeCountAggregationDao` 하나만 남았는지 grep으로 확인한다.
-- [ ] 주문 목록 1회 조회의 실행 SQL이 COUNT·헤더·품목 3회인지 테스트 로그로 확인해 기록한다.
+- [x] 커밋마다 해당 컨텍스트 테스트(`--tests "*Brand*"` 등)를 실행한다.
+- [x] 마지막에 `./gradlew :apps:commerce-api:check`를 실행하고 건수·실패·skip을 기록한다.
+- [x] 운영 코드의 JdbcClient가 `JdbcLikeCountAggregationDao` 하나만 남았는지 grep으로 확인한다.
+- [x] 주문 목록 1회 조회의 실행 SQL이 COUNT·헤더·품목 3회인지 테스트 로그로 확인해 기록한다.
+
+검증 기록(커밋 6~12 시점, 커밋 13 후 좋아요 테스트·Checkstyle 재확인)
+- `./gradlew :apps:commerce-api:check` BUILD SUCCESSFUL. test 219건, slowTest 17건, 실패·오류·skip 0건. 커밋 13 후 `--tests "*Like*"` 34건 통과, Checkstyle 통과.
+- 운영 코드의 JdbcClient는 `JdbcLikeCountAggregationDao` 하나만 남음.
+- 주문 목록 1회 조회: 헤더 페이지(`orders` ⟕ `order_records`, `order by created_at desc, id desc limit`) → 품목(`order_items where order_id in (...) order by order_id, id`) → `count(o.id)` 3회. JDBC 때와 달리 COUNT가 마지막이며 쿼리 구성은 같다.
+- 계획과 다른 점: `Projections.constructor`가 package-private 생성자를 찾지 못해 `OrderHeaderRow`·`OrderItemRow`를 `public record`로 바꿨다(기존 `ProductQueryRow`와 같음). Brand DAO에는 전용 통합 테스트가 없어 이름을 바꿀 테스트가 없었다. Like 조회는 Row 없이 중첩 `Projections.constructor`로 `BrandSummaryView`를 만든다. `ProductService`의 수정·재고 설정에서 `findBrand`가 `save`보다 먼저 실행되지만 같은 트랜잭션이라 결과는 같다.
 
 ## 좋아요 집계
 
