@@ -65,6 +65,6 @@ JDBC로 남는 유일한 영역인 좋아요 집계는 매 주기 전체를 다�
 
 - ~~좋아요 등록의 JPA 구현~~ → 결정: [중복 등록·취소 처리](trade_off/02-like-duplicate.md).
 - ~~좋아요 등록·취소의 계층 위치~~ → 결정: [도메인 구조](trade_off/01-like-aggregate.md), [활성 상품 확인](trade_off/03-like-product-check.md).
-- 좋아요 집계 방식: 전체 재집계 유지(쿼리만 개선) / 변경된 상품만 재집계 / 등록·취소 시 즉시 ±1 반영.
-- 집계 방식에 따른 `product_like_counts` 행 생성 시점(첫 좋아요 시 / 상품 생성 시).
+- ~~좋아요 집계 방식~~ → 결정: [집계 전략](trade_off/05-like-count-strategy.md), [변경 추적](trade_off/07-like-change-tracking.md), [추가·삭제 감지](trade_off/08-like-insert-detection.md), [반영과 전체 재집계](trade_off/09-like-count-flush.md).
+- ~~`product_like_counts` 행 생성 시점~~ → 결정: 반영 upsert가 행이 없으면 만든다([09](trade_off/09-like-count-flush.md)).
 - ~~테스트 코드의 JdbcClient 허용 여부~~ → 결정: [조회 전환 방식](trade_off/04-query-conversion.md#테스트-코드의-jdbcclient-허용-6번).

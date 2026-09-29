@@ -64,4 +64,4 @@ flowchart TB
 
 ## 남은 사항
 
-좋아요 수 집계(`product_like_counts`)를 등록·취소 시점에 함께 갱신할지는 R03의 집계 주제에서 정한다. 그 결정에 따라 `LikeRepository.save`가 "새로 저장했는지"를 알려줘야 할 수 있다.
+~~집계 결정에 따라 `LikeRepository.save`가 "새로 저장했는지"를 알려줘야 할 수 있다.~~ → 해소: [08번](08-like-insert-detection.md)에서 `boolean save`·`boolean delete`로 결정했다.
