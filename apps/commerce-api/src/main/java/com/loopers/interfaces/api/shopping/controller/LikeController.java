@@ -1,5 +1,6 @@
 package com.loopers.interfaces.api.shopping.controller;
 
+import com.loopers.application.shopping.command.LikeCommand;
 import com.loopers.application.shopping.usecase.CancelLikeUseCase;
 import com.loopers.application.shopping.usecase.RegisterLikeUseCase;
 import com.loopers.interfaces.api.ApiResponse;
@@ -24,7 +25,7 @@ public class LikeController {
     @PostMapping
     public ApiResponse<Object> register(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        registerLikeUseCase.register(userId, productId);
+        registerLikeUseCase.execute(new LikeCommand.Register(userId, productId));
         return ApiResponse.success();
     }
 
@@ -32,7 +33,7 @@ public class LikeController {
     @DeleteMapping
     public ApiResponse<Object> cancel(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        cancelLikeUseCase.cancel(userId, productId);
+        cancelLikeUseCase.execute(new LikeCommand.Cancel(userId, productId));
         return ApiResponse.success();
     }
 }
