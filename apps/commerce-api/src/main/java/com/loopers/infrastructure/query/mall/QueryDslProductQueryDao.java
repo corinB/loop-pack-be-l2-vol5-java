@@ -15,21 +15,30 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-@RequiredArgsConstructor
 // QueryDSL 기반 상품 조회 DAO
 public class QueryDslProductQueryDao implements ProductQueryDao {
     private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
     private static final QBrandJpaEntity BRAND = QBrandJpaEntity.brandJpaEntity;
 
     private final JPAQueryFactory queryFactory;
+    // 브랜드 필터가 없는 전체 개수만 짧게 캐시한다 (test 프로필은 TTL 0으로 끔)
+    private final ExpiringCountCache totalCountCache;
+
+    public QueryDslProductQueryDao(JPAQueryFactory queryFactory,
+                                   @Value("${query.product-count-cache.ttl:30s}") Duration countCacheTtl) {
+        this.queryFactory = queryFactory;
+        this.totalCountCache = new ExpiringCountCache(Clock.systemUTC(), countCacheTtl);
+    }
 
     // 상품 목록 페이지 조회
     @Override
@@ -91,10 +100,16 @@ public class QueryDslProductQueryDao implements ProductQueryDao {
     }
 
     private long countProducts(ProductCriteria criteria) {
+        if (criteria.brandId() == null) {
+            return totalCountCache.get(() -> countActiveProducts(null));
+        }
+        return countActiveProducts(criteria.brandId());
+    }
+
+    private long countActiveProducts(Long brandId) {
         Long count = queryFactory.select(PRODUCT.count())
             .from(PRODUCT)
-            .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId))
-            .where(activeProduct(), activeBrand(), brandIdEquals(criteria.brandId()))
+            .where(activeProduct(), brandIdEquals(brandId))
             .fetchOne();
         return count == null ? 0L : count;
     }
