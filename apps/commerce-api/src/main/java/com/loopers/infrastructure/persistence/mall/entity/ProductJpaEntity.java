@@ -14,7 +14,9 @@ import java.time.Instant;
 @Entity
 @Table(name = "products", indexes = {
     @Index(name = "idx_products_deleted_brand_created", columnList = "deleted, brand_id, created_at DESC, id DESC"),
-    @Index(name = "idx_products_deleted_brand_price", columnList = "deleted, brand_id, price ASC, id DESC")
+    @Index(name = "idx_products_deleted_brand_price", columnList = "deleted, brand_id, price ASC, id DESC"),
+    @Index(name = "idx_products_deleted_like", columnList = "deleted, like_count DESC, id DESC"),
+    @Index(name = "idx_products_deleted_brand_like", columnList = "deleted, brand_id, like_count DESC, id DESC")
 })
 // 상품 JPA 엔티티
 public class ProductJpaEntity {
@@ -31,6 +33,10 @@ public class ProductJpaEntity {
     private long price;
     @Column(nullable = false)
     private int stock;
+    // 좋아요 집계 DAO만 갱신하는 조회 전용 컬럼. JPA 저장 시 INSERT/UPDATE 대상에서 제외한다.
+    @Column(name = "like_count", insertable = false, updatable = false,
+        columnDefinition = "bigint not null default 0")
+    private long likeCount;
     @Column(nullable = false)
     private boolean deleted;
     @Column(name = "created_at", nullable = false, updatable = false)
