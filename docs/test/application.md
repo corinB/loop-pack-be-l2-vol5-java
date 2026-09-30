@@ -34,7 +34,7 @@
 
 `ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`로 실행하면 `test` 태스크가 태그 제외 없이 모든 테스트를 한 JVM에서 실행하고 `slowTest`는 따로 돌지 않는다.
 
-집계: 클래스 13개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 45개 — 단위 테스트 클래스 7개(26개 메서드), 통합 테스트 클래스 6개(19개 메서드).
+집계: 클래스 13개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 44개 — 단위 테스트 클래스 7개(26개 메서드), 통합 테스트 클래스 6개(18개 메서드).
 
 ## 2. 컨텍스트별 테스트
 
@@ -65,7 +65,7 @@
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
 | [LikeServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeServiceTest.java) | 단위 | none | 불필요 | 등록 시 상품이 없으면 PRODUCT_NOT_FOUND·삭제된 상품이면 DELETED_PRODUCT로 거절하며 저장하지 않음, 활성 상품이면 해당 사용자·상품으로 저장, 새로 저장되면 +1 변경 이벤트 발행·이미 있으면 미발행, 취소는 상품 조회 없이 삭제 호출, 실제로 지웠으면 -1 이벤트 발행·없으면 미발행 | 8 | 미기록(단위 테스트 수준으로 빠름) |
-| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백, 증감분 반영(addDeltas)은 행이 없으면 생성·기존 값에 더함·음수 결과는 0으로 맞춤 | 5 | 측정 시간 미기록 |
+| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 `products.like_count`에 저장하고 관계가 사라진 기존 값은 0으로 갱신, 증감분 반영(addDeltas)은 기존 값에 더함·음수 결과는 0으로 맞춤·없는 상품 id는 무시 | 4 | 측정 시간 미기록 |
 | [LikeCountDeltaBufferTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaBufferTest.java) | 단위 | none | 불필요 | 같은 상품의 증감 누적, drain이 값을 돌려주고 비움, 합이 0인 상품 제외, restore 후 새 증감과 합산 | 4 | 미기록(단위 테스트 수준으로 빠름) |
 | [LikeCountDeltaBufferIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaBufferIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | AFTER_COMMIT 연결 확인: 등록은 커밋 후 +1, 같은 등록 반복은 추가 증감 없음, 취소는 -1 (테스트를 트랜잭션으로 감싸지 않음) | 1 | 측정 시간 미기록 |
 | [LikeCountDeltaFlushServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaFlushServiceTest.java) | 단위 | none | 불필요 | 누적분이 없으면 DAO 미호출, 있으면 그대로 addDeltas 호출 후 버퍼 비움, DAO 실패 시 버퍼에 복원하고 예외 전파 | 3 | 미기록(단위 테스트 수준으로 빠름) |
