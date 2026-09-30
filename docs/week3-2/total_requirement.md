@@ -72,7 +72,7 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 선행 | 상태 |
 |---|---|---|---|---|---|---|
 | 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 구현·검증 완료([결과](r03-jdbc-and-like-aggregation/result.md)), [PR #16](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/16) 리뷰 중 |
-| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 문서 준비 |
+| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 트레이드오프 결정([선택 현황](r04-like-sort-index/trade_off/total_trade_off.md)), 구현 계획 작성 중 |
 | 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 문서 준비 |
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 문서 준비 |
 
