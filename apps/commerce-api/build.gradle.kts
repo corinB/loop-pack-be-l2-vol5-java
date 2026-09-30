@@ -33,9 +33,15 @@ configure<CheckstyleExtension> {
     maxWarnings = 0
 }
 
+// check·build로 실행되면 test 태스크 하나(한 JVM, Spring 컨텍스트 기동 1회)가 slow·example 태그까지 모두 실행한다.
+// test를 단독으로 실행할 때만 slow·example 태그를 뺀다.
+val runsFullCheck = gradle.startParameter.taskNames.any { it.substringAfterLast(':') in setOf("check", "build") }
+
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("slow", "example")
+        if (!runsFullCheck) {
+            excludeTags("slow", "example")
+        }
     }
 }
 
@@ -54,8 +60,4 @@ val slowTest by tasks.registering(Test::class) {
     systemProperty("spring.profiles.active", "test")
     jvmArgs("-Xshare:off")
     shouldRunAfter(tasks.test)
-}
-
-tasks.named("check") {
-    dependsOn(slowTest)
 }
