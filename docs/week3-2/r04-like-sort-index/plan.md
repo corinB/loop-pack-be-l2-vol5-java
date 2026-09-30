@@ -102,9 +102,9 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 6 — 좋아요 집계 테이블 제거
 
-- [ ] `ProductLikeCountJpaEntity`를 삭제한다. `LikeStorageIntegrationTest`의 "상품별 집계 저장"(`product_like_counts` 유일 키) 테스트는 테이블이 사라지므로 삭제한다.
-- [ ] `git grep -n "product_like_counts\|ProductLikeCount" apps/` 결과가 없어야 한다.
-- [ ] 커밋: `refactor: 상품 좋아요 집계 테이블 제거`
+- [x] `ProductLikeCountJpaEntity`를 삭제한다. `LikeStorageIntegrationTest`의 "상품별 집계 저장"(`product_like_counts` 유일 키) 테스트는 테이블이 사라지므로 삭제한다.
+- [x] `git grep -n "product_like_counts\|ProductLikeCount" apps/` 결과가 없어야 한다.
+- [x] 커밋: `refactor: 상품 좋아요 집계 테이블 제거`
 
 ### 커밋 7 — 변경 후 실행 계획과 문서 갱신
 

@@ -49,28 +49,4 @@ class LikeStorageIntegrationTest {
                 .update();
         }
     }
-
-    @DisplayName("상품별 집계 저장")
-    @Nested
-    class SaveCount {
-        @DisplayName("상품 ID를 유일 키로 좋아요 수를 저장한다")
-        @Test
-        void storesCountByProductId() {
-            jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (:productId, :likeCount)")
-                .param("productId", 10L)
-                .param("likeCount", 3L)
-                .update();
-
-            assertThatThrownBy(() -> jdbcClient.sql(
-                    "INSERT INTO product_like_counts (product_id, like_count) VALUES (:productId, :likeCount)")
-                .param("productId", 10L)
-                .param("likeCount", 5L)
-                .update())
-                .isInstanceOf(DataIntegrityViolationException.class);
-            assertThat(jdbcClient.sql("SELECT like_count FROM product_like_counts WHERE product_id = :productId")
-                .param("productId", 10L)
-                .query(Long.class)
-                .single()).isEqualTo(3L);
-        }
-    }
 }
