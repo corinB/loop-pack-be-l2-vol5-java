@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/r04-like-sort-index` · PR 대상: `volume-3/main`
 
-상태: 초안(사용자 합의 전). 브랜치는 R03 브랜치(`volume-3/r03-jdbc-and-like-aggregation`, PR #16)에서 분기했다. R03이 병합되면 main 위로 리베이스한 뒤 PR을 만든다.
+상태: 사용자 합의 완료(2026-09-30), Sonnet 위임. 브랜치는 R03 브랜치(`volume-3/r03-jdbc-and-like-aggregation`, PR #16)에서 분기했다. R03이 병합되면 main 위로 리베이스한 뒤 PR을 만든다.
 
 ## 문서와 진행 원칙
 
@@ -35,7 +35,7 @@ SET p.like_count = COALESCE(a.c, 0)
 WHERE p.like_count <> COALESCE(a.c, 0)
 ```
 
-### 전체 개수 캐시와 테스트 격리 (문답 이후 발견, 합의 필요)
+### 전체 개수 캐시와 테스트 격리 (문답 이후 발견, 제안대로 합의)
 
 `QueryDslProductQueryDao`는 모든 Spring 테스트가 공유하는 싱글톤이다. 캐시가 켜져 있으면 한 테스트 클래스가 센 전체 개수가 30초 동안 다른 테스트 클래스(`ProductApiE2ETest`의 `totalElements` 등)에 새어 기대값이 흔들린다.
 
@@ -95,7 +95,7 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 5 — 목록 개수에서 브랜드 조인 제거와 전체 개수 캐시
 
-- [ ] (위 "테스트 격리" 제안이 합의되면) 캐시 POJO 테스트를 먼저 쓴다.
+- [ ] 캐시 POJO 테스트를 먼저 쓴다(TTL 안이면 재계산하지 않음, 지나면 재계산, TTL 0이면 매번 계산).
 - [ ] `countProducts`에서 브랜드 조인을 제거한다. 브랜드 필터가 없을 때만 캐시를 거친다.
 - [ ] `application.yml`에 TTL 기본값, `test` 프로필에 `0s`를 둔다.
 - [ ] 커밋: `refactor: 상품 목록 개수에서 브랜드 조인을 빼고 전체 개수를 짧게 캐시`
