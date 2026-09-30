@@ -88,10 +88,10 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 4 — 상품·좋아요 조회를 `products.like_count` 기준으로 전환
 
-- [ ] `QueryDslProductQueryDaoIntegrationTest`(`@IntegrationTest`)를 새로 쓴다. 좋아요순에서 좋아요 수 내림차순, 동점은 id 내림차순, 좋아요 0건 상품 포함, 삭제 상품 제외, 브랜드 필터를 확인한다. 좋아요 수는 JDBC `UPDATE products SET like_count`로 준비한다.
-- [ ] 기존 테스트의 데이터 준비를 `product_like_counts` INSERT에서 `UPDATE products SET like_count`로 바꾼다(`ProductApiE2ETest.saveLikeCount`, `QueryDslLikeQueryDaoIntegrationTest`). 기대값은 바꾸지 않는다.
-- [ ] 두 QueryDao에서 `product_like_counts` 조인을 없애고 `PRODUCT.likeCount`를 쓴다.
-- [ ] 커밋: `refactor: 상품·좋아요 조회를 상품의 좋아요 수 컬럼 기준으로 전환`
+- [x] `QueryDslProductQueryDaoIntegrationTest`(`@IntegrationTest`)를 새로 쓴다. 좋아요순에서 좋아요 수 내림차순, 동점은 id 내림차순, 좋아요 0건 상품 포함, 삭제 상품 제외, 브랜드 필터를 확인한다. 좋아요 수는 JDBC `UPDATE products SET like_count`로 준비한다.
+- [x] 기존 테스트의 데이터 준비를 `product_like_counts` INSERT에서 `UPDATE products SET like_count`로 바꾼다(`ProductApiE2ETest.saveLikeCount`, `QueryDslLikeQueryDaoIntegrationTest`). 기대값은 바꾸지 않는다.
+- [x] 두 QueryDao에서 `product_like_counts` 조인을 없애고 `PRODUCT.likeCount`를 쓴다.
+- [x] 커밋: `refactor: 상품·좋아요 조회를 상품의 좋아요 수 컬럼 기준으로 전환`
 
 ### 커밋 5 — 목록 개수에서 브랜드 조인 제거와 전체 개수 캐시
 
