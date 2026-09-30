@@ -72,9 +72,9 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 2 — 상품에 좋아요 수 컬럼과 정렬 인덱스 추가
 
-- [ ] `ProductRepositoryIntegrationTest`에 단언 1개를 먼저 추가한다. JDBC로 `like_count = 5`를 넣고, Repository로 상품을 읽어 재고를 바꿔 저장해도 `like_count`가 5로 남는지 확인한다. 새 상품의 `like_count`가 0인지도 같은 테스트에서 확인한다.
-- [ ] `ProductJpaEntity`에 컬럼과 인덱스 2개를 추가한다. getter는 필요할 때만 둔다(조회는 QueryDSL `PRODUCT.likeCount` 경로 사용).
-- [ ] 커밋: `refactor: 상품에 좋아요 수 컬럼과 좋아요순 정렬 인덱스 추가`
+- [x] `ProductRepositoryIntegrationTest`에 단언 1개를 먼저 추가한다. JDBC로 `like_count = 5`를 넣고, Repository로 상품을 읽어 재고를 바꿔 저장해도 `like_count`가 5로 남는지 확인한다. 새 상품의 `like_count`가 0인지도 같은 테스트에서 확인한다.
+- [x] `ProductJpaEntity`에 컬럼과 인덱스 2개를 추가한다. getter는 필요할 때만 둔다(조회는 QueryDSL `PRODUCT.likeCount` 경로 사용).
+- [x] 커밋: `refactor: 상품에 좋아요 수 컬럼과 좋아요순 정렬 인덱스 추가`
 
 ### 커밋 3 — 좋아요 수 반영·재집계를 상품 테이블로 전환
 
