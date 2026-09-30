@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` · PR 대상: `volume-3/main`
 
-상태: 구현·검증 완료([결과](result.md)). 최종 check: test 236건, slowTest 17건 통과. PR 미제출(refacto 병합 대기). 선택 현황은 [트레이드오프 전체 목록](trade_off/total_trade_off.md)을 따른다.
+상태: 구현·검증 완료([결과](result.md)). 최종 check: test 236건, slowTest 17건 통과. refacto 병합 후 main 기준으로 리베이스, PR 미제출. 선택 현황은 [트레이드오프 전체 목록](trade_off/total_trade_off.md)을 따른다.
 기준 항목: 데이터 접근 기준(조회 QueryDSL·쓰기 JPA·배치 JDBC), 분석 항목 1(좋아요 전체 재집계), 항목 5(좋아요 등록 3단계).
 
 ## 1. 목적

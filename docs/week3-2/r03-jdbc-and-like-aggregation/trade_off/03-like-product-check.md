@@ -74,7 +74,7 @@ flowchart TB
 | `ApiErrorMapper` 결과 | `ErrorType.NOT_FOUND` | `ErrorType.NOT_FOUND` |
 | HTTP 상태 / 응답 `errorCode` / 메시지 | 404 / `"Not Found"` / 상품을 찾을 수 없습니다. | 404 / `"Not Found"` / 상품을 찾을 수 없습니다. |
 
-4. 응답 계약은 바뀐 적이 없으므로 되돌린 이유가 사라졌다. 사용자 판단에 따라 `ensureActive`로 다시 돌아왔다(`9ac90c4`).
+4. 응답 계약은 바뀐 적이 없으므로 되돌린 이유가 사라졌다. 사용자 판단에 따라 `ensureActive`로 다시 돌아왔다(`872510a`).
 
 > **채택 — `ensureActive` 유지:** 응답 계약이 같으므로, 규칙을 한 곳에 두는 원래 결정의 장점을 버릴 이유가 없다.
 

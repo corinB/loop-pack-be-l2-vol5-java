@@ -5,7 +5,7 @@
 작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` · PR 대상: `volume-3/main`
 
 상태: 좋아요 등록·취소(커밋 1~6, 13)와 조회 전환(커밋 7~12) 구현·검증 완료. 커밋 1~12는 Sonnet 위임, 13은 직접 수정. 좋아요 집계(커밋 14~20)도 구현·검증 완료(Sonnet 위임). R03 전체 구현 완료, 결과는 [result.md](result.md).
-브랜치는 `volume-3/main`에 아직 병합되지 않은 `volume-3/refacto`에서 분기했다. refacto가 병합되면 main 기준으로 맞추고, 그 전에는 PR을 만들지 않는다.
+브랜치는 `volume-3/refacto`에서 분기했고, refacto가 `volume-3/main`에 병합(PR #15)된 뒤 main 위로 리베이스했다.
 
 ## 문서와 진행 원칙
 
@@ -108,7 +108,7 @@ DELETE /api/v1/products/{productId}/likes
 
 - [x] `LikeServiceTest`의 삭제된 상품 케이스를 `DomainException(DELETED_PRODUCT)` 기대로 먼저 바꾸고 실패를 확인했다.
 - [x] `LikeService.register`를 `findById` → `PRODUCT_NOT_FOUND`, `product.ensureActive()`로 되돌렸다. E2E의 `"Not Found"` 단언은 그대로 통과한다.
-- [x] 커밋: `refactor: 좋아요 등록의 삭제 상품 확인을 ensureActive로 되돌림` (`9ac90c4`)
+- [x] 커밋: `refactor: 좋아요 등록의 삭제 상품 확인을 ensureActive로 되돌림` (`872510a`)
 
 ## 조회 DAO의 QueryDSL 전환
 

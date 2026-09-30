@@ -2,10 +2,10 @@
 
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
-작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` (`volume-3/refacto`의 `9ec23d0`에서 분기) · PR 대상: `volume-3/main`
+작업 브랜치: `volume-3/r03-jdbc-and-like-aggregation` (`volume-3/refacto`에서 분기, refacto 병합(PR #15) 후 `volume-3/main`의 `b81d60e` 위로 리베이스) · PR 대상: `volume-3/main`
 
 상태: 구현·검증 완료. 최종 check에서 test 236건, slowTest 17건 모두 통과했다(실패·오류·skip 0). Checkstyle·ArchUnit도 통과했다.
-PR은 아직 만들지 않았다. `volume-3/refacto`가 `volume-3/main`에 병합된 뒤 main 기준으로 맞추고 제출한다.
+리베이스 전후 최종 트리가 같음을 확인했다(main의 병합 커밋 트리 = 원격 refacto 트리).
 
 ## 1. 구현 결과
 
@@ -90,7 +90,7 @@ DELETE /api/v1/products/{id}/likes
 | Like 조회 Row | Row 또는 중첩 Projection | 중첩 `Projections.constructor` | 더 단순한 쪽 |
 | 집계 DAO | JdbcClient | JdbcClient + `JdbcTemplate`(배치) | `batchUpdate`용 |
 | `LikeRepositoryIntegrationTest` | 트랜잭션 없음 | 클래스 단위 `@Transactional` | `@Modifying` 쿼리는 트랜잭션 밖에서 `TransactionRequiredException`. `BrandRepositoryIntegrationTest`와 같은 방식 |
-| 커밋 메시지 | Co-Authored-By 줄 포함 | 사용자 요청으로 브랜치 전체에서 제거 | 메시지만 재작성했고 커밋별 트리가 같음을 확인. 백업 브랜치 `backup/r03-before-trailer-removal`, `backup/refacto-before-trailer-removal` 보존 |
+| 커밋 메시지 | Co-Authored-By 줄 포함 | 사용자 요청으로 브랜치 전체에서 제거 | 메시지만 재작성했고 커밋별 트리가 같음을 확인한 뒤 백업 브랜치는 사용자 요청으로 삭제 |
 
 ## 4. 한계와 후속 검토
 
