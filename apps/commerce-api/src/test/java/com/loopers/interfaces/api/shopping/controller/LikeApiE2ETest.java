@@ -111,6 +111,7 @@ class LikeApiE2ETest {
 
             assertAll(
                 () -> assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND),
+                () -> assertThat(response.getBody().meta().errorCode()).isEqualTo("Not Found"),
                 () -> assertThat(countLikes(user.getId(), product.getId())).isZero()
             );
         }

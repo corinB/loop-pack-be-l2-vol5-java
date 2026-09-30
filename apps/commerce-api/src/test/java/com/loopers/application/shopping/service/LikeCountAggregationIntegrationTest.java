@@ -9,6 +9,7 @@ import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
 import com.loopers.infrastructure.dao.shopping.JdbcLikeCountAggregationDao;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,37 @@ class LikeCountAggregationIntegrationTest {
         } finally {
             reset(aggregationDao);
         }
+    }
+
+    @DisplayName("증감분 반영은 집계 행이 없으면 생성한다")
+    @Test
+    void addDeltas_createsMissingRow() {
+        aggregationDao.addDeltas(Map.of(10L, 3L));
+
+        assertThat(findCount(10L)).isEqualTo(3L);
+    }
+
+    @DisplayName("증감분 반영은 기존 집계 값에 더한다")
+    @Test
+    void addDeltas_addsToExistingCount() {
+        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (10, 5)").update();
+        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (20, 5)").update();
+
+        aggregationDao.addDeltas(Map.of(10L, 2L, 20L, -3L));
+
+        assertThat(findCount(10L)).isEqualTo(7L);
+        assertThat(findCount(20L)).isEqualTo(2L);
+    }
+
+    @DisplayName("증감분 반영은 결과가 음수가 되면 0으로 맞춘다")
+    @Test
+    void addDeltas_clampsAtZero() {
+        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (10, 1)").update();
+
+        aggregationDao.addDeltas(Map.of(10L, -5L, 30L, -2L));
+
+        assertThat(findCount(10L)).isZero();
+        assertThat(findCount(30L)).isZero();
     }
 
     private void insertLike(long userId, long productId) {

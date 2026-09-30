@@ -12,7 +12,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "product_likes", uniqueConstraints = @UniqueConstraint(
-    name = "uk_product_likes_user_product", columnNames = {"user_id", "product_id"}
+    name = "uk_product_likes_user_product", columnNames = {"product_id", "user_id"}
 ), indexes = {
     @Index(name = "idx_product_likes_user_created", columnList = "user_id, created_at DESC, product_id DESC")
 })

@@ -1,8 +1,8 @@
 package com.loopers.interfaces.api.shopping.controller;
 
-import com.loopers.application.shopping.dao.LikeCommandDao;
-import com.loopers.application.support.error.ApplicationErrorCode;
-import com.loopers.application.support.error.ApplicationException;
+import com.loopers.application.shopping.command.LikeCommand;
+import com.loopers.application.shopping.usecase.CancelLikeUseCase;
+import com.loopers.application.shopping.usecase.RegisterLikeUseCase;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.support.RequestInputValidator;
 import com.loopers.interfaces.api.support.XUserId;
@@ -18,16 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 // 좋아요 등록/취소 API 컨트롤러
 public class LikeController {
-    private final LikeCommandDao likeCommandDao;
+    private final RegisterLikeUseCase registerLikeUseCase;
+    private final CancelLikeUseCase cancelLikeUseCase;
 
     // 좋아요 등록 요청 처리
     @PostMapping
     public ApiResponse<Object> register(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        if (!likeCommandDao.existsActiveProduct(productId)) {
-            throw new ApplicationException(ApplicationErrorCode.PRODUCT_NOT_FOUND);
-        }
-        likeCommandDao.register(userId, productId);
+        registerLikeUseCase.execute(new LikeCommand.Register(userId, productId));
         return ApiResponse.success();
     }
 
@@ -35,7 +33,7 @@ public class LikeController {
     @DeleteMapping
     public ApiResponse<Object> cancel(@XUserId long userId, @PathVariable long productId) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        likeCommandDao.cancel(userId, productId);
+        cancelLikeUseCase.execute(new LikeCommand.Cancel(userId, productId));
         return ApiResponse.success();
     }
 }

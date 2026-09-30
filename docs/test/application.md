@@ -6,12 +6,12 @@
 
 | 종류 | 특징 | 예시 |
 |---|---|---|
-| 서비스 단위 테스트 | Mockito만 사용, Spring 컨텍스트·Docker 불필요, 순수 자바 객체(POJO) 조립 | `ConfirmOrderServiceTest`, `OrderServiceTest`, `WalletServiceTest`, `ApplicationExceptionTest` |
-| 통합 테스트 | `@SpringBootTest`(MOCK 환경) + Testcontainers MySQL, 실제 트랜잭션·롤백·비관적 락·동시성까지 검증 | `ConfirmOrderIntegrationTest`, `ConfirmOrderConcurrencyIntegrationTest`, `ConfirmOrderSqlRollbackIntegrationTest`, `DeleteBrandRollbackIntegrationTest`, `LikeCountAggregationIntegrationTest` |
+| 서비스 단위 테스트 | Mockito만 사용, Spring 컨텍스트·Docker 불필요, 순수 자바 객체(POJO) 조립 | `ConfirmOrderServiceTest`, `OrderServiceTest`, `WalletServiceTest`, `LikeServiceTest`, `LikeCountDeltaBufferTest`, `LikeCountDeltaFlushServiceTest`, `ApplicationExceptionTest` |
+| 통합 테스트 | `@SpringBootTest`(MOCK 환경) + Testcontainers MySQL, 실제 트랜잭션·롤백·비관적 락·동시성까지 검증 | `ConfirmOrderIntegrationTest`, `ConfirmOrderConcurrencyIntegrationTest`, `ConfirmOrderSqlRollbackIntegrationTest`, `DeleteBrandRollbackIntegrationTest`, `LikeCountAggregationIntegrationTest`, `LikeCountDeltaBufferIntegrationTest` |
 
 통합 테스트는 실행 전 Docker가 떠 있어야 하며(`docker-compose -f ./docker/infra-compose.yml up`), `modules/jpa`의 `MySqlTestContainersConfig`를 통해 Testcontainers MySQL을 띄운다. 각 통합 테스트 클래스는 `@AfterEach`에서 `DatabaseCleanUp.truncateAllTables()`로 모든 테이블을 비운다.
 
-5개 통합 테스트 클래스는 모두 공용 메타 애노테이션 [`@IntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/support/test/IntegrationTest.java)(`@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean(OrderRepository, ProductJpaRepository, JdbcLikeCountAggregationDao)`)를 붙여 하나의 Spring 컨텍스트를 공유한다. 각 클래스는 필요한 스파이를 `@Autowired`로 주입받아 쓴다.
+6개 통합 테스트 클래스는 모두 공용 메타 애노테이션 [`@IntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/support/test/IntegrationTest.java)(`@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean(OrderRepository, ProductJpaRepository, JdbcLikeCountAggregationDao)`)를 붙여 하나의 Spring 컨텍스트를 공유한다. 각 클래스는 필요한 스파이를 `@Autowired`로 주입받아 쓴다.
 
 실행 방법.
 
@@ -34,7 +34,7 @@
 
 `ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`는 두 태스크를 모두 포함한다.
 
-집계: 클래스 9개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 26개 — 단위 테스트 클래스 4개(11개 메서드), 통합 테스트 클래스 5개(15개 메서드).
+집계: 클래스 13개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 45개 — 단위 테스트 클래스 7개(26개 메서드), 통합 테스트 클래스 6개(19개 메서드).
 
 ## 2. 컨텍스트별 테스트
 
@@ -64,7 +64,11 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백 | 2 | 측정 시간 미기록 |
+| [LikeServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeServiceTest.java) | 단위 | none | 불필요 | 등록 시 상품이 없으면 PRODUCT_NOT_FOUND·삭제된 상품이면 DELETED_PRODUCT로 거절하며 저장하지 않음, 활성 상품이면 해당 사용자·상품으로 저장, 새로 저장되면 +1 변경 이벤트 발행·이미 있으면 미발행, 취소는 상품 조회 없이 삭제 호출, 실제로 지웠으면 -1 이벤트 발행·없으면 미발행 | 8 | 미기록(단위 테스트 수준으로 빠름) |
+| [LikeCountAggregationIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountAggregationIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신, 집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백, 증감분 반영(addDeltas)은 행이 없으면 생성·기존 값에 더함·음수 결과는 0으로 맞춤 | 5 | 측정 시간 미기록 |
+| [LikeCountDeltaBufferTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaBufferTest.java) | 단위 | none | 불필요 | 같은 상품의 증감 누적, drain이 값을 돌려주고 비움, 합이 0인 상품 제외, restore 후 새 증감과 합산 | 4 | 미기록(단위 테스트 수준으로 빠름) |
+| [LikeCountDeltaBufferIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaBufferIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | AFTER_COMMIT 연결 확인: 등록은 커밋 후 +1, 같은 등록 반복은 추가 증감 없음, 취소는 -1 (테스트를 트랜잭션으로 감싸지 않음) | 1 | 측정 시간 미기록 |
+| [LikeCountDeltaFlushServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/shopping/service/LikeCountDeltaFlushServiceTest.java) | 단위 | none | 불필요 | 누적분이 없으면 DAO 미호출, 있으면 그대로 addDeltas 호출 후 버퍼 비움, DAO 실패 시 버퍼에 복원하고 예외 전파 | 3 | 미기록(단위 테스트 수준으로 빠름) |
 
 ### support
 
@@ -88,7 +92,7 @@
 - `ConfirmOrderSqlRollbackIntegrationTest`와 겹치던 `OrderApiE2ETest#returnsInternalServerError_whenSaveFailsAfterRealSql`은 삭제됐다.
 - `WalletServiceTest#rejectsOverflow_withoutSavingAnything`, `#rejectsNonPositiveAmount_withoutSavingAnything`과 겹치던 [WalletApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/pay/controller/WalletApiE2ETest.java)의 상태 검증 케이스도 삭제됐다.
 
-공백(gap): `Brand`/`Product`/`Like` 애플리케이션 서비스에는 서비스 단위 테스트가 없다. 해당 분기는 현재 E2E 테스트에서만 커버된다.
+공백(gap): `Brand`/`Product` 애플리케이션 서비스에는 서비스 단위 테스트가 없다. 해당 분기는 현재 E2E 테스트에서만 커버된다.
 
 ## 4. 경량화 결과
 

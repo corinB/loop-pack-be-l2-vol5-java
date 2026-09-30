@@ -62,7 +62,7 @@ public class AdminProductController {
     // 상품 생성
     @PostMapping
     public ResponseEntity<ApiResponse<AdminProductView>> create(@RequestBody ProductApiDto.CreateRequest request) {
-        AdminProductView product = AdminProductView.from(createProductUseCase.execute(request.toCommand()));
+        AdminProductView product = findView(createProductUseCase.execute(request.toCommand()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(product));
     }
 
@@ -70,7 +70,7 @@ public class AdminProductController {
     @PutMapping("/{productId}")
     public ApiResponse<AdminProductView> update(@PathVariable long productId, @RequestBody ProductApiDto.UpdateRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        return ApiResponse.success(AdminProductView.from(updateProductUseCase.execute(request.toCommand(productId))));
+        return ApiResponse.success(findView(updateProductUseCase.execute(request.toCommand(productId))));
     }
 
     // 상품 삭제
@@ -85,7 +85,11 @@ public class AdminProductController {
     @PutMapping("/{productId}/stock")
     public ApiResponse<AdminProductView> setStock(@PathVariable long productId, @RequestBody ProductApiDto.StockRequest request) {
         RequestInputValidator.requirePositiveId(productId, "상품 ID");
-        return ApiResponse.success(AdminProductView.from(setProductStockUseCase.execute(request.toCommand(productId))));
+        return ApiResponse.success(findView(setProductStockUseCase.execute(request.toCommand(productId))));
+    }
+
+    private AdminProductView findView(long productId) {
+        return productQueryDao.findAdminProduct(productId).orElseThrow(AdminProductController::notFound);
     }
 
     private static ApplicationException notFound() {
