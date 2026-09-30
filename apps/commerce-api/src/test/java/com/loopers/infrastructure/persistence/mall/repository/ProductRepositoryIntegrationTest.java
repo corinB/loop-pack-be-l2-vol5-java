@@ -48,10 +48,10 @@ class ProductRepositoryIntegrationTest {
         entityManager.clear();
         assertThat(likeCountOf(product.getId())).isZero();
 
+        Product loaded = productRepository.findById(product.getId()).orElseThrow();
         entityManager.createNativeQuery("UPDATE products SET like_count = 5 WHERE id = :id")
             .setParameter("id", product.getId())
             .executeUpdate();
-        Product loaded = productRepository.findById(product.getId()).orElseThrow();
         loaded.setStock(0);
         productRepository.save(loaded);
         entityManager.flush();
