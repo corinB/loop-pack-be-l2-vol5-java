@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r04-like-sort-index` · PR 대상: `volume-3/main`
 
-상태: 트레이드오프 결정 완료([선택 현황](trade_off/total_trade_off.md)), 구현 계획 작성. 브랜치는 R03 브랜치에서 먼저 분기했고 R03 병합 후 main 기준으로 리베이스한다.
+상태: 구현·검증 완료([결과](result.md)). 최종 check: test 241건, slowTest 17건 통과. R03 병합 후 main 기준으로 리베이스했다.
 기준 항목: 분석 항목 2(좋아요순 정렬 인덱스 부재와 매 요청 `COUNT`).
 
 ## 1. 목적
