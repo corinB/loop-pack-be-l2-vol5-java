@@ -108,9 +108,9 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 7 — 변경 후 실행 계획과 문서 갱신
 
-- [ ] `after.sql`로 같은 EXPLAIN을 실행해 변경 후 결과를 검증 기록에 적는다.
-- [ ] `docs/test/*.md`의 테스트 목록·개수, `CLAUDE.md`의 좋아요 수 구조 설명(`product_like_counts` → `products.like_count`, upsert → UPDATE)을 갱신한다.
-- [ ] 커밋: `docs: 좋아요순 조회 변경 후 실행 계획과 관련 문서 갱신`
+- [x] `after.sql`로 같은 EXPLAIN을 실행해 변경 후 결과를 검증 기록에 적는다.
+- [x] `docs/test/*.md`의 테스트 목록·개수, `CLAUDE.md`의 좋아요 수 구조 설명(`product_like_counts` → `products.like_count`, upsert → UPDATE)을 갱신한다.
+- [x] 커밋: `docs: 좋아요순 조회 변경 후 실행 계획과 관련 문서 갱신`
 
 ## 검증 계획
 
@@ -121,11 +121,11 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ## 완료 체크리스트
 
-- [ ] 좋아요순 목록이 인덱스를 사용하고 전후 EXPLAIN·실행 SQL이 기록됨
-- [ ] 기존 상품 목록·좋아요·E2E 테스트가 기대값 변경 없이 통과
-- [ ] JPA 저장이 `like_count`를 덮어쓰지 않음을 테스트로 확인
-- [ ] `product_like_counts` 참조 없음
-- [ ] `./gradlew :apps:commerce-api:check` 통과
+- [x] 좋아요순 목록이 인덱스를 사용하고 전후 EXPLAIN·실행 SQL이 기록됨
+- [x] 기존 상품 목록·좋아요·E2E 테스트가 기대값 변경 없이 통과
+- [x] JPA 저장이 `like_count`를 덮어쓰지 않음을 테스트로 확인
+- [x] `product_like_counts` 참조 없음
+- [x] `./gradlew :apps:commerce-api:check` 통과
 - [ ] 운영 마이그레이션 순서를 `result.md`에 기록(결과 작성 시)
 
 ## 검증 기록
@@ -144,3 +144,27 @@ MySQL 8.0.46(`docker-mysql-1`, `docker/infra-compose.yml`). 스크래치 스키�
 | COUNT, 브랜드 필터(브랜드 조인) | b: const, p: ref / `idx_products_deleted_brand_price` (covering) | 1,000 | `Using index` | 0.31 ms |
 | 최신순, 필터 없음 (기록만) | p: ref / `idx_products_deleted_brand_created`(deleted만 사용) | 497,280 (실제 950,000행 읽음) | `Using filesort` | 5,583 ms |
 | 가격순, 필터 없음 (기록만) | p: ref / `idx_products_deleted_brand_created`(가격 인덱스 미사용) | 497,280 (실제 950,000행 읽음) | `Using filesort` | 5,700 ms |
+
+### 변경 후 (커밋 7)
+
+`after.sql`(`products.like_count` + 인덱스 2개, 데이터는 `r04_before`에서 복사)로 만든 `r04_after`에서 `explain_after.sql`·`explain.sql` 실행. 같은 MySQL 8.0.46.
+
+| 쿼리 | type / key | rows(추정) | Extra | 실행 시간 |
+|---|---|---|---|---|
+| 좋아요순, 필터 없음 | p: ref / `idx_products_deleted_like`, b: eq_ref PRIMARY | 496,944 (LIMIT 20이라 실제 20행만 읽음) | `Using filesort`·`Using temporary` 없음 | 0.30 ms (변경 전 9,112 ms) |
+| 좋아요순, 브랜드 필터(500) | b: const, p: ref / `idx_products_deleted_brand_like` | 1,000 (LIMIT 20이라 실제 20행만 읽음) | filesort·temporary 없음 | 0.75 ms (변경 전 34 ms) |
+| COUNT, 필터 없음(products만) | p: ref / `idx_products_deleted_brand_price` (covering) | 496,944 (실제 950,000행 스캔) | `Using index` | 177 ms (변경 전 286 ms) |
+| COUNT, 브랜드 필터(products만) | p: ref / `idx_products_deleted_brand_price` (covering) | 1,000 | `Using index` | 0.24 ms (변경 전 0.31 ms) |
+| 최신순, 필터 없음 (기록만, 변경 없음) | p: ref / `idx_products_deleted_brand_created`(deleted만 사용) | 496,944 (실제 950,000행 읽음) | `Using filesort` | 16,328 ms |
+| 가격순, 필터 없음 (기록만, 변경 없음) | p: ref / `idx_products_deleted_brand_created` | 496,944 (실제 950,000행 읽음) | `Using filesort` | 4,522 ms |
+
+- 좋아요순은 두 경우 모두 새 인덱스를 사용하고 filesort가 사라졌다. 기대(중단 조건 미해당)와 일치한다.
+- 필터 없는 COUNT는 여전히 인덱스 950,000건을 훑는다(브랜드 조인은 제거됨). 그래서 앱에서 전체 개수를 TTL 캐시한다.
+- 최신순·가격순(필터 없음)의 시간은 `brand_id`가 선두 다음 컬럼이라 인덱스를 타지 못해 filesort가 남은 결과이며 이번 범위 밖이다. 변경 전후 시간 차이(5.6s/5.7s → 16.3s/4.5s)는 인덱스가 늘어난 스키마의 버퍼 풀 상태 등 측정 잡음으로 보이며 실행 계획은 동일하다(단발 측정, 반복 측정 아님).
+- 이 EXPLAIN의 좋아요순 쿼리는 SQL로 옮긴 것이다. 앱이 실제로 내는 QueryDSL SQL은 `select ... from products p1_0 join brands b1_0 on ... where p1_0.deleted=0 and b1_0.deleted=0 order by p1_0.like_count desc, p1_0.id desc limit ?, ?` 형태이다(Hibernate가 `deleted`를 bit로 비교하므로 동일 계획으로 기대하지만, 앱 실행 로그로 재확인한 것은 아님).
+
+### 최종 검증 (`./gradlew :apps:commerce-api:check`)
+
+- BUILD SUCCESSFUL. `test` 241건 · `slowTest` 17건 (`build/test-results/{test,slowTest}/*.xml` 합산), 실패 0 · 오류 0 · skip 0. slowTest에는 R02 `ConfirmOrderConcurrencyIntegrationTest`가 포함되어 통과했다.
+- Checkstyle main/test, ArchUnit 통과(`check`에 포함).
+- `git grep -n "product_like_counts\|ProductLikeCount" apps/` 결과 없음.

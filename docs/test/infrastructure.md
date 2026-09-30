@@ -8,12 +8,12 @@
 
 - `com.loopers.testcontainers.MySqlTestContainersConfig`(`modules/jpa/src/testFixtures`)는 `@Configuration` 빈으로, `commerce-api`가 `modules:jpa`의 `testFixtures` 의존성을 통해 컴포넌트 스캔으로 가져온다. `static` 블록에서 `mysql:8.0` 컨테이너를 기동하고 `datasource.mysql-jpa.main.*` 시스템 프로퍼티를 설정한다. 따라서 `@SpringBootTest`로 전체 컨텍스트를 올리는 테스트는 DB를 직접 건드리지 않아도 모두 Docker와 MySQL 컨테이너 기동을 필요로 한다. `withReuse(true)`가 적용되어 있어, 로컬 `~/.testcontainers.properties`에 `testcontainers.reuse.enable=true`를 설정하면 테스트 실행 사이에 컨테이너를 재사용한다(설정하지 않으면 기존과 동일하게 매번 새로 기동되며, CI 동작에는 영향이 없다).
 - `commerce-api`는 `modules:redis`의 `testFixtures` 의존성을 제거했다. 더 이상 Redis를 전혀 사용하지 않는데도 `@SpringBootTest` 컨텍스트를 올릴 때마다 `RedisTestContainersConfig`가 불필요한 `redis:latest` 컨테이너를 기동하던 문제를 없앤 것이다. `test` 프로파일(`application.yml`)에서도 `management.health.redis.enabled: false`로 Redis 헬스 인디케이터를 비활성화해 둔다.
-- `com.loopers.utils.DatabaseCleanUp`(`modules/jpa/src/testFixtures`)은 `@Component` + `InitializingBean`으로, 컨텍스트 초기화 시 `EntityManager` 메타모델에서 `@Entity` + `@Table` 조합을 스캔해 테이블명 목록을 만든다. `truncateAllTables()`는 `SET FOREIGN_KEY_CHECKS = 0` → 각 테이블 `TRUNCATE` → `SET FOREIGN_KEY_CHECKS = 1` 순으로 실행하되, 테이블별로 `SELECT 1 ... LIMIT 1`로 먼저 비어 있는지 확인해 빈 테이블은 TRUNCATE를 건너뛴다. 현재 엔티티 11종(example, users, product_likes, product_like_counts, wallets, point_bills, orders, order_items, order_records, brands, products)에 대응하는 테이블 중 실제로 데이터가 있는 테이블만 TRUNCATE 대상이 된다.
+- `com.loopers.utils.DatabaseCleanUp`(`modules/jpa/src/testFixtures`)은 `@Component` + `InitializingBean`으로, 컨텍스트 초기화 시 `EntityManager` 메타모델에서 `@Entity` + `@Table` 조합을 스캔해 테이블명 목록을 만든다. `truncateAllTables()`는 `SET FOREIGN_KEY_CHECKS = 0` → 각 테이블 `TRUNCATE` → `SET FOREIGN_KEY_CHECKS = 1` 순으로 실행하되, 테이블별로 `SELECT 1 ... LIMIT 1`로 먼저 비어 있는지 확인해 빈 테이블은 TRUNCATE를 건너뛴다. 현재 엔티티 10종(example, users, product_likes, wallets, point_bills, orders, order_items, order_records, brands, products)에 대응하는 테이블 중 실제로 데이터가 있는 테이블만 TRUNCATE 대상이 된다.
 - 워크트리에서 처음 테스트를 돌릴 때는 git-ignore된 `apps/commerce-api/src/test/resources/docker-java.properties`(`api.version=1.44`) 파일이 있어야 한다. 이 파일이 없으면 Testcontainers가 Docker Engine API 버전 협상에 실패해 `BadRequestException`(HTTP 400)을 던진다.
 
 ### 테스트 규모
 
-대상 테스트 클래스 21개(단위 5개 + 통합/컨텍스트 16개), 총 테스트 케이스 43개.
+대상 테스트 클래스 23개(단위 6개 + 통합/컨텍스트 17개), 총 테스트 케이스 49개.
 
 ## 2. 종류·컨텍스트별 테스트
 
@@ -23,13 +23,13 @@
 |---|---|---|---|---|---|---|---|---|
 | [`BrandRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/BrandRepositoryIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 삭제 전용 조회(`findForDeletion`)가 미삭제 상품만 빈 목록으로 반환, 브랜드 저장 시 연결 상품 삭제 상태 전파 및 무관 필드 보존 | 2 | |
 | [`BrandFindForDeletionLockIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/BrandFindForDeletionLockIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | FOR UPDATE, innodb_lock_wait_timeout | `@AfterEach` TRUNCATE | `findForDeletion`이 브랜드 행뿐 아니라 딸린 상품 행까지 비관적 쓰기 잠금으로 보호하는지, 별도 커넥션으로 짧은 대기시간을 주고 잠금 대기 타임아웃(에러코드 1205)을 관찰 | 1 | 락/동시성 테스트, `slow` 태그 |
-| [`ProductRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/ProductRepositoryIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 상품 수정 후 flush/clear해도 이름·설명·가격·재고·생성시각 보존 | 1 | |
+| [`ProductRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/ProductRepositoryIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 상품 수정 후 flush/clear해도 이름·설명·가격·재고·생성시각 보존, 새 상품의 `like_count`는 0이고 JPA 저장이 외부에서 갱신한 `like_count`를 덮어쓰지 않음 | 2 | |
 | [`StockLostUpdateControlGroupTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/mall/repository/StockLostUpdateControlGroupTest.java) | mall | @IntegrationTest(공유) | 필요 | 잠금 없는 SELECT + 상수 UPDATE, `ConcurrentRequests` 유틸 | `@AfterEach` TRUNCATE | 잠금 없이 재고를 읽고 상수로 덮어쓰는 두 트랜잭션이 모두 성공해도 최종 재고가 어긋나는 갱신 유실을 재현 | 1 | 대조군(제품 코드를 전혀 호출하지 않음), 동시성 테스트, `slow` 태그 |
 | [`LikeRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/LikeRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native `INSERT IGNORE`(중복 시 영향 행 0) | `@Transactional`(rollback) + `@AfterEach` TRUNCATE | 신규 저장은 true·1행, 중복 저장은 예외 없이 false·1행이며 `created_at` 불변, 삭제는 true·0행, 없는 관계 삭제는 false | 4 | 수정 쿼리는 트랜잭션이 필요해 클래스에 `@Transactional` 적용 |
 | [`OrderRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/ordering/repository/OrderRepositoryIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 주문·품목 저장 후 flush/clear해도 스냅샷·합계 보존, 없는 주문 조회, 확정 시 `OrderRecord` cascade 저장/복원 | 3 | |
 | [`PointBillRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/PointBillRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 충전/사용 기록 저장 후 flush/clear해도 타입·금액·주문ID 보존 | 2 | |
 | [`WalletRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/WalletRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 지갑 저장·충전 후 flush/clear해도 잔액 보존, 없는 사용자 빈 결과 | 2 | |
-| [`LikeStorageIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/entity/LikeStorageIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | unique constraint 위반 → `DataIntegrityViolationException` | `@AfterEach` TRUNCATE | 사용자·상품 유일 관계 위반, `product_like_counts` 유일 키 위반을 원시 JDBC INSERT로 검증 | 2 | |
+| [`LikeStorageIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/entity/LikeStorageIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | unique constraint 위반 → `DataIntegrityViolationException` | `@AfterEach` TRUNCATE | 사용자·상품 유일 관계 위반을 원시 JDBC INSERT로 검증 | 1 | |
 | [`UserEntityMapperTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/entity/UserEntityMapperTest.java) | shopping | 없음(순수 단위) | 불필요 | - | 해당 없음 | 도메인↔Entity 왕복 변환 시 사용자 ID 보존 | 1 | |
 | [`UserRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/UserRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 할당 사용자 ID 저장 후 flush/clear해도 저장 상태 확인 | 1 | `UserFixture` 사용 |
 
@@ -39,7 +39,9 @@
 |---|---|---|---|---|---|---|---|---|
 | [`QueryDslOrderQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/ordering/QueryDslOrderQueryDaoIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient`, `created_at` 직접 UPDATE) | `@AfterEach` TRUNCATE만 | 최근 생성순 정렬, 다른 사용자 주문 제외, 결제 필드 포함, 없는 주문, 관리자 목록 전체 조회 | 5 | |
 | [`QueryDslWalletQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/pay/QueryDslWalletQueryDaoIntegrationTest.java) | pay | @IntegrationTest(공유) + `@Transactional`(클래스 레벨) | 필요 | - | `@Transactional`(rollback)만 | JPA로 저장한 잔액을 JDBC로 재조회, 없는 사용자 빈 결과 | 2 | |
-| [`QueryDslLikeQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslLikeQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient` 직접 INSERT), 조회는 QueryDSL, 검증 데이터 입력만 JdbcClient | `@AfterEach` TRUNCATE만 | 좋아요 상품을 브랜드·집계와 함께 최근순 반환, 동시각 상품ID 내림차순, 삭제 상품 제외, 페이지네이션 | 4 | |
+| [`QueryDslProductQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/QueryDslProductQueryDaoIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient`로 `products.like_count` 갱신), 조회는 QueryDSL | `@AfterEach` TRUNCATE만 | 좋아요순 목록이 좋아요 수 내림차순·동점은 id 내림차순(좋아요 0건 포함), 삭제 상품은 목록·전체 개수에서 제외, 브랜드 필터 정렬·개수 | 3 | |
+| [`ExpiringCountCacheTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/ExpiringCountCacheTest.java) | mall | 없음(순수 단위, 가변 Clock) | 불필요 | - | 해당 없음 | TTL 안에서는 재계산하지 않음, TTL이 지나면 재계산, TTL 0이면 매번 계산(전체 개수 캐시) | 3 | `test` 프로필은 `query.product-count-cache.ttl=0s`라 통합 테스트에서는 캐시가 꺼져 있다 |
+| [`QueryDslLikeQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslLikeQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient` 직접 INSERT), 조회는 QueryDSL, 검증 데이터 입력만 JdbcClient | `@AfterEach` TRUNCATE만 | 좋아요 상품을 브랜드·`products.like_count`와 함께 최근순 반환, 동시각 상품ID 내림차순, 삭제 상품 제외, 페이지네이션 | 4 | |
 | [`QueryDslUserQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslUserQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) + `@Transactional`(클래스 레벨) | 필요 | - | `@Transactional`(rollback)만, 별도 TRUNCATE 없음 | JPA 저장 사용자를 JDBC 조회 모델로 조회, 없는 사용자는 빈 결과이며 기존 저장 상태 유지 | 2 | TRUNCATE 호출 없이 rollback에만 의존 |
 
 ### dao
@@ -79,7 +81,7 @@
 
 ### 빈 자리
 
-상품 목록 쿼리(`QueryDslProductQueryDao`)에 대한 인프라 레벨 통합 테스트가 없다. 정렬·페이징을 포함한 QueryDSL 동적 조건 SQL은 오직 [`ProductApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/mall/controller/ProductApiE2ETest.java)를 통해서만 간접적으로 검증되고 있어, DAO 단위로 격리된 케이스가 비어 있다. 이 경량화 작업에서는 다루지 않았다.
+상품 목록 쿼리(`QueryDslProductQueryDao`)의 좋아요순 정렬은 R04에서 `QueryDslProductQueryDaoIntegrationTest`로 격리해 검증한다. 최신순·가격순 정렬과 페이징은 여전히 [`ProductApiE2ETest`](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/mall/controller/ProductApiE2ETest.java)로만 간접 검증된다.
 
 ## 4. 경량화 결과
 
@@ -99,7 +101,7 @@
 
 ## 참고: 확인 사항
 
-- `LikeStorageIntegrationTest`는 엔티티가 아닌 `JdbcClient` 원시 SQL로 `product_likes`/`product_like_counts` 유일 제약을 검증하는 테스트로, `infrastructure.persistence.shopping.entity` 패키지에 있지만 실제로는 엔티티 클래스를 직접 다루지 않는다.
+- `LikeStorageIntegrationTest`는 엔티티가 아닌 `JdbcClient` 원시 SQL로 `product_likes` 유일 제약을 검증하는 테스트로, `infrastructure.persistence.shopping.entity` 패키지에 있지만 실제로는 엔티티 클래스를 직접 다루지 않는다.
 
 ## 5. 실행 방법
 
