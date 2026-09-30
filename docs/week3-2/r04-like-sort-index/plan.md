@@ -62,13 +62,13 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 1 — EXPLAIN 검증 스크립트와 변경 전 실행 계획
 
-- [ ] `docs/week3-2/r04-like-sort-index/explain/`에 스크립트를 둔다. 스크립트는 자체 DDL을 포함해 로컬 Docker MySQL(`docker/infra-compose.yml`)의 별도 스키마에서 실행한다.
+- [x] `docs/week3-2/r04-like-sort-index/explain/`에 스크립트를 둔다. 스크립트는 자체 DDL을 포함해 로컬 Docker MySQL(`docker/infra-compose.yml`)의 별도 스키마에서 실행한다.
   - `before.sql`: 현재 엔티티와 같은 `brands`·`products`(기존 인덱스 2개)·`product_like_counts` DDL.
   - `after.sql`: `products.like_count`와 인덱스 2개를 추가한 DDL.
   - `seed.sql`: 브랜드 1,000개, 상품 100만 건(삭제 약 5%), 좋아요 수는 편중 분포(대부분 0~10, 소수 수만)로 채운다. 재귀 CTE 등 SQL만 사용한다.
   - `explain.sql`: 좋아요순(필터 없음·브랜드 필터), COUNT(필터 없음·브랜드 필터), 최신순·가격순(필터 없음)의 첫 페이지 쿼리를 `EXPLAIN`(가능하면 `EXPLAIN ANALYZE`)으로 실행한다.
-- [ ] 변경 전 결과(`type`, `key`, `rows`, `Extra`의 `Using filesort`·`Using temporary`, 실행 시간)를 이 문서의 검증 기록에 적는다.
-- [ ] 커밋: `docs: 좋아요순 조회의 EXPLAIN 검증 스크립트와 변경 전 실행 계획 기록`
+- [x] 변경 전 결과(`type`, `key`, `rows`, `Extra`의 `Using filesort`·`Using temporary`, 실행 시간)를 이 문서의 검증 기록에 적는다.
+- [x] 커밋: `docs: 좋아요순 조회의 EXPLAIN 검증 스크립트와 변경 전 실행 계획 기록`
 
 ### 커밋 2 — 상품에 좋아요 수 컬럼과 정렬 인덱스 추가
 
@@ -130,4 +130,17 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ## 검증 기록
 
-(구현 중 작성)
+### EXPLAIN 환경
+
+MySQL 8.0.46(`docker-mysql-1`, `docker/infra-compose.yml`). 스크래치 스키마 `r04_before`/`r04_after`. 브랜드 1,000개, 상품 1,000,000건(삭제 50,000건 = 5%, 브랜드당 약 1,000건), `product_like_counts` 610,000행(1% 상품 1만~6만, 나머지 0~10, 약 39% 상품은 집계 행 없음). 스크립트는 [explain/](explain/) 참고(`before.sql` → `seed.sql` → `explain.sql`·`explain_before.sql`, 이후 `after.sql` → `explain.sql`·`explain_after.sql`). 시간은 `EXPLAIN ANALYZE`의 첫 실행(실제 시간) 값이다.
+
+### 변경 전 (커밋 1)
+
+| 쿼리 | type / key | rows(추정) | Extra | 실행 시간 |
+|---|---|---|---|---|
+| 좋아요순, 필터 없음 | p: ref / `idx_products_deleted_brand_created`(deleted만 사용), b·c: eq_ref PRIMARY | 497,280 (실제 950,000행 읽음) | `Using temporary; Using filesort` | 9,112 ms |
+| 좋아요순, 브랜드 필터(500) | b: const, p: ref / `idx_products_deleted_brand_created`(deleted, brand_id), c: eq_ref | 1,000 | `Using temporary; Using filesort` | 34 ms |
+| COUNT, 필터 없음(브랜드 조인) | b: ref / `idx_brands_deleted_created`, p: ref / `idx_products_deleted_brand_price` (covering) | 1,000 x 993 | `Using index` | 286 ms |
+| COUNT, 브랜드 필터(브랜드 조인) | b: const, p: ref / `idx_products_deleted_brand_price` (covering) | 1,000 | `Using index` | 0.31 ms |
+| 최신순, 필터 없음 (기록만) | p: ref / `idx_products_deleted_brand_created`(deleted만 사용) | 497,280 (실제 950,000행 읽음) | `Using filesort` | 5,583 ms |
+| 가격순, 필터 없음 (기록만) | p: ref / `idx_products_deleted_brand_created`(가격 인덱스 미사용) | 497,280 (실제 950,000행 읽음) | `Using filesort` | 5,700 ms |
