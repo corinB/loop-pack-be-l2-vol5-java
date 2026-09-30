@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-3/r04-like-sort-index` · PR 대상: `volume-3/main`
 
-상태: 사용자 합의 완료(2026-09-30), Sonnet 위임. 브랜치는 R03 브랜치(`volume-3/r03-jdbc-and-like-aggregation`, PR #16)에서 분기했다. R03이 병합되면 main 위로 리베이스한 뒤 PR을 만든다.
+상태: 사용자 합의 완료(2026-09-30), Sonnet 위임. 브랜치는 R03 브랜치(`volume-3/r03-jdbc-and-like-aggregation`, PR #16)에서 분기했다. R03 병합(PR #16) 후 main 위로 리베이스했다(트리 동일). 결과는 [result.md](result.md).
 
 ## 문서와 진행 원칙
 
