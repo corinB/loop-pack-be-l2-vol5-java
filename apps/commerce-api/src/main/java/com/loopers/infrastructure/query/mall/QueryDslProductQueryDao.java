@@ -9,12 +9,10 @@ import com.loopers.application.mall.query.ProductSort;
 import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.infrastructure.persistence.mall.entity.QBrandJpaEntity;
 import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
-import com.loopers.infrastructure.persistence.shopping.entity.QProductLikeCountJpaEntity;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
@@ -30,9 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class QueryDslProductQueryDao implements ProductQueryDao {
     private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
     private static final QBrandJpaEntity BRAND = QBrandJpaEntity.brandJpaEntity;
-    private static final QProductLikeCountJpaEntity LIKE_COUNT_ROW =
-        QProductLikeCountJpaEntity.productLikeCountJpaEntity;
-    private static final NumberExpression<Long> LIKE_COUNT = LIKE_COUNT_ROW.likeCount.coalesce(0L);
 
     private final JPAQueryFactory queryFactory;
 
@@ -87,13 +82,12 @@ public class QueryDslProductQueryDao implements ProductQueryDao {
     private JPAQuery<ProductQueryRow> selectProducts() {
         return queryFactory.select(productProjection())
             .from(PRODUCT)
-            .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId))
-            .leftJoin(LIKE_COUNT_ROW).on(LIKE_COUNT_ROW.productId.eq(PRODUCT.id));
+            .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId));
     }
 
     private ConstructorExpression<ProductQueryRow> productProjection() {
         return Projections.constructor(ProductQueryRow.class, PRODUCT.id, PRODUCT.name, PRODUCT.price,
-            BRAND.id, BRAND.name, LIKE_COUNT, PRODUCT.description, PRODUCT.stock, PRODUCT.createdAt);
+            BRAND.id, BRAND.name, PRODUCT.likeCount, PRODUCT.description, PRODUCT.stock, PRODUCT.createdAt);
     }
 
     private long countProducts(ProductCriteria criteria) {
@@ -121,7 +115,7 @@ public class QueryDslProductQueryDao implements ProductQueryDao {
         OrderSpecifier<?> primary = switch (sort) {
             case LATEST -> PRODUCT.createdAt.desc();
             case PRICE_ASC -> PRODUCT.price.asc();
-            case LIKES_DESC -> LIKE_COUNT.desc();
+            case LIKES_DESC -> PRODUCT.likeCount.desc();
         };
         return new OrderSpecifier<?>[] {primary, PRODUCT.id.desc()};
     }

@@ -179,7 +179,7 @@ class ProductApiE2ETest {
     }
 
     private void saveLikeCount(long productId, long count) {
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (:productId, :count)")
+        jdbcClient.sql("UPDATE products SET like_count = :count WHERE id = :productId")
             .param("productId", productId)
             .param("count", count)
             .update();
