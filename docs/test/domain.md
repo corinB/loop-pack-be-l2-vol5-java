@@ -92,7 +92,7 @@
 ```bash
 ./gradlew :apps:commerce-api:test      # 빠른 기본(slow·example 태그 제외)
 ./gradlew :apps:commerce-api:slowTest  # slow·example 태그만
-./gradlew :apps:commerce-api:check     # 전체(빌드 + test + slowTest + Checkstyle + ArchUnit)
+./gradlew :apps:commerce-api:check     # 전체(빌드 + 모든 테스트를 test 1회로 + Checkstyle + ArchUnit)
 ```
 
 ## 5. 작성 규칙

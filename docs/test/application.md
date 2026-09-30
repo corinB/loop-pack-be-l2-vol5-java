@@ -22,7 +22,7 @@
 # slow(ConfirmOrderConcurrencyIntegrationTest)·example 태그만 실행
 ./gradlew :apps:commerce-api:slowTest
 
-# 전체(test + slowTest + Checkstyle + ArchUnit)
+# 전체(test 태스크 1회가 slow·example 포함 모든 테스트 실행 + Checkstyle + ArchUnit)
 ./gradlew :apps:commerce-api:check
 
 # application 패키지만
@@ -32,7 +32,7 @@
 ./gradlew :apps:commerce-api:test --tests "com.loopers.application.ordering.service.ConfirmOrderConcurrencyIntegrationTest"
 ```
 
-`ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`는 두 태스크를 모두 포함한다.
+`ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`로 실행하면 `test` 태스크가 태그 제외 없이 모든 테스트를 한 JVM에서 실행하고 `slowTest`는 따로 돌지 않는다.
 
 집계: 클래스 13개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 45개 — 단위 테스트 클래스 7개(26개 메서드), 통합 테스트 클래스 6개(19개 메서드).
 
@@ -108,7 +108,7 @@
 ```bash
 ./gradlew :apps:commerce-api:test      # 빠른 기본(slow·example 태그 제외)
 ./gradlew :apps:commerce-api:slowTest  # slow·example 태그만
-./gradlew :apps:commerce-api:check     # 전체(빌드 + test + slowTest + Checkstyle + ArchUnit)
+./gradlew :apps:commerce-api:check     # 전체(빌드 + 모든 테스트를 test 1회로 + Checkstyle + ArchUnit)
 ```
 
 ### 결과

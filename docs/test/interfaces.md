@@ -30,7 +30,7 @@ MOCK 환경(비-E2E) 통합 테스트는 같은 스파이 구성을 갖는 `com.
 # slow·example 태그만 실행(ExampleV1ApiE2ETest, ContractClassificationTest 포함)
 ./gradlew :apps:commerce-api:slowTest
 
-# 빌드 + 전체 테스트(test + slowTest) + Checkstyle + ArchUnit
+# 빌드 + 전체 테스트(test 태스크 1회가 slow·example 포함 모두 실행) + Checkstyle + ArchUnit
 ./gradlew :apps:commerce-api:check
 ```
 

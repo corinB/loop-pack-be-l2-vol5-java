@@ -46,7 +46,7 @@ docker-compose -f ./docker/monitoring-compose.yml up
 ./gradlew :apps:commerce-api:checkstyleMain :apps:commerce-api:checkstyleTest
 ```
 
-`check` runs both `test` and `slowTest` (plus Checkstyle), so it is the only task that covers everything.
+`check` (and `build`) runs everything in a single `test` task execution: when either is on the command line, `apps/commerce-api/build.gradle.kts` drops the `slow`/`example` exclusion from `test`, so one JVM and one set of Spring contexts cover all tests (plus Checkstyle), and `slowTest` is not run. Standalone `test` still excludes those tags, and `slowTest` still runs only them. `check` is the only task that covers everything.
 
 Integration tests use Testcontainers (MySQL only — commerce-api tests do not start a Redis container) via `modules/jpa`'s `MySqlTestContainersConfig`, so Docker must be running for any test that touches the DB. To reuse the MySQL container across local runs, add `testcontainers.reuse.enable=true` to `~/.testcontainers.properties` (has no effect, and no CI impact, if absent). In a git worktree, Testcontainers needs `apps/commerce-api/src/test/resources/docker-java.properties` (git-ignored, `api.version=1.44`) copied in, or it fails to connect to Docker with `BadRequestException (Status 400)`.
 
