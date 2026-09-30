@@ -78,13 +78,13 @@ GET /api/v1/products?sort=likes_desc[&brandId=]
 
 ### 커밋 3 — 좋아요 수 반영·재집계를 상품 테이블로 전환
 
-- [ ] `LikeCountAggregationIntegrationTest`를 먼저 고친다. 상품 행을 먼저 만들고 `products.like_count`로 검증한다.
+- [x] `LikeCountAggregationIntegrationTest`를 먼저 고친다. 상품 행을 먼저 만들고 `products.like_count`로 검증한다.
   - 전체 재집계: 좋아요 수가 저장되고, 좋아요가 사라진 상품의 기존 값은 0이 된다.
   - 증감분: 기존 값에 더하고, 음수는 0으로 막는다. 없는 상품 id의 증감분은 무시된다(예외 없음).
   - "0 초기화 후 집계 실패 시 롤백" 테스트는 두 단계가 한 문장으로 합쳐져 대상 동작이 사라지므로 삭제한다. "집계 행이 없으면 생성" 테스트도 상품 행이 항상 있으므로 삭제한다.
-- [ ] `LikeCountAggregationServiceTest`가 있으면 `recountAll` 호출로 고친다.
-- [ ] DAO 계약과 JDBC 구현을 바꾼다. `addDeltas`는 `new TreeMap<>(deltas)` 등으로 id 오름차순을 보장한다.
-- [ ] 커밋: `refactor: 좋아요 수 반영과 전체 재집계를 상품 테이블 대상으로 전환`
+- [x] `LikeCountAggregationServiceTest`가 있으면 `recountAll` 호출로 고친다.
+- [x] DAO 계약과 JDBC 구현을 바꾼다. `addDeltas`는 `new TreeMap<>(deltas)` 등으로 id 오름차순을 보장한다.
+- [x] 커밋: `refactor: 좋아요 수 반영과 전체 재집계를 상품 테이블 대상으로 전환`
 
 ### 커밋 4 — 상품·좋아요 조회를 `products.like_count` 기준으로 전환
 
