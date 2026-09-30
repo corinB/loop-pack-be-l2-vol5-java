@@ -168,3 +168,10 @@ MySQL 8.0.46(`docker-mysql-1`, `docker/infra-compose.yml`). 스크래치 스키�
 - BUILD SUCCESSFUL. `test` 241건 · `slowTest` 17건 (`build/test-results/{test,slowTest}/*.xml` 합산), 실패 0 · 오류 0 · skip 0. slowTest에는 R02 `ConfirmOrderConcurrencyIntegrationTest`가 포함되어 통과했다.
 - Checkstyle main/test, ArchUnit 통과(`check`에 포함).
 - `git grep -n "product_like_counts\|ProductLikeCount" apps/` 결과 없음.
+
+### 위임 결과 검토 (직접 확인)
+
+- 커밋 7개의 단위·메시지를 확인했고 Co-Authored-By 줄이 없다. 테스트 삭제는 계획의 3개뿐이며 단언 기대값을 바꾼 곳은 없다(데이터 준비만 `UPDATE products SET like_count`로 변경).
+- **덮어쓰기 테스트 보강:** `ProductRepositoryIntegrationTest.keepsLikeCountWrittenOutsideJpa`는 외부에서 좋아요 수를 바꾼 **뒤에** 상품을 읽어, 보호 설정이 없어도 최신 값을 다시 써서 통과하는 구조였다. 상품을 먼저 읽고(영속성 컨텍스트에 0) 외부에서 5로 바꾼 뒤 저장하도록 순서를 바꿨다. `insertable = false, updatable = false`를 임시로 빼면 이 테스트가 60번째 줄 단언에서 실패하고, 되돌리면 통과함을 확인했다.
+- 재실행 `./gradlew :apps:commerce-api:check`(test 결과를 지우고 실제 실행): BUILD SUCCESSFUL, 2분 38초. test 241건·slowTest 17건, 실패·오류·skip 0.
+- 실행 중 Gradle이 `build` 폴더를 지우지 못하는 오류가 두 번 났다(OneDrive·IDE 파일 잠금 추정). 해당 폴더를 직접 지우고 다시 실행해 해결했다. 코드 문제는 아니다.
