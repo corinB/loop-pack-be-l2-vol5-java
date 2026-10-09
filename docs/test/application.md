@@ -42,7 +42,9 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [DeleteBrandRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/DeleteBrandRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 두 번째 상품 저장이 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상(과거 확정 주문 등)은 영향받지 않는다 | 1 | 측정 시간 미기록 |
+| [BrandServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/BrandServiceTest.java) | 단위(Mockito) | 없음 | 불필요 | 삭제가 쓰기 잠금 조회 → 브랜드 저장 → 상품 일괄 삭제 순으로 호출 / 없는 브랜드는 `BRAND_NOT_FOUND`, 이미 삭제된 브랜드는 `DELETED_BRAND`이고 저장·상품 삭제 미호출 | 3 | 측정 시간 미기록 |
+| [ProductServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/ProductServiceTest.java) | 단위(Mockito) | 없음 | 불필요 | 등록이 브랜드를 공유 잠금으로 읽고 저장 / 삭제된 브랜드는 `DELETED_BRAND`, 없는 브랜드는 `BRAND_NOT_FOUND`이고 저장 미호출 | 3 | 측정 시간 미기록 |
+| [DeleteBrandRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/DeleteBrandRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 상품 일괄 삭제가 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상(과거 확정 주문 등)은 영향받지 않는다 | 1 | 측정 시간 미기록 |
 
 ### ordering
 
@@ -92,7 +94,7 @@
 - `ConfirmOrderSqlRollbackIntegrationTest`와 겹치던 `OrderApiE2ETest#returnsInternalServerError_whenSaveFailsAfterRealSql`은 삭제됐다.
 - `WalletServiceTest#rejectsOverflow_withoutSavingAnything`, `#rejectsNonPositiveAmount_withoutSavingAnything`과 겹치던 [WalletApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/pay/controller/WalletApiE2ETest.java)의 상태 검증 케이스도 삭제됐다.
 
-공백(gap): `Brand`/`Product` 애플리케이션 서비스에는 서비스 단위 테스트가 없다. 해당 분기는 현재 E2E 테스트에서만 커버된다.
+공백(gap): `Brand`/`Product` 애플리케이션 서비스 단위 테스트는 R07에서 추가한 `BrandServiceTest`(삭제)·`ProductServiceTest`(등록)만 있다. 그 외 분기(브랜드 생성·수정, 상품 수정·삭제·재고 설정)는 현재 E2E 테스트에서만 커버된다.
 
 ## 4. 경량화 결과
 

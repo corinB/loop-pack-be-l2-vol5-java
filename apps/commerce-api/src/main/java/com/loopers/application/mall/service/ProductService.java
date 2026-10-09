@@ -27,7 +27,7 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
     @Override
     @Transactional
     public long execute(ProductCommand.Create command) {
-        Brand brand = brandRepository.findById(command.brandId())
+        Brand brand = brandRepository.findByIdForShare(command.brandId())
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.BRAND_NOT_FOUND));
         brand.ensureActive();
         Product product = Product.create(command.brandId(), command.name(), command.description(), command.price(),

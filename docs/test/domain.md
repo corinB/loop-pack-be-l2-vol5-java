@@ -18,7 +18,7 @@
 
 | 테스트 클래스 | 중첩 그룹 | 검증 시나리오 | 테스트 수 |
 |---|---|---|---|
-| [BrandTest](../../apps/commerce-api/src/test/java/com/loopers/domain/mall/model/BrandTest.java) | 없음 | 이름의 앞뒤 공백을 제거하고 브랜드를 생성한다 / 잘못된 수정은 기존 상태를 유지한다 / 삭제된 브랜드는 수정할 수 없다 / 브랜드를 삭제하면 연결된 미삭제 상품 전체도 함께 삭제된다 / 연결 상품이 없는 브랜드도 정상적으로 삭제된다 / 이미 삭제된 상품은 다시 처리하지 않고 상태를 유지한다 / 상품 목록을 조회하지 않은 상태는 구조적으로 거부한다 / 이미 삭제된 브랜드는 다시 삭제할 수 없다 | 8 |
+| [BrandTest](../../apps/commerce-api/src/test/java/com/loopers/domain/mall/model/BrandTest.java) | 없음 | 이름의 앞뒤 공백을 제거하고 브랜드를 생성한다 / 잘못된 수정은 기존 상태를 유지한다 / 삭제된 브랜드는 수정할 수 없다 / 삭제하면 브랜드만 삭제 상태가 된다(소속 상품 삭제는 `BrandService`의 일괄 삭제가 담당) / 이미 삭제된 브랜드는 다시 삭제할 수 없다 | 5 |
 | [ProductTest](../../apps/commerce-api/src/test/java/com/loopers/domain/mall/model/ProductTest.java) | 없음 | 상품 생성 시 이름을 정규화하고 가격과 재고를 보관한다 / 잘못된 가격 수정은 상품 정보를 유지한다 / 삭제 상품의 정보와 재고는 변경할 수 없다 | 3 |
 | [StockTest](../../apps/commerce-api/src/test/java/com/loopers/domain/mall/model/StockTest.java) | SetStock / DecreaseStock | (SetStock) 0과 int 최댓값을 재고로 설정한다 / 음수 재고를 거절하고 기존 값을 유지한다, (DecreaseStock) 정확한 수량을 차감하면 재고가 0이 된다 / 재고보다 하나 많은 수량을 거절하고 기존 값을 유지한다 | 4 |
 
@@ -76,7 +76,7 @@
 | `ConfirmOrderServiceTest` - 이미 확정된 주문 케이스 | `OrderConfirmationPolicyTest#rejectsReconfirm_andKeepsState` | 메서드명 일치 확인 |
 | `ConfirmOrderServiceTest` - 삭제된 상품 케이스 | `OrderConfirmationPolicyTest#rejectsDeletedProduct_andKeepsState` | 메서드명 일치 확인 |
 | `ConfirmOrderServiceTest` - 정상 확정(happy path) 케이스 | `OrderConfirmationPolicyTest#confirmsOrder_whenStockAndBalanceAreSufficient` | 메서드명 일치 확인 |
-| `BrandApiE2ETest#deletesOnlyUndeletedProducts_whenMixedWithAlreadyDeletedProduct` | `BrandTest#keepsAlreadyDeletedProductState_whenBrandDeleted` | 메서드명 일치 확인 |
+| `BrandApiE2ETest#deletesOnlyUndeletedProducts_whenMixedWithAlreadyDeletedProduct` | `ProductRepositoryIntegrationTest#deletesOnlyActiveProductsOfBrand` | R07에서 상품 일괄 삭제 규칙이 저장소 계층으로 이동 |
 | `WalletApiE2ETest#returnsBadRequest_whenBalanceOverflows` | `WalletTest#rejectsOverflow_andKeepsOriginalBalance` | 메서드명 일치 확인 |
 
 위 표의 도메인 쪽 메서드 5개(`OrderConfirmationPolicyTest`)와 `BrandTest`/`WalletTest` 메서드는 모두 이 문서에서 실제 소스를 읽어 이름을 직접 확인했고, 표기된 이름과 실제 메서드명이 일치해 불일치 사례는 없었다. `ConfirmOrderServiceTest`/`BrandApiE2ETest`/`WalletApiE2ETest`는 application·interfaces 레이어 소관이라 이 문서 범위 밖이며, 이름 대조는 해당 레이어 문서(`application.md`, `interfaces.md`) 작성자가 재확인해야 한다.

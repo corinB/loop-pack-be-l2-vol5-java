@@ -15,6 +15,7 @@
   4. repository 저장마다 재조회·`saveAndFlush`
   5. 좋아요 등록의 존재 확인·INSERT·예외 처리 3단계
 - **같은 날 데이터 접근 기준 결정**: 조회는 QueryDSL, 쓰기는 JPA로 통일하고, JPA 쓰기와 섞이지 않는 배치 작업(좋아요 집계)만 JDBC를 사용한다.
+- **2026-10-09 브랜드 삭제 조사**: 브랜드 삭제의 잠금 조회가 상품 테이블 전체를 잠그는 것을 측정으로 확인했고, 사용자 제안(애플리케이션에서 브랜드 삭제 후 상품 일괄 삭제)으로 R07을 추가했다. R05·R06은 같은 날 폐기했다.
 - **같은 날 진행 방식 결정**: JDBC 전환과 좋아요 전체 재집계(항목 1)를 첫 요구사항으로 묶고, 항목 2~4를 요구사항 하나씩 진행한다. 항목 5는 좋아요 등록을 JPA로 옮기는 일이므로 첫 요구사항에 포함한다.
 - 기존 [3주차 전체 요구사항](../week3/total_requirement.md), [R01 트레이드오프](../week3/r01-brand-bulk-delete/trade_off/total_trade_off.md), [R02 트레이드오프](../week3/r02-order-consistency/trade_off/total_trade_off.md), [패키지 리팩토링 결과](../refactor/result.md).
 
@@ -61,6 +62,7 @@ JDBC는 영속성 컨텍스트를 거치지 않아 flush되지 않은 JPA 변경
 | R04 | 좋아요순 상품 목록 조회 개선 | 항목 2 | [R04 명세](r04-like-sort-index/requirement.md) |
 | R05 | 주문 확정 잠금 조회 개선 | 항목 3 | [R05 명세](r05-order-confirm-lock/requirement.md) |
 | R06 | repository 저장 경로 개선 | 항목 4 | [R06 명세](r06-save-flush/requirement.md) |
+| R07 | 브랜드 삭제의 상품 일괄 삭제 전환 | 2026-10-09 브랜드 삭제 조사 | [R07 명세](r07-brand-delete-bulk/requirement.md) |
 
 ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이어서 붙인다.
 
@@ -72,9 +74,10 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 선행 | 상태 |
 |---|---|---|---|---|---|---|
 | 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 구현·검증 완료([결과](r03-jdbc-and-like-aggregation/result.md)), [PR #16](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/16) 병합 완료 |
-| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 리뷰 중 |
+| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 병합 완료 |
 | 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
+| 5 | R07 | `r07-brand-delete-bulk/` | `volume-3/r07-brand-delete-bulk` | `volume-3/main` | R04 | 트레이드오프 결정([선택 현황](r07-brand-delete-bulk/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r07-brand-delete-bulk/result.md)), R04 병합 후 main 기준으로 리베이스, [PR #19](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/19) 리뷰 중 |
 
 - R04는 R03에서 정한 좋아요 수 저장 위치·갱신 방식을 전제로 하므로 R03 뒤에 둔다.
 - R06은 JPA 쓰기 트랜잭션 안에 JdbcClient가 남아 있지 않아야 flush 시점을 옮길 수 있으므로 R03 병합 후에만 시작한다.

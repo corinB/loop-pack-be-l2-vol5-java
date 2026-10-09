@@ -3,7 +3,8 @@ package com.loopers.application.mall.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 
@@ -23,10 +24,10 @@ import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
-import com.loopers.infrastructure.persistence.mall.entity.ProductJpaEntity;
 import com.loopers.infrastructure.persistence.mall.jpa.ProductJpaRepository;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,9 +63,9 @@ class DeleteBrandRollbackIntegrationTest {
         databaseCleanUp.truncateAllTables();
     }
 
-    @DisplayName("두 번째 상품 저장이 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상은 영향받지 않는다")
+    @DisplayName("상품 일괄 삭제가 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상은 영향받지 않는다")
     @Test
-    void rollsBackEverything_whenSecondProductSaveFails() {
+    void rollsBackEverything_whenBulkProductDeleteFails() {
         Brand brand = brandRepository.save(Brand.create("브랜드", null));
         Product productA = productRepository.save(Product.create(brand.getId(), "상품A", null, 1_000L, 5));
         Product productB = productRepository.save(Product.create(brand.getId(), "상품B", null, 1_000L, 5));
@@ -75,8 +76,7 @@ class DeleteBrandRollbackIntegrationTest {
         long pastOrderId = createConfirmedOrder();
 
         doThrow(new IllegalStateException("forced failure"))
-            .when(productJpaRepository).saveAndFlush(argThat(
-                (ProductJpaEntity entity) -> entity.getId().equals(productB.getId())));
+            .when(productJpaRepository).deleteAllActiveByBrandId(eq(brand.getId()), any(Instant.class));
 
         try {
             assertThatThrownBy(() -> deleteBrandUseCase.execute(new BrandCommand.Delete(brand.getId())))
