@@ -77,7 +77,7 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 | 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 병합 완료 |
 | 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
-| 5 | R07 | `r07-brand-delete-bulk/` | `volume-3/r07-brand-delete-bulk` | `volume-3/main` | R04 | 트레이드오프 결정([선택 현황](r07-brand-delete-bulk/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r07-brand-delete-bulk/result.md)), R04 병합 후 main 기준으로 리베이스, PR 리뷰 중 |
+| 5 | R07 | `r07-brand-delete-bulk/` | `volume-3/r07-brand-delete-bulk` | `volume-3/main` | R04 | 트레이드오프 결정([선택 현황](r07-brand-delete-bulk/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r07-brand-delete-bulk/result.md)), R04 병합 후 main 기준으로 리베이스, [PR #19](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/19) 리뷰 중 |
 
 - R04는 R03에서 정한 좋아요 수 저장 위치·갱신 방식을 전제로 하므로 R03 뒤에 둔다.
 - R06은 JPA 쓰기 트랜잭션 안에 JdbcClient가 남아 있지 않아야 flush 시점을 옮길 수 있으므로 R03 병합 후에만 시작한다.
