@@ -26,10 +26,10 @@
 
 ### 커밋 1 — 운영 코드 JDBC 의존 ArchUnit 규칙
 
-- [ ] `LayerArchitectureTest`에 규칙 추가: `noClasses().that().resideOutsideOfPackage("com.loopers.infrastructure.dao..").or().haveSimpleNameNotStartingWith("Jdbc").should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")` 형태(정확한 DSL은 ArchUnit API에 맞춘다). 테스트 클래스는 기존 `DoNotIncludeTests`로 제외된다.
-- [ ] 규칙이 실제로 잡는지 확인: 운영 클래스 하나에 `JdbcClient` 필드를 임시로 넣어 실패를 보고 되돌린다(커밋하지 않음). 결과를 검증 기록에 적는다.
-- [ ] `DataSourceConfig`(`modules/jpa`)는 `com.loopers.config..`라 `org.springframework.jdbc`에 의존하면 규칙에 걸릴 수 있다. 걸리면 규칙 대상을 `apps/commerce-api`의 계층 패키지(`com.loopers.domain..`, `application..`, `interfaces..`, `infrastructure..`)로 한정한다.
-- [ ] 커밋: `test: 운영 코드의 JDBC 의존을 배치 DAO로 제한하는 아키텍처 규칙 추가`
+- [x] `LayerArchitectureTest`에 규칙 추가: `noClasses().that().resideOutsideOfPackage("com.loopers.infrastructure.dao..").or().haveSimpleNameNotStartingWith("Jdbc").should().dependOnClassesThat().resideInAPackage("org.springframework.jdbc..")` 형태(정확한 DSL은 ArchUnit API에 맞춘다). 테스트 클래스는 기존 `DoNotIncludeTests`로 제외된다.
+- [x] 규칙이 실제로 잡는지 확인: 운영 클래스 하나에 `JdbcClient` 필드를 임시로 넣어 실패를 보고 되돌린다(커밋하지 않음). 결과를 검증 기록에 적는다.
+- [x] `DataSourceConfig`(`modules/jpa`)는 `com.loopers.config..`라 `org.springframework.jdbc`에 의존하면 규칙에 걸릴 수 있다. 걸리면 규칙 대상을 `apps/commerce-api`의 계층 패키지(`com.loopers.domain..`, `application..`, `interfaces..`, `infrastructure..`)로 한정한다.
+- [x] 커밋: `test: 운영 코드의 JDBC 의존을 배치 DAO로 제한하는 아키텍처 규칙 추가`
 
 ### 커밋 2 — 주문 확정 검증 공용 헬퍼와 주문·브랜드 롤백 테스트
 
