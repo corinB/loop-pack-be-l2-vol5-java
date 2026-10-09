@@ -10,7 +10,7 @@
 ./gradlew :apps:commerce-api:test --tests "com.loopers.domain.*"
 ```
 
-전체 규모는 테스트 클래스 13개, `@Test`/`@ParameterizedTest` 메서드 78개다(파라미터화 테스트의 개별 값 실행까지 펼치면 86회 실행). 클래스·시나리오별 상세는 2절 표를 참고한다.
+전체 규모는 테스트 클래스 12개, `@Test`/`@ParameterizedTest` 메서드 71개다(파라미터화 테스트의 개별 값 실행까지 펼치면 79회 실행). 클래스·시나리오별 상세는 2절 표를 참고한다.
 
 ## 2. 컨텍스트별 테스트
 
@@ -28,8 +28,7 @@
 |---|---|---|---|
 | [OrderItemTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/model/OrderItemTest.java) | Create / Restore | (Create) 단가와 수량으로 품목 금액을 계산한다 / 0 이하 수량은 거절한다 / 금액 계산이 범위를 초과하면 거절한다 / 0 이하 상품 ID는 거절한다, (Restore) 저장된 금액이 단가·수량과 일치하면 복원한다 / 저장된 금액이 단가·수량과 다르면 거절한다 | 6 |
 | [OrderRecordTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/model/OrderRecordTest.java) | Paid / Restore | (Paid) 성공한 결제만 PAID 상태로 생성한다 / 0 이하 결제액은 거절한다, (Restore) 저장된 상태를 복원한다 / id가 없거나 생성 시각이 없으면 거절한다 | 4 |
-| [OrderTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/model/OrderTest.java) | Create / Restore / Confirm | (Create) 품목 금액의 합으로 총액을 계산하고 DRAFT로 생성한다 / 품목이 없으면 거절한다 / 총액 계산이 범위를 초과하면 거절한다 / 0 이하 사용자 ID는 거절한다, (Restore) 저장된 합계가 품목 금액의 합과 일치하면 복원한다 / 저장된 합계가 품목 금액의 합과 다르면 거절한다 / id가 없거나 생성 시각이 없으면 거절한다 / CONFIRMED인데 결제 기록이 없으면 거절한다 / DRAFT인데 결제 기록이 있으면 거절한다, (Confirm) DRAFT 주문을 CONFIRMED로 전환한다 / 확정하면 사용자·총액을 담은 PAID 상태의 주문 기록을 보유하고 DRAFT는 기록이 없다 / 이미 CONFIRMED인 주문은 재확정을 거절하고 상태를 유지한다 | 12 |
-| [OrderConfirmationPolicyTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/policy/OrderConfirmationPolicyTest.java) | Confirm | 재고·잔액이 충분하면 확정하고 재고·잔액을 차감하며 사용 기록을 반환한다 / 확정 결과의 주문 기록은 주문과 일치하고 사용 기록은 결제 영수증이다 / 동일 상품 품목은 총수량으로 합산해 한 번만 차감한다 / 합산 수량이 재고를 초과하면 개별 수량은 충분해도 거절하고 재고를 유지한다 / 동일 상품의 합산 수량이 계산 범위를 초과하면 거절하고 재고를 유지한다 / 이미 확정된 주문은 상태 오류로 거절하고 재고·잔액을 유지한다 / 품목 상품이 삭제됐으면 거절하고 재고·잔액을 유지한다 / 재고가 요청 수량보다 1 부족하면 거절하고 재고·잔액을 유지한다 / 뒤쪽 품목이 실패하면 앞쪽 품목의 재고도 차감되지 않는다 / 잔액이 결제액보다 1 부족하면 거절하고 재고·잔액을 유지한다 | 10 |
+| [OrderTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/model/OrderTest.java) | Create / Restore / Confirm / QuantitiesByProductId | (Create) 품목 금액의 합으로 총액을 계산하고 DRAFT로 생성한다 / 품목이 없으면 거절한다 / 총액 계산이 범위를 초과하면 거절한다 / 0 이하 사용자 ID는 거절한다, (Restore) 저장된 합계가 품목 금액의 합과 일치하면 복원한다 / 저장된 합계가 품목 금액의 합과 다르면 거절한다 / id가 없거나 생성 시각이 없으면 거절한다 / CONFIRMED인데 결제 기록이 없으면 거절한다 / DRAFT인데 결제 기록이 있으면 거절한다, (Confirm) DRAFT 주문을 CONFIRMED로 전환한다 / 확정하면 사용자·총액을 담은 PAID 상태의 주문 기록을 보유하고 DRAFT는 기록이 없다 / 이미 CONFIRMED인 주문은 재확정을 거절하고 상태를 유지한다, (QuantitiesByProductId) 같은 상품 품목의 수량을 합산한다 / 상품의 첫 등장 순서를 유지한다 / 합산 수량이 계산 범위를 초과하면 거절한다 | 15 |
 
 ### pay
 
@@ -67,19 +66,14 @@
 
 ## 3. 다른 레이어와 겹치는 검증
 
-도메인 정책 테스트(`OrderConfirmationPolicyTest`)와 애그리거트 테스트가 확정·삭제·잔액 규칙의 1차 근거이고, 상위 레이어의 아래 테스트들은 같은 규칙을 다시 검증하고 있어 경량화 과정에서 삭제됐다.
+R09에서 `OrderConfirmationPolicy`와 그 테스트(10건)를 제거했다. 확정·삭제·잔액 규칙은 `OrderTest`(수량 합산·overflow)와 application 레이어의 `OrderServiceTest`·`ProductServiceTest`·`WalletServiceTest`·`ConfirmOrderFacadeTest`가 나눠 검증한다. 아래 표는 경량화 때 삭제된 `ConfirmOrderServiceTest` 케이스와 그 시점의 대응 도메인 테스트를 보존한 이력이며, 대응 테스트는 위 application 테스트로 옮겨졌다.
 
 | 상위 레이어 테스트 | 대응하는 도메인 테스트 | 비고 |
 |---|---|---|
-| `ConfirmOrderServiceTest` - 재고 부족 케이스 | `OrderConfirmationPolicyTest#rejectsStockShortByOne_andKeepsState` | 메서드명 일치 확인 |
-| `ConfirmOrderServiceTest` - 포인트 부족 케이스 | `OrderConfirmationPolicyTest#rejectsInsufficientBalance_andKeepsState` | 메서드명 일치 확인 |
-| `ConfirmOrderServiceTest` - 이미 확정된 주문 케이스 | `OrderConfirmationPolicyTest#rejectsReconfirm_andKeepsState` | 메서드명 일치 확인 |
-| `ConfirmOrderServiceTest` - 삭제된 상품 케이스 | `OrderConfirmationPolicyTest#rejectsDeletedProduct_andKeepsState` | 메서드명 일치 확인 |
-| `ConfirmOrderServiceTest` - 정상 확정(happy path) 케이스 | `OrderConfirmationPolicyTest#confirmsOrder_whenStockAndBalanceAreSufficient` | 메서드명 일치 확인 |
 | `BrandApiE2ETest#deletesOnlyUndeletedProducts_whenMixedWithAlreadyDeletedProduct` | `ProductRepositoryIntegrationTest#deletesOnlyActiveProductsOfBrand` | R07에서 상품 일괄 삭제 규칙이 저장소 계층으로 이동 |
 | `WalletApiE2ETest#returnsBadRequest_whenBalanceOverflows` | `WalletTest#rejectsOverflow_andKeepsOriginalBalance` | 메서드명 일치 확인 |
 
-위 표의 도메인 쪽 메서드 5개(`OrderConfirmationPolicyTest`)와 `BrandTest`/`WalletTest` 메서드는 모두 이 문서에서 실제 소스를 읽어 이름을 직접 확인했고, 표기된 이름과 실제 메서드명이 일치해 불일치 사례는 없었다. `ConfirmOrderServiceTest`/`BrandApiE2ETest`/`WalletApiE2ETest`는 application·interfaces 레이어 소관이라 이 문서 범위 밖이며, 이름 대조는 해당 레이어 문서(`application.md`, `interfaces.md`) 작성자가 재확인해야 한다.
+위 표의 `BrandTest`/`WalletTest` 메서드는 모두 이 문서에서 실제 소스를 읽어 이름을 직접 확인했고, 표기된 이름과 실제 메서드명이 일치해 불일치 사례는 없었다. `BrandApiE2ETest`/`WalletApiE2ETest`는 application·interfaces 레이어 소관이라 이 문서 범위 밖이며, 이름 대조는 해당 레이어 문서(`application.md`, `interfaces.md`) 작성자가 재확인해야 한다.
 
 ## 4. 경량화 결과
 

@@ -11,6 +11,9 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +65,24 @@ public class ProductService implements CreateProductUseCase, UpdateProductUseCas
         product.setStock(command.stock());
         findBrand(product.getBrandId());
         return productRepository.save(product).getId();
+    }
+
+    // 상품 id 오름차순으로 잠가 조회한 뒤 품목 등장 순서로 모두 검증하고 통과하면 차감·저장한다.
+    // 하나라도 실패하면 메모리의 재고도 바뀌지 않고 저장하지 않는다. 트랜잭션 안(파사드)에서만 호출한다
+    public void decreaseStocks(Map<Long, Integer> quantityByProductId) {
+        Map<Long, Product> lockedProducts = new LinkedHashMap<>();
+        for (Long productId : new TreeSet<>(quantityByProductId.keySet())) {
+            lockedProducts.put(productId, findProduct(productId));
+        }
+        for (Map.Entry<Long, Integer> entry : quantityByProductId.entrySet()) {
+            lockedProducts.get(entry.getKey()).ensureCanDecreaseStock(entry.getValue());
+        }
+        for (Map.Entry<Long, Integer> entry : quantityByProductId.entrySet()) {
+            lockedProducts.get(entry.getKey()).decreaseStock(entry.getValue());
+        }
+        for (Product product : lockedProducts.values()) {
+            productRepository.save(product);
+        }
     }
 
     private Product findProduct(long productId) {

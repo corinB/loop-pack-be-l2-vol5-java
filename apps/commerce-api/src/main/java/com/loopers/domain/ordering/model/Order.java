@@ -4,7 +4,9 @@ import com.loopers.domain.shared.Money;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 // 주문 도메인 모델
@@ -71,6 +73,23 @@ public final class Order {
         ensureCanConfirm();
         status = OrderStatus.CONFIRMED;
         record = OrderRecord.paid(userId, totalAmount.getValue());
+    }
+
+    // 같은 상품 품목의 수량을 등장 순서대로 합산하고 초과 시 계산 초과 오류를 낸다
+    public Map<Long, Integer> quantitiesByProductId() {
+        Map<Long, Integer> quantityByProductId = new LinkedHashMap<>();
+        for (OrderItem item : items) {
+            quantityByProductId.merge(item.getProductId(), item.getQuantity(), Order::addExact);
+        }
+        return quantityByProductId;
+    }
+
+    private static int addExact(int a, int b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (ArithmeticException exception) {
+            throw new DomainException(DomainErrorCode.CALCULATION_OVERFLOW);
+        }
     }
 
     // 품목 금액 합산

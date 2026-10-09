@@ -7,6 +7,7 @@ import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -159,6 +160,48 @@ class OrderTest {
                 .extracting("errorCode")
                 .isEqualTo(DomainErrorCode.ORDER_ALREADY_CONFIRMED);
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        }
+    }
+
+    @DisplayName("상품별 합산 수량")
+    @Nested
+    class QuantitiesByProductId {
+        @DisplayName("같은 상품 품목의 수량을 합산한다")
+        @Test
+        void sumsQuantities_ofSameProductItems() {
+            Order order = Order.create(1L, List.of(
+                OrderItem.create(10L, "상품A", 1_000L, 2),
+                OrderItem.create(10L, "상품A", 1_000L, 1)
+            ));
+
+            assertThat(order.quantitiesByProductId()).containsExactly(Map.entry(10L, 3));
+        }
+
+        @DisplayName("상품의 첫 등장 순서를 유지한다")
+        @Test
+        void keepsFirstAppearanceOrder() {
+            Order order = Order.create(1L, List.of(
+                OrderItem.create(20L, "상품B", 500L, 1),
+                OrderItem.create(10L, "상품A", 1_000L, 2),
+                OrderItem.create(20L, "상품B", 500L, 4)
+            ));
+
+            assertThat(order.quantitiesByProductId())
+                .containsExactly(Map.entry(20L, 5), Map.entry(10L, 2));
+        }
+
+        @DisplayName("합산 수량이 계산 범위를 초과하면 거절한다")
+        @Test
+        void rejectsQuantityOverflow() {
+            Order order = Order.restore(1L, 1L, OrderStatus.DRAFT, List.of(
+                OrderItem.restore(10L, "상품A", 1L, Integer.MAX_VALUE, Integer.MAX_VALUE),
+                OrderItem.restore(10L, "상품A", 1L, 1, 1L)
+            ), Integer.MAX_VALUE + 1L, Instant.now(), null);
+
+            assertThatThrownBy(order::quantitiesByProductId)
+                .isInstanceOf(DomainException.class)
+                .extracting("errorCode")
+                .isEqualTo(DomainErrorCode.CALCULATION_OVERFLOW);
         }
     }
 }

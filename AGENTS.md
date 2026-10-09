@@ -57,7 +57,7 @@ PR 01은 계획 정리·공통 기반·사용자 입력을 함께 다룬다. PR 
 - 도메인 `Product`와 저장 객체 `ProductJpaEntity`를 분리한다. domain은 JPA BaseEntity를 상속하지 않는다.
 - 도메인은 숨긴 생성자와 `create` / `restore`로 유효한 상태를 구성하고, 공개 setter 없이 의미 있는 행동으로 변경한다.
 - Money·Stock처럼 규칙이 모이는 값부터 값 객체로 분리한다. 실패하는 행동은 메모리 상태도 유지해야 한다.
-- 행동별 `ConfirmOrderUseCase` 인터페이스와 `ConfirmOrderService` 구현체를 두고 `execute`로 실행한다.
+- 행동별 `ConfirmOrderUseCase` 인터페이스와 `ConfirmOrderFacade` 구현체(컨텍스트 서비스를 순서대로 조율하는 `facade`)를 두고 `execute`로 실행한다.
 - 쓰기는 Request → Command → Result → Response, 조회는 Request → Criteria → 조회 record → ApiResponse를 사용한다.
 - 쓰기 트랜잭션은 application Service의 `execute`, 조회 readOnly 트랜잭션은 DAO 구현의 공개 메서드에 둔다.
 - DAO 상세 조회는 Optional을 반환하며 Controller가 기존 오류로 변환한다. 조회 UseCase·Service는 만들지 않는다.
