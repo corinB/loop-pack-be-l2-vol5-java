@@ -26,6 +26,7 @@ import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.infrastructure.persistence.mall.jpa.ProductJpaRepository;
 import com.loopers.support.test.IntegrationTest;
+import com.loopers.support.test.OrderConfirmProbe;
 import com.loopers.utils.DatabaseCleanUp;
 import java.time.Instant;
 import java.util.List;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @IntegrationTest
 class DeleteBrandRollbackIntegrationTest {
@@ -52,7 +52,7 @@ class DeleteBrandRollbackIntegrationTest {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private OrderConfirmProbe probe;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
     @Autowired
@@ -88,7 +88,7 @@ class DeleteBrandRollbackIntegrationTest {
                 () -> assertThat(productRepository.findById(productB.getId()).orElseThrow().isDeleted()).isFalse(),
                 () -> assertThat(brandRepository.findById(otherBrand.getId()).orElseThrow().isDeleted()).isFalse(),
                 () -> assertThat(productRepository.findById(otherProduct.getId()).orElseThrow().isDeleted()).isFalse(),
-                () -> assertThat(orderStatus(pastOrderId)).isEqualTo("CONFIRMED"),
+                () -> assertThat(probe.orderStatus(pastOrderId)).isEqualTo("CONFIRMED"),
                 () -> assertThat(walletRepository.findByUserId(2L).orElseThrow().getBalance()).isEqualTo(8_000L)
             );
         } finally {
@@ -109,12 +109,5 @@ class DeleteBrandRollbackIntegrationTest {
         confirmOrderUseCase.execute(new ConfirmOrderCommand(order.getId()));
 
         return order.getId();
-    }
-
-    private String orderStatus(long orderId) {
-        return jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
-            .param("orderId", orderId)
-            .query(String.class)
-            .single();
     }
 }

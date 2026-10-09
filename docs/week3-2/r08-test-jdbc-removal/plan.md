@@ -33,9 +33,9 @@
 
 ### 커밋 2 — 주문 확정 검증 공용 헬퍼와 주문·브랜드 롤백 테스트
 
-- [ ] `com.loopers.support.test`에 공용 헬퍼(예: `OrderConfirmAssertions` 또는 `@Component` 빈 `OrderConfirmProbe`)를 만든다. 제공: 포인트 사용 기록 수(사용자·주문 기준), 주문 상태, 주문 기록 수(상태 기준). 내부는 `JPAQueryFactory`.
-- [ ] 대상: `ConfirmOrderIntegrationTest`, `ConfirmOrderSqlRollbackIntegrationTest`, `ConfirmOrderConcurrencyIntegrationTest`, `DeleteBrandRollbackIntegrationTest`(주문 상태 조회). 그 밖의 단건 조회(충전 금액 합계 등)는 각 클래스 private 메서드로 QueryDSL.
-- [ ] 커밋: `test: 주문 확정 검증을 QueryDSL 공용 헬퍼로 바꾸고 JDBC 조회 제거`
+- [x] `com.loopers.support.test`에 공용 헬퍼(예: `OrderConfirmAssertions` 또는 `@Component` 빈 `OrderConfirmProbe`)를 만든다. 제공: 포인트 사용 기록 수(사용자·주문 기준), 주문 상태, 주문 기록 수(상태 기준). 내부는 `JPAQueryFactory`.
+- [x] 대상: `ConfirmOrderIntegrationTest`, `ConfirmOrderSqlRollbackIntegrationTest`, `ConfirmOrderConcurrencyIntegrationTest`, `DeleteBrandRollbackIntegrationTest`(주문 상태 조회). 그 밖의 단건 조회(충전 금액 합계 등)는 각 클래스 private 메서드로 QueryDSL.
+- [x] 커밋: `test: 주문 확정 검증을 QueryDSL 공용 헬퍼로 바꾸고 JDBC 조회 제거`
 
 ### 커밋 3 — shopping 테스트
 

@@ -25,6 +25,7 @@ import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.domain.support.error.DomainErrorCode;
 import com.loopers.domain.support.error.DomainException;
 import com.loopers.support.test.IntegrationTest;
+import com.loopers.support.test.OrderConfirmProbe;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.List;
 import org.assertj.core.groups.Tuple;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @IntegrationTest
 class ConfirmOrderIntegrationTest {
@@ -52,7 +52,7 @@ class ConfirmOrderIntegrationTest {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private OrderConfirmProbe probe;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -83,9 +83,9 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(result.paymentAmount()).isEqualTo(2_000L),
                 () -> assertThat(reloadedProduct.getStock()).isEqualTo(3),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
-                () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("CONFIRMED"),
+                () -> assertThat(probe.countUsePointBills(1L, order.getId())).isEqualTo(1L),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isEqualTo(1L),
+                () -> assertThat(probe.orderStatus(order.getId())).isEqualTo("CONFIRMED"),
                 // 재고 외 무관한 상품 값은 잠금 조회·저장 이후에도 그대로 보존돼야 한다
                 () -> assertThat(reloadedProduct.getName()).isEqualTo("상품"),
                 () -> assertThat(reloadedProduct.getPrice()).isEqualTo(1_000L),
@@ -122,9 +122,9 @@ class ConfirmOrderIntegrationTest {
                 () -> assertThat(productRepository.findById(sufficientProductId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(productRepository.findById(insufficientProductId).orElseThrow().getStock()).isEqualTo(1),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
-                () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
+                () -> assertThat(probe.orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(probe.countUsePointBills(1L, order.getId())).isZero(),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -144,8 +144,8 @@ class ConfirmOrderIntegrationTest {
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isZero(),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
+                () -> assertThat(probe.orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -170,9 +170,9 @@ class ConfirmOrderIntegrationTest {
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
-                () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isZero()
+                () -> assertThat(probe.orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(probe.countUsePointBills(1L, order.getId())).isZero(),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isZero()
             );
         }
 
@@ -195,8 +195,8 @@ class ConfirmOrderIntegrationTest {
             assertAll(
                 () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(3),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(8_000L),
-                () -> assertThat(countUsePointBills(1L, order.getId())).isEqualTo(1L),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L)
+                () -> assertThat(probe.countUsePointBills(1L, order.getId())).isEqualTo(1L),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isEqualTo(1L)
             );
         }
     }
@@ -209,28 +209,5 @@ class ConfirmOrderIntegrationTest {
     private Order createOrder(long userId, long productId, int quantity, long unitPrice) {
         OrderItem item = OrderItem.create(productId, "상품", unitPrice, quantity);
         return orderRepository.save(Order.create(userId, List.of(item)));
-    }
-
-    private long countUsePointBills(long userId, long orderId) {
-        return jdbcClient.sql(
-                "SELECT COUNT(*) FROM point_bills WHERE user_id = :userId AND type = 'USE' AND order_id = :orderId")
-            .param("userId", userId)
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
-    }
-
-    private long countPaidOrderRecords(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
-    }
-
-    private String orderStatus(long orderId) {
-        return jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
-            .param("orderId", orderId)
-            .query(String.class)
-            .single();
     }
 }
