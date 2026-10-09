@@ -72,7 +72,7 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 | 순서 | ID | 폴더 | 작업 브랜치 | PR 대상 | 선행 | 상태 |
 |---|---|---|---|---|---|---|
 | 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 구현·검증 완료([결과](r03-jdbc-and-like-aggregation/result.md)), [PR #16](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/16) 병합 완료 |
-| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), PR 리뷰 대기 |
+| 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 리뷰 중 |
 | 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 
