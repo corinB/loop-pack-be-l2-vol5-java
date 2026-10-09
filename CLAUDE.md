@@ -67,7 +67,7 @@ Packages are organized **layer → bounded context → kind**, not feature-first
 ```
 com.loopers
 ├── interfaces.api.<context>.{controller,dto}          # Controller (HTTP-facing validation), Request/Response DTOs
-├── application.<context>.{usecase,service,command,result,query,dao,event}
+├── application.<context>.{usecase,service,facade,command,result,query,dao,event}
 │                                                       # UseCase interface, *Service impl, Command, Result,
 │                                                       # QueryDao + query records, write-side dao contracts,
 │                                                       # application events (e.g. ProductLikeChangedEvent)
@@ -77,11 +77,11 @@ com.loopers
                                                         # persistence.<context>.{entity,jpa,repository} — JpaEntity + EntityMapper,
                                                         # Spring Data JpaRepository, RepositoryImpl
                                                         # query.<context> — QueryDSL-based QueryDao impl
-                                                        # dao.<context> — write-side/batch dao impl (e.g. ConfirmOrderWriter, JdbcLikeCountAggregationDao)
+                                                        # dao.<context> — write-side/batch dao impl (e.g. JdbcLikeCountAggregationDao)
                                                         # scheduler.<context>, initializer.<context>
 ```
 
-Read models (application `query`) all end in `*View` (e.g. `BrandView`, `ProductSummaryView`, `UserView`); write results (application `result`) end in `*Result`. `dao` under `application.<context>` holds write-side contracts that `infrastructure.dao.<context>` implements (`ConfirmOrderWriter`, `LikeCountAggregationDao`) — distinct from `query`'s read-only `QueryDao` contracts. EntityMappers live in the same `entity` package as their JpaEntity, since JpaEntity constructors are package-private and only the mapper calls them.
+Read models (application `query`) all end in `*View` (e.g. `BrandView`, `ProductSummaryView`, `UserView`); write results (application `result`) end in `*Result`. `dao` under `application.<context>` holds write-side contracts that `infrastructure.dao.<context>` implements (`LikeCountAggregationDao`) — distinct from `query`'s read-only `QueryDao` contracts. EntityMappers live in the same `entity` package as their JpaEntity, since JpaEntity constructors are package-private and only the mapper calls them.
 
 Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPurityArchitectureTest`):
 - `domain` depends on nothing else in `com.loopers` (and, for the four real contexts + `domain.shared`, on no Spring/JPA/Servlet types, and not on `BaseEntity`).
@@ -90,6 +90,8 @@ Dependency direction is enforced by ArchUnit (`LayerArchitectureTest`, `DomainPu
 - `infrastructure` must not depend on `interfaces`, nor on any `application.*Service` class (it may depend on `application` QueryDao contracts and query-record types).
 
 Writes flow `interfaces → application UseCase → domain + infrastructure RepositoryImpl`. Reads bypass UseCase/Service entirely: a query-only Controller calls an `application` `QueryDao` contract directly. All QueryDao implementations use QueryDSL (`QueryDsl*QueryDao`, backed by `modules/jpa`'s `QueryDslConfig`) with `Projections.constructor` into Views or infra Row records — never entity selects (R03, [trade-off 04](docs/week3-2/r03-jdbc-and-like-aggregation/trade_off/04-query-conversion.md)). Writes use JPA; `JdbcClient` remains only in the batch like-count aggregation DAO (enforced by `LayerArchitectureTest.JDBC_DEPENDENCY_RULE`: no class in the layer packages other than `Jdbc*` classes may depend on `org.springframework.jdbc`). Tests no longer use `JdbcClient`/`JdbcTemplate` either (R08): data setup/verification goes through `JPAQueryFactory` (QueryDSL) and domain repositories. There is intentionally no query UseCase/Service layer. The no-brand-filter total count of the product list is cached briefly by `ExpiringCountCache` (`query.product-count-cache.ttl`, default 30s, `0s` in the `test` profile so tests never see a stale total).
+
+Order confirmation (R09) is orchestrated by `application.ordering.facade.ConfirmOrderFacade` (`@Transactional`, the only transaction boundary): `OrderService.lockForConfirm` → `WalletService.lockByUserId` → `ProductService.decreaseStocks` (ascending product-id locks, validate all in item order, then decrease and save) → `WalletService.pay` → `OrderService.confirm`. The service methods carry no `@Transactional`; a facade may depend on other contexts' `application.*.service` classes. Lock order and error priority come from this call order.
 
 Likes and like counts span several classes (R03, [trade-offs 05–09](docs/week3-2/r03-jdbc-and-like-aggregation/trade_off/total_trade_off.md)):
 - Writes go `RegisterLikeUseCase`/`CancelLikeUseCase` (`execute(LikeCommand.*)`) → `LikeService` → `LikeRepository` (independent `Like` aggregate). Registration is a native `INSERT IGNORE` so the duplicate path stays idempotent (200) and `save`/`delete` return `boolean` = "row actually added/removed".

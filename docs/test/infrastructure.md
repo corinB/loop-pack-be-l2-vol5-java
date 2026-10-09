@@ -13,7 +13,7 @@
 
 ### 테스트 규모
 
-대상 테스트 클래스 23개(단위 6개 + 통합/컨텍스트 17개), 총 테스트 케이스 49개.
+대상 테스트 클래스 22개(단위 5개 + 통합/컨텍스트 17개), 총 테스트 케이스 47개.
 
 ## 2. 종류·컨텍스트별 테스트
 
@@ -41,12 +41,6 @@
 | [`ExpiringCountCacheTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/ExpiringCountCacheTest.java) | mall | 없음(순수 단위, 가변 Clock) | 불필요 | - | 해당 없음 | TTL 안에서는 재계산하지 않음, TTL이 지나면 재계산, TTL 0이면 매번 계산(전체 개수 캐시) | 3 | `test` 프로필은 `query.product-count-cache.ttl=0s`라 통합 테스트에서는 캐시가 꺼져 있다 |
 | [`QueryDslLikeQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslLikeQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | `LikeRepository.save`로 좋아요 저장 후 QueryDSL update로 `created_at`·`products.like_count` 설정, 조회는 QueryDSL | `@AfterEach` TRUNCATE만 | 좋아요 상품을 브랜드·`products.like_count`와 함께 최근순 반환, 동시각 상품ID 내림차순, 삭제 상품 제외, 페이지네이션 | 4 | |
 | [`QueryDslUserQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslUserQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) + `@Transactional`(클래스 레벨) | 필요 | - | `@Transactional`(rollback)만, 별도 TRUNCATE 없음 | JPA 저장 사용자를 JDBC 조회 모델로 조회, 없는 사용자는 빈 결과이며 기존 저장 상태 유지 | 2 | TRUNCATE 호출 없이 rollback에만 의존 |
-
-### dao
-
-| 테스트 클래스 | 컨텍스트 | Spring 컨텍스트 | Docker | MySQL 고유 동작 | 정리 방식 | 검증 시나리오 | 테스트 수 | 비고 |
-|---|---|---|---|---|---|---|---|---|
-| [`JpaConfirmOrderWriterTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/dao/ordering/JpaConfirmOrderWriterTest.java) | ordering | 없음(Mockito 순수 단위) | 불필요 | - | 해당 없음 | 주문→지갑→상품ID 오름차순(중복 제거) 잠금 조회 순서, 상품재고→지갑잔액→사용기록→주문(기록 cascade) 저장 순서를 `InOrder`로 검증 | 2 | |
 
 ### scheduler
 

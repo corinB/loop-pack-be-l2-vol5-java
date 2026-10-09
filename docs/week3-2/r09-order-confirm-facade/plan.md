@@ -60,9 +60,9 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ### 커밋 5 — 문서
 
-- [ ] `CLAUDE.md`: 패키지 종류에 `facade` 추가, `ConfirmOrderWriter`를 예로 든 문장 정리, 주문 확정 흐름 한 줄 추가. `docs/test/*.md`: 삭제·추가된 테스트 목록과 개수. (R02 01 상단의 R09 후속 결정 안내는 문서 준비 커밋에서 이미 추가함)
-- [ ] 검증 기록 작성.
-- [ ] 커밋: `docs: 주문 확정 파사드 전환을 관련 문서에 반영`
+- [x] `CLAUDE.md`: 패키지 종류에 `facade` 추가, `ConfirmOrderWriter`를 예로 든 문장 정리, 주문 확정 흐름 한 줄 추가. `docs/test/*.md`: 삭제·추가된 테스트 목록과 개수. (R02 01 상단의 R09 후속 결정 안내는 문서 준비 커밋에서 이미 추가함)
+- [x] 검증 기록 작성.
+- [x] 커밋: `docs: 주문 확정 파사드 전환을 관련 문서에 반영`
 
 ## 검증 계획
 
@@ -72,11 +72,15 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ## 완료 체크리스트
 
-- [ ] `ConfirmOrderWriter`·`OrderConfirmationPolicy` 제거
-- [ ] 잠금 순서(주문 → 지갑 → 상품 id 오름차순)를 파사드 단위 테스트로 고정
-- [ ] 기존 주문 확정 테스트 기대값 변경 없음
-- [ ] `./gradlew :apps:commerce-api:check` 통과
+- [x] `ConfirmOrderWriter`·`OrderConfirmationPolicy` 제거
+- [x] 잠금 순서(주문 → 지갑 → 상품 id 오름차순)를 파사드 단위 테스트로 고정
+- [x] 기존 주문 확정 테스트 기대값 변경 없음
+- [x] `./gradlew :apps:commerce-api:check` 통과
 
 ## 검증 기록
 
-(구현 중 작성)
+- 커밋 4 이후 `git grep -n "ConfirmOrderWriter\|ConfirmOrderLoad\|OrderConfirmationPolicy\|OrderConfirmation\|ConfirmOrderService" apps/commerce-api/src` 결과 없음(종료 코드 1).
+- 커밋 3 이후 `slowTest --tests "*ConfirmOrderConcurrency*"` 6건 통과.
+- `./gradlew :apps:commerce-api:check` BUILD SUCCESSFUL: 테스트 271건(100개 결과 파일), 실패 0, 오류 0, skip 0. ArchUnit·Checkstyle 통과(규칙 완화 없음).
+- 기존 `ConfirmOrderIntegrationTest`(5), `ConfirmOrderSqlRollbackIntegrationTest`(1), `ConfirmOrderConcurrencyIntegrationTest`(6), `OrderApiE2ETest`(15) 기대값 변경 없이 통과.
+- 삭제한 정책 테스트 10건의 이전 위치: 정상 확정·기록 일치는 `ConfirmOrderFacadeTest`·`OrderServiceTest.Confirm`·`WalletServiceTest.Pay`, 합산·overflow는 `OrderTest.QuantitiesByProductId`, 합산 재고 초과·삭제 상품·재고 1 부족·뒤쪽 품목 실패는 `ProductServiceTest.DecreaseStocks`, 이미 확정된 주문은 `OrderServiceTest.LockForConfirm`, 잔액 1 부족은 `WalletServiceTest.Pay`. 잠금·저장 순서(`JpaConfirmOrderWriterTest` 2건)는 `ConfirmOrderFacadeTest`의 `InOrder`와 `ProductServiceTest`의 id 오름차순 잠금·저장 테스트가 대신한다.

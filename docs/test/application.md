@@ -6,7 +6,7 @@
 
 | 종류 | 특징 | 예시 |
 |---|---|---|
-| 서비스 단위 테스트 | Mockito만 사용, Spring 컨텍스트·Docker 불필요, 순수 자바 객체(POJO) 조립 | `ConfirmOrderServiceTest`, `OrderServiceTest`, `WalletServiceTest`, `LikeServiceTest`, `LikeCountDeltaBufferTest`, `LikeCountDeltaFlushServiceTest`, `ApplicationExceptionTest` |
+| 서비스 단위 테스트 | Mockito만 사용, Spring 컨텍스트·Docker 불필요, 순수 자바 객체(POJO) 조립 | `ConfirmOrderFacadeTest`, `OrderServiceTest`, `WalletServiceTest`, `ProductServiceTest`, `LikeServiceTest`, `LikeCountDeltaBufferTest`, `LikeCountDeltaFlushServiceTest`, `ApplicationExceptionTest` |
 | 통합 테스트 | `@SpringBootTest`(MOCK 환경) + Testcontainers MySQL, 실제 트랜잭션·롤백·비관적 락·동시성까지 검증 | `ConfirmOrderIntegrationTest`, `ConfirmOrderConcurrencyIntegrationTest`, `ConfirmOrderSqlRollbackIntegrationTest`, `DeleteBrandRollbackIntegrationTest`, `LikeCountAggregationIntegrationTest`, `LikeCountDeltaBufferIntegrationTest` |
 
 통합 테스트는 실행 전 Docker가 떠 있어야 하며(`docker-compose -f ./docker/infra-compose.yml up`), `modules/jpa`의 `MySqlTestContainersConfig`를 통해 Testcontainers MySQL을 띄운다. 각 통합 테스트 클래스는 `@AfterEach`에서 `DatabaseCleanUp.truncateAllTables()`로 모든 테이블을 비운다.
@@ -34,7 +34,7 @@
 
 `ConfirmOrderConcurrencyIntegrationTest`는 `@Tag("slow")`가 붙어 있어 `test` 태스크에서는 제외되고 `slowTest` 태스크에서만 실행된다. `check`로 실행하면 `test` 태스크가 태그 제외 없이 모든 테스트를 한 JVM에서 실행하고 `slowTest`는 따로 돌지 않는다.
 
-집계: 클래스 13개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 44개 — 단위 테스트 클래스 7개(26개 메서드), 통합 테스트 클래스 6개(18개 메서드).
+집계: 클래스 15개(테스트 헬퍼 `ConcurrentRequests` 제외), 테스트 메서드 총 70개 — 단위 테스트 클래스 9개(52개 메서드), 통합 테스트 클래스 6개(18개 메서드).
 
 ## 2. 컨텍스트별 테스트
 
@@ -43,15 +43,15 @@
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
 | [BrandServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/BrandServiceTest.java) | 단위(Mockito) | 없음 | 불필요 | 삭제가 쓰기 잠금 조회 → 브랜드 저장 → 상품 일괄 삭제 순으로 호출 / 없는 브랜드는 `BRAND_NOT_FOUND`, 이미 삭제된 브랜드는 `DELETED_BRAND`이고 저장·상품 삭제 미호출 | 3 | 측정 시간 미기록 |
-| [ProductServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/ProductServiceTest.java) | 단위(Mockito) | 없음 | 불필요 | 등록이 브랜드를 공유 잠금으로 읽고 저장 / 삭제된 브랜드는 `DELETED_BRAND`, 없는 브랜드는 `BRAND_NOT_FOUND`이고 저장 미호출 | 3 | 측정 시간 미기록 |
+| [ProductServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/ProductServiceTest.java) | 단위(Mockito) | 없음 | 불필요 | 등록이 브랜드를 공유 잠금으로 읽고 저장 / 삭제된 브랜드는 `DELETED_BRAND`, 없는 브랜드는 `BRAND_NOT_FOUND`이고 저장 미호출 / 재고 차감(`decreaseStocks`)이 상품 id 오름차순으로 잠가 조회·저장, 없는 상품·삭제된 상품·재고 부족 거절, 뒤쪽 품목 실패 시 앞쪽 재고 유지·저장 없음, 여러 품목 실패 시 품목 등장 순서 우선 | 10 | 측정 시간 미기록 |
 | [DeleteBrandRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/mall/service/DeleteBrandRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 상품 일괄 삭제가 실패하면 브랜드·상품 변경 전체를 롤백하고 다른 대상(과거 확정 주문 등)은 영향받지 않는다 | 1 | 측정 시간 미기록 |
 
 ### ordering
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [ConfirmOrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderServiceTest.java) | 단위 | none | 불필요 | 상품 가격 변동과 무관하게 저장된 합계로 결제 | 1 | 미기록(단위 테스트 수준으로 빠름) |
-| [OrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/OrderServiceTest.java) | 단위 | none | 불필요 | 품목별 스냅샷·합계 저장, 동일 상품 수량 합산, 없는 상품 거절, 삭제된 상품 거절, 중복 수량 합산 오버플로 거절 | 5 | 약 0.19초 |
+| [ConfirmOrderFacadeTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/facade/ConfirmOrderFacadeTest.java) | 단위(Mockito) | 없음 | 불필요 | 주문 → 지갑 → 재고 → 결제 → 확정 순서 호출(`InOrder`)과 확정 결과, 품목 등장 순서의 합산 수량 전달, 주문·상품·결제 단계 실패 시 후속 단계 미호출 | 5 | 측정 시간 미기록 |
+| [OrderServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/OrderServiceTest.java) | 단위 | none | 불필요 | 품목별 스냅샷·합계 저장, 동일 상품 수량 합산, 없는 상품 거절, 삭제된 상품 거절, 중복 수량 합산 오버플로 거절, 확정용 잠금 조회(없는 주문·이미 확정된 주문 거절), 확정 시 저장과 주문 기록 일치 | 10 | 약 0.19초 |
 | [ConfirmOrderIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 재고·잔액 차감 후 USE/PAID 기록을 남기고 CONFIRMED 저장, 두 번째 품목 재고 부족 시 전체 롤백, 포인트 부족 시 전체 롤백, 브랜드 일괄 삭제로 상품이 삭제되면 확정 거절, 이미 확정된 주문 재확정 거절 | 5 | 13.8초 |
 | [ConfirmOrderConcurrencyIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderConcurrencyIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 같은 주문 동시 재확정 시 1회만 성공, 재고 5에 8명이 동시 주문하면 재고만큼만 성공, 잔액이 허용하는 만큼만 동시 결제 성공, 충전과 결제 동시 실행 시 둘 다 성공, 관리자 재고 설정과 주문 확정 동시 실행 시 순차 실행과 동일한 결과, 두 상품을 반대 순서로 담은 두 주문이 동시에 확정돼도 데드락 없이 둘 다 성공 (R02 필수 6개 시나리오) | 6 | `@Tag("slow")`, 23.1초 |
 | [ConfirmOrderSqlRollbackIntegrationTest](../../apps/commerce-api/src/test/java/com/loopers/application/ordering/service/ConfirmOrderSqlRollbackIntegrationTest.java) | 통합 | MOCK(공유 컨텍스트) | 필요 | 재고·잔액·기록까지 실제 SQL로 반영된 뒤 마지막 저장 단계에서 실패해도 확정 전체가 롤백된다 | 1 | 측정 시간 미기록 |
@@ -60,7 +60,7 @@
 
 | 테스트 클래스 | 종류 | Spring 컨텍스트 | Docker | 검증 시나리오 | 테스트 수 | 최근 측정 시간 |
 |---|---|---|---|---|---|---|
-| [WalletServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/pay/service/WalletServiceTest.java) | 단위 | none | 불필요 | 충전 시 잔액 저장 후 CHARGE 기록을 순서대로 저장, 충전 후 잔액이 범위를 초과하면 저장 없이 거절, 비양수 충전액은 저장 없이 거절 | 3 | 미기록(단위 테스트 수준으로 빠름) |
+| [WalletServiceTest](../../apps/commerce-api/src/test/java/com/loopers/application/pay/service/WalletServiceTest.java) | 단위 | none | 불필요 | 충전 시 잔액 저장 후 CHARGE 기록을 순서대로 저장, 충전 후 잔액이 범위를 초과하면 저장 없이 거절, 비양수 충전액은 저장 없이 거절, 확정용 지갑 잠금 조회, 주문 합계로 결제해 지갑·사용 기록 순서로 저장(저장된 주문 합계 기준), 잔액 부족 시 거절·저장 없음 | 7 | 미기록(단위 테스트 수준으로 빠름) |
 
 ### shopping
 
@@ -86,7 +86,7 @@
 
 ## 3. 다른 레이어와 겹치는 검증
 
-`ConfirmOrderServiceTest`에는 원래 다른 테스트와 중복되거나 실질적 검증력이 없는 6개 케이스(`rejectsExecute_whenStockIsInsufficient`, `rejectsExecute_whenPointIsInsufficient`, `rejectsExecute_whenOrderIsAlreadyConfirmed`, `rejectsExecute_whenProductIsDeleted`, `rejectsExecute_whenOrderDoesNotExist`, `confirmsOrder_andSavesStockPointAndRecords`)가 있었고, 각각 [OrderConfirmationPolicyTest](../../apps/commerce-api/src/test/java/com/loopers/domain/ordering/policy/OrderConfirmationPolicyTest.java)·`ConfirmOrderIntegrationTest`·[OrderApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/ordering/controller/OrderApiE2ETest.java)와 겹쳤다. 경량화로 모두 삭제했고, 다른 곳에서 검증되지 않는 고유 케이스인 `usesStoredTotalAmount_ignoringCurrentProductPrice`만 남았다.
+`ConfirmOrderServiceTest`는 R09에서 파사드 전환과 함께 삭제됐다. 경량화 때 남겼던 `usesStoredTotalAmount_ignoringCurrentProductPrice`(저장된 주문 합계로 결제)는 `WalletServiceTest.Pay`(주문 합계 기준 차감)로, 도메인 정책 테스트와 겹치던 규칙은 `OrderTest`·`ProductServiceTest.DecreaseStocks`·`WalletServiceTest.Pay`로 이전했다. [OrderApiE2ETest](../../apps/commerce-api/src/test/java/com/loopers/interfaces/api/ordering/controller/OrderApiE2ETest.java)와 `ConfirmOrderIntegrationTest`는 그대로 상태·오류 검증을 맡는다.
 
 그 밖의 레이어 간 중복.
 
@@ -98,7 +98,7 @@
 
 ## 4. 경량화 결과
 
-- `ConfirmOrderServiceTest`에서 위 6개 중복 케이스를 삭제했다. `usesStoredTotalAmount_ignoringCurrentProductPrice`만 남아 7개에서 1개로 줄었다.
+- `ConfirmOrderServiceTest`에서 6개 중복 케이스를 삭제해 1개로 줄였다가, R09에서 클래스를 `ConfirmOrderFacadeTest`(5개)로 대체했다.
 - 공용 메타 애노테이션 [`@IntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/support/test/IntegrationTest.java)를 도입했다. `@SpringBootTest`(MOCK) + 타입 레벨 `@MockitoSpyBean`(`OrderRepository`, `ProductJpaRepository`, `JdbcLikeCountAggregationDao`)을 묶어, 기존에 4개로 분리돼 있던 Spring 컨텍스트를 2개(공유 컨텍스트 + `DeleteBrandRollbackIntegrationTest` 등도 같은 컨텍스트 사용)로 줄였다. 각 통합 테스트 클래스는 필요한 스파이를 `@Autowired`로 받아 쓴다.
 - `ConfirmOrderConcurrencyIntegrationTest`에 `@Tag("slow")`를 붙여 `test` 태스크(`excludeTags("slow", "example")`)에서 제외하고, `slowTest` 태스크(`includeTags("slow", "example")`)에서만 실행하도록 했다. `check`는 `test`와 `slowTest`를 모두 실행한다.
 - `DatabaseCleanUp.truncateAllTables()`가 각 테이블을 `TRUNCATE`하기 전에 비어 있는지 확인하고, 비어 있으면 건너뛰도록 했다.
