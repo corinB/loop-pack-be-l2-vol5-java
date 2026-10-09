@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r08-test-jdbc-removal` · PR 대상: `volume-3/main`
 
-상태: 구현·검증 완료([결과](result.md)). 최종 check 260건 통과. 브랜치는 R07 브랜치(PR #19)에서 분기했고 R07 병합(PR #19) 후 main 기준으로 리베이스했다.
+상태: 구현·검증 완료([결과](result.md)). 최종 check 260건 통과. 브랜치는 R07 브랜치(PR #19)에서 분기했고 R07 병합(PR #19) 후 main 기준으로 리베이스했다. [PR #20](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/20) 리뷰 중.
 기준 자료: 2026-10-09 JDBC 사용처 조사, 사용자 결정 "JDBC는 배치성 작업 외에는 웬만하면 쓰지 않는다".
 
 ## 1. 목적
