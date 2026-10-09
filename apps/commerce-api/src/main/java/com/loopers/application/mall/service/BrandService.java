@@ -9,6 +9,7 @@ import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.repository.BrandRepository;
+import com.loopers.domain.mall.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 // 브랜드 생성·수정·삭제 유스케이스 구현
 public class BrandService implements CreateBrandUseCase, UpdateBrandUseCase, DeleteBrandUseCase {
     private final BrandRepository brandRepository;
+    private final ProductRepository productRepository;
 
     // 브랜드 생성
     @Override
@@ -35,14 +37,15 @@ public class BrandService implements CreateBrandUseCase, UpdateBrandUseCase, Del
         return BrandResult.from(brandRepository.save(brand));
     }
 
-    // 브랜드와 연결된 미삭제 상품 전체를 함께 삭제
+    // 브랜드를 삭제하고 소속 미삭제 상품 전체를 한 번에 삭제
     @Override
     @Transactional
     public void execute(BrandCommand.Delete command) {
-        Brand brand = brandRepository.findForDeletion(command.brandId())
+        Brand brand = brandRepository.findByIdForUpdate(command.brandId())
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.BRAND_NOT_FOUND));
         brand.delete();
         brandRepository.save(brand);
+        productRepository.deleteAllByBrandId(command.brandId());
     }
 
     private Brand findBrand(long brandId) {

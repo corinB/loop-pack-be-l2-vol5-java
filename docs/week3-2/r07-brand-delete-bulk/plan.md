@@ -62,10 +62,10 @@ POST /api-admin/v1/products
 
 ### 커밋 3 — 브랜드 삭제를 서비스 호출과 상품 일괄 삭제로 전환
 
-- [ ] `BrandServiceTest`(Mockito, 신규)를 먼저 쓴다. 정상 삭제는 `findByIdForUpdate` → `save` → `deleteAllByBrandId` 순서로 호출(`InOrder`), 없는 브랜드는 `BRAND_NOT_FOUND`이고 저장·상품 삭제 미호출, 이미 삭제된 브랜드는 `DELETED_BRAND`이고 저장·상품 삭제 미호출.
-- [ ] `DeleteBrandRollbackIntegrationTest`의 실패 주입을 `productJpaRepository.saveAndFlush`에서 상품 일괄 삭제(`ProductJpaRepository`의 새 메서드, 공유 spy)로 바꾼다. 브랜드·상품 모두 변경 전 상태이고 다른 대상이 영향받지 않는다는 기대값은 그대로 둔다.
-- [ ] `BrandService` 삭제 흐름을 바꾼다.
-- [ ] 커밋: `refactor: 브랜드 삭제를 브랜드 저장 후 상품 일괄 삭제로 전환`
+- [x] `BrandServiceTest`(Mockito, 신규)를 먼저 쓴다. 정상 삭제는 `findByIdForUpdate` → `save` → `deleteAllByBrandId` 순서로 호출(`InOrder`), 없는 브랜드는 `BRAND_NOT_FOUND`이고 저장·상품 삭제 미호출, 이미 삭제된 브랜드는 `DELETED_BRAND`이고 저장·상품 삭제 미호출.
+- [x] `DeleteBrandRollbackIntegrationTest`의 실패 주입을 `productJpaRepository.saveAndFlush`에서 상품 일괄 삭제(`ProductJpaRepository`의 새 메서드, 공유 spy)로 바꾼다. 브랜드·상품 모두 변경 전 상태이고 다른 대상이 영향받지 않는다는 기대값은 그대로 둔다.
+- [x] `BrandService` 삭제 흐름을 바꾼다.
+- [x] 커밋: `refactor: 브랜드 삭제를 브랜드 저장 후 상품 일괄 삭제로 전환`
 
 ### 커밋 4 — 상품 등록의 브랜드 공유 잠금
 
