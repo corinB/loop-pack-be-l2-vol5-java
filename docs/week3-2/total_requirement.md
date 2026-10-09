@@ -73,12 +73,13 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 |---|---|---|---|---|---|---|
 | 1 | R03 | `r03-jdbc-and-like-aggregation/` | `volume-3/r03-jdbc-and-like-aggregation` | `volume-3/main` | refacto 병합 | 구현·검증 완료([결과](r03-jdbc-and-like-aggregation/result.md)), [PR #16](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/16) 병합 완료 |
 | 2 | R04 | `r04-like-sort-index/` | `volume-3/r04-like-sort-index` | `volume-3/main` | R03 | 구현·검증 완료([결과](r04-like-sort-index/result.md)), PR 리뷰 대기 |
-| 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 문서 준비 |
-| 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 문서 준비 |
+| 3 | R05 | `r05-order-confirm-lock/` | `volume-3/r05-order-confirm-lock` | `volume-3/main` | R04 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
+| 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 
 - R04는 R03에서 정한 좋아요 수 저장 위치·갱신 방식을 전제로 하므로 R03 뒤에 둔다.
 - R06은 JPA 쓰기 트랜잭션 안에 JdbcClient가 남아 있지 않아야 flush 시점을 옮길 수 있으므로 R03 병합 후에만 시작한다.
 - 작업 브랜치끼리 직접 병합하거나 미리 쌓지 않는다. 앞 요구사항이 병합된 뒤 최신 main에서 다음 브랜치를 만든다.
+- R05·R06은 트레이드오프 문답을 시작하기 전에 사용자 결정으로 폐기했다. 브랜치는 만들지 않았고 `requirement.md`만 기록으로 남긴다. 다시 진행하려면 최신 main 기준으로 현재 코드를 다시 확인한 뒤 문답부터 시작한다.
 - 상태는 실제 진행에 맞춰 갱신한다. PR 생성 후 링크를 추가하고, 병합을 확인한 뒤 병합 완료로 표시한다.
 
 ## 5. 요구사항별 작업 절차와 문서 양식
