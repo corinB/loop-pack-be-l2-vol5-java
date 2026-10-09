@@ -81,7 +81,7 @@ ID는 3주차 R01·R02와 브랜치 이름이 겹치지 않도록 R03부터 이�
 | 4 | R06 | `r06-save-flush/` | `volume-3/r06-save-flush` | `volume-3/main` | R03 필수 | 폐기(2026-10-09, 트레이드오프 문답 전 사용자 결정). 문서만 보존 |
 | 5 | R07 | `r07-brand-delete-bulk/` | `volume-3/r07-brand-delete-bulk` | `volume-3/main` | R04 | 트레이드오프 결정([선택 현황](r07-brand-delete-bulk/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r07-brand-delete-bulk/result.md)), R04 병합 후 main 기준으로 리베이스, [PR #19](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/19) 병합 완료 |
 | 6 | R08 | `r08-test-jdbc-removal/` | `volume-3/r08-test-jdbc-removal` | `volume-3/main` | R07 | 트레이드오프 결정([선택 현황](r08-test-jdbc-removal/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r08-test-jdbc-removal/result.md)), R07 병합 후 main 기준으로 리베이스, [PR #20](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/20) 병합 완료 |
-| 7 | R09 | `r09-order-confirm-facade/` | `volume-3/r09-order-confirm-facade` | `volume-3/main` | R08 | 트레이드오프 결정([선택 현황](r09-order-confirm-facade/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r09-order-confirm-facade/result.md)), R08 병합 후 main 기준으로 리베이스, PR 리뷰 중 |
+| 7 | R09 | `r09-order-confirm-facade/` | `volume-3/r09-order-confirm-facade` | `volume-3/main` | R08 | 트레이드오프 결정([선택 현황](r09-order-confirm-facade/trade_off/total_trade_off.md)), 구현·검증 완료([결과](r09-order-confirm-facade/result.md)), R08 병합 후 main 기준으로 리베이스, [PR #21](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/21) 리뷰 중 |
 
 - R04는 R03에서 정한 좋아요 수 저장 위치·갱신 방식을 전제로 하므로 R03 뒤에 둔다.
 - R06은 JPA 쓰기 트랜잭션 안에 JdbcClient가 남아 있지 않아야 flush 시점을 옮길 수 있으므로 R03 병합 후에만 시작한다.
