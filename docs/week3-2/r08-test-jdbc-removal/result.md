@@ -2,7 +2,7 @@
 
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
-작업 브랜치: `volume-3/r08-test-jdbc-removal` (R07 브랜치에서 분기, R07 병합(PR #19) 후 main 기준으로 리베이스 예정) · PR 대상: `volume-3/main`
+작업 브랜치: `volume-3/r08-test-jdbc-removal` (R07 브랜치에서 분기, R07 병합(PR #19) 후 main 위로 리베이스, 트리 동일) · PR 대상: `volume-3/main`
 
 상태: 구현·검증 완료. 이제 저장소 전체에서 `JdbcClient`·`JdbcTemplate`을 쓰는 코드는 `JdbcLikeCountAggregationDao` 하나뿐이고, ArchUnit 규칙이 이를 고정한다.
 
