@@ -50,9 +50,9 @@ POST /api-admin/v1/products
 
 ### 커밋 1 — 상품 일괄 삭제 저장소 추가
 
-- [ ] `ProductRepositoryIntegrationTest`에 테스트를 먼저 추가한다. 대상 브랜드의 활성 상품 2개만 삭제 상태가 되고 `updated_at`이 바뀌며 반환값이 2인지, 이미 삭제된 상품의 `updated_at`과 다른 브랜드 상품이 그대로인지 확인한다.
-- [ ] `ProductRepository.deleteAllByBrandId`, `ProductJpaRepository`의 JPQL, `ProductRepositoryImpl` 구현을 추가한다.
-- [ ] 커밋: `refactor: 브랜드의 미삭제 상품을 한 번에 삭제하는 저장소 기능 추가`
+- [x] `ProductRepositoryIntegrationTest`에 테스트를 먼저 추가한다. 대상 브랜드의 활성 상품 2개만 삭제 상태가 되고 `updated_at`이 바뀌며 반환값이 2인지, 이미 삭제된 상품의 `updated_at`과 다른 브랜드 상품이 그대로인지 확인한다.
+- [x] `ProductRepository.deleteAllByBrandId`, `ProductJpaRepository`의 JPQL, `ProductRepositoryImpl` 구현을 추가한다.
+- [x] 커밋: `refactor: 브랜드의 미삭제 상품을 한 번에 삭제하는 저장소 기능 추가`
 
 ### 커밋 2 — 브랜드 잠금 조회 추가
 

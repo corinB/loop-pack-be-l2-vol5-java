@@ -5,6 +5,7 @@ import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.infrastructure.persistence.mall.entity.ProductEntityMapper;
 import com.loopers.infrastructure.persistence.mall.entity.ProductJpaEntity;
 import com.loopers.infrastructure.persistence.mall.jpa.ProductJpaRepository;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -38,5 +39,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Optional<Product> findByIdForUpdate(long productId) {
         return productJpaRepository.findByIdForUpdate(productId).map(mapper::toDomain);
+    }
+
+    // 브랜드의 미삭제 상품 전체를 한 번에 삭제 처리
+    @Override
+    public int deleteAllByBrandId(long brandId) {
+        return productJpaRepository.deleteAllActiveByBrandId(brandId, Instant.now());
     }
 }

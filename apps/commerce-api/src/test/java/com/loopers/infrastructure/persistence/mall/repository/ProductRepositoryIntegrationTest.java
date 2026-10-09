@@ -60,6 +60,40 @@ class ProductRepositoryIntegrationTest {
         assertThat(likeCountOf(product.getId())).isEqualTo(5L);
     }
 
+    @DisplayName("브랜드의 미삭제 상품만 일괄 삭제하고 삭제 건수를 반환하며 이미 삭제된 상품과 다른 브랜드 상품은 그대로 둔다")
+    @Test
+    @Transactional
+    void deletesOnlyActiveProductsOfBrand() {
+        Product activeA = productRepository.save(Product.create(10L, "상품A", null, 1_000L, 5));
+        Product activeB = productRepository.save(Product.create(10L, "상품B", null, 1_000L, 5));
+        Product alreadyDeleted = productRepository.save(Product.create(10L, "삭제된 상품", null, 1_000L, 5));
+        alreadyDeleted.delete();
+        productRepository.save(alreadyDeleted);
+        Product other = productRepository.save(Product.create(20L, "다른 브랜드 상품", null, 1_000L, 5));
+        entityManager.flush();
+        entityManager.createNativeQuery("UPDATE products SET updated_at = '2000-01-01 00:00:00.000000'")
+            .executeUpdate();
+        entityManager.clear();
+
+        int deletedCount = productRepository.deleteAllByBrandId(10L);
+        entityManager.clear();
+
+        assertThat(deletedCount).isEqualTo(2);
+        assertThat(productRepository.findById(activeA.getId()).orElseThrow().isDeleted()).isTrue();
+        assertThat(productRepository.findById(activeB.getId()).orElseThrow().isDeleted()).isTrue();
+        assertThat(productRepository.findById(other.getId()).orElseThrow().isDeleted()).isFalse();
+        assertThat(updatedYearOf(activeA.getId())).isGreaterThan(2000);
+        assertThat(updatedYearOf(activeB.getId())).isGreaterThan(2000);
+        assertThat(updatedYearOf(alreadyDeleted.getId())).isEqualTo(2000);
+        assertThat(updatedYearOf(other.getId())).isEqualTo(2000);
+    }
+
+    private int updatedYearOf(Long productId) {
+        return ((Number) entityManager.createNativeQuery("SELECT YEAR(updated_at) FROM products WHERE id = :id")
+            .setParameter("id", productId)
+            .getSingleResult()).intValue();
+    }
+
     private long likeCountOf(Long productId) {
         return ((Number) entityManager.createNativeQuery("SELECT like_count FROM products WHERE id = :id")
             .setParameter("id", productId)
