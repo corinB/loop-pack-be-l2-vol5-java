@@ -13,9 +13,11 @@ import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
+import com.loopers.infrastructure.persistence.shopping.entity.QLikeJpaEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,10 +30,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @E2ETest
 class LikeApiE2ETest {
+    private static final QLikeJpaEntity LIKE = QLikeJpaEntity.likeJpaEntity;
+
     @Autowired
     private TestRestTemplate restTemplate;
     @Autowired
@@ -43,7 +46,7 @@ class LikeApiE2ETest {
     @Autowired
     private ProductRepository productRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -223,10 +226,8 @@ class LikeApiE2ETest {
     }
 
     private long countLikes(long userId, long productId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM product_likes WHERE user_id = :userId AND product_id = :productId")
-            .param("userId", userId)
-            .param("productId", productId)
-            .query(Long.class)
-            .single();
+        return queryFactory.select(LIKE.count()).from(LIKE)
+            .where(LIKE.userId.eq(userId), LIKE.productId.eq(productId))
+            .fetchOne();
     }
 }

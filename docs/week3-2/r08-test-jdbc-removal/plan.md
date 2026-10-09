@@ -39,10 +39,10 @@
 
 ### 커밋 3 — shopping 테스트
 
-- [ ] `LikeCountAggregationIntegrationTest`: 상품·좋아요를 저장소로 만들고 생성 id를 쓴다. `like_count` 준비·조회와 상품 수 조회는 QueryDSL. "없는 상품 id 무시" 케이스는 존재하지 않는 id(생성 id와 겹치지 않는 값)를 쓴다.
-- [ ] `LikeRepositoryIntegrationTest`, `QueryDslLikeQueryDaoIntegrationTest`, `LikeApiE2ETest`, `LocalUserFixtureInitializerIntegrationTest`: 검증 조회·`like_count` 준비를 QueryDSL로, 좋아요 원시 INSERT는 `LikeRepository.save`로.
-- [ ] `LikeStorageIntegrationTest` 삭제.
-- [ ] 커밋: `test: 좋아요·사용자 테스트의 JDBC 준비·검증을 QueryDSL과 저장소로 교체`
+- [x] `LikeCountAggregationIntegrationTest`: 상품·좋아요를 저장소로 만들고 생성 id를 쓴다. `like_count` 준비·조회와 상품 수 조회는 QueryDSL. "없는 상품 id 무시" 케이스는 존재하지 않는 id(생성 id와 겹치지 않는 값)를 쓴다.
+- [x] `LikeRepositoryIntegrationTest`, `QueryDslLikeQueryDaoIntegrationTest`, `LikeApiE2ETest`, `LocalUserFixtureInitializerIntegrationTest`: 검증 조회·`like_count` 준비를 QueryDSL로, 좋아요 원시 INSERT는 `LikeRepository.save`로.
+- [x] `LikeStorageIntegrationTest` 삭제.
+- [x] 커밋: `test: 좋아요·사용자 테스트의 JDBC 준비·검증을 QueryDSL과 저장소로 교체`
 
 ### 커밋 4 — mall·ordering·pay 조회·E2E 테스트
 
