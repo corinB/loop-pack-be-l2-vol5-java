@@ -75,13 +75,13 @@ POST /api-admin/v1/products
 
 ### 커밋 5 — 브랜드→상품 연관관계와 삭제 전용 조회 제거
 
-- [ ] 제거: `Brand.products`·`restoreForDeletion`·상품 연쇄 삭제, `BrandRepository.findForDeletion`, `BrandJpaRepository.findForDeletion`, `BrandJpaEntity`의 `@OneToMany`, `BrandEntityMapper.toDomainForDeletion`, `BrandRepositoryImpl.save`의 상품 순회.
-- [ ] 테스트 정리(대상 동작이 사라지거나 커밋 1·3으로 옮겨짐):
+- [x] 제거: `Brand.products`·`restoreForDeletion`·상품 연쇄 삭제, `BrandRepository.findForDeletion`, `BrandJpaRepository.findForDeletion`, `BrandJpaEntity`의 `@OneToMany`, `BrandEntityMapper.toDomainForDeletion`, `BrandRepositoryImpl.save`의 상품 순회.
+- [x] 테스트 정리(대상 동작이 사라지거나 커밋 1·3으로 옮겨짐):
   - `BrandTest`: "연결된 미삭제 상품 전체도 함께 삭제", "연결 상품이 없는 브랜드도 정상 삭제", "이미 삭제된 상품은 다시 처리하지 않음", "상품 목록을 조회하지 않은 상태는 구조적으로 거부"를 삭제하고 "삭제하면 브랜드만 삭제 상태가 된다" 1개로 바꾼다. "이미 삭제된 브랜드는 다시 삭제할 수 없다"는 유지.
   - `BrandRepositoryIntegrationTest`: 삭제 전용 조회·브랜드 저장의 상품 반영 테스트 2개를 삭제한다(커밋 1·2 테스트가 대신함).
   - `BrandFindForDeletionLockIntegrationTest`(slow) 삭제([04](trade_off/04-verification.md)).
-- [ ] `git grep -n "findForDeletion\|restoreForDeletion\|toDomainForDeletion\|OneToMany" apps/commerce-api/src` 결과가 없어야 한다.
-- [ ] 커밋: `refactor: 브랜드 삭제 전용 조회와 브랜드-상품 연관관계 제거`
+- [x] `git grep -n "findForDeletion\|restoreForDeletion\|toDomainForDeletion\|OneToMany" apps/commerce-api/src` 결과가 없어야 한다.
+- [x] 커밋: `refactor: 브랜드 삭제 전용 조회와 브랜드-상품 연관관계 제거`
 
 ### 커밋 6 — 잠금 범위 측정과 문서 갱신
 

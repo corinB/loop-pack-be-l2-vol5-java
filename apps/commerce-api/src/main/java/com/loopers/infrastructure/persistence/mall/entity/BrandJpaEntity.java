@@ -1,22 +1,15 @@
 package com.loopers.infrastructure.persistence.mall.entity;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "brands", indexes = {
@@ -37,12 +30,6 @@ public class BrandJpaEntity {
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-    // 조회 전용 단방향 연관관계. FK 저장은 ProductJpaEntity.brandId가 담당하며,
-    // 기존처럼 물리적 FK 제약은 생성하지 않는다(NO_CONSTRAINT).
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "brand_id", insertable = false, updatable = false,
-        foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private List<ProductJpaEntity> products = new ArrayList<>();
 
     protected BrandJpaEntity() {}
 
@@ -74,5 +61,4 @@ public class BrandJpaEntity {
     public String getDescription() { return description; }
     public boolean isDeleted() { return deleted; }
     public Instant getCreatedAt() { return createdAt; }
-    public List<ProductJpaEntity> getProducts() { return products; }
 }
