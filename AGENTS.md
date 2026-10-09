@@ -42,7 +42,7 @@ PR 01은 계획 정리·공통 기반·사용자 입력을 함께 다룬다. PR 
 - `infrastructure`는 domain 저장 계약과 application QueryDao·조회 타입을 사용한다. application 구현 서비스에는 의존하지 않는다.
 - HTTP 정책이나 업무 규칙을 infrastructure에서 중복 구현하지 않는다.
 - GET은 조회 전용 Controller → application QueryDao 계약 → infrastructure 구현으로 연결한다. 조회 구현은 QueryDSL
-  Projection을 사용한다. 쓰기는 JPA, JdbcClient는 좋아요 집계 같은 배치 작업에만 사용한다(3주차 후속 R03에서 변경).
+  Projection을 사용한다. 쓰기는 JPA, JdbcClient는 좋아요 집계 같은 배치 작업에만 사용하며 테스트 코드도 쓰지 않는다(3주차 후속 R03·R08에서 변경, 운영 코드는 `LayerArchitectureTest`가 검사한다).
 - DAO는 같은 DB의 Context 간 조인과 조회 모델 조합을 담당한다. Controller는 입력·404·ApiResponse 포장을 담당한다.
 - 조회 모델은 application의 순수 record이며 별도 HTTP Response 복사 없이 반환한다. domain은 HTTP DTO를 알지 못한다.
 - `@XUserId` resolver는 UserQueryDao.findById로 사용자 존재를 검사하고 ID를 반환한다. 형식 오류 시 DAO를 호출하지 않는다.

@@ -52,9 +52,9 @@
 
 ### 커밋 5 — 문서
 
-- [ ] `CLAUDE.md`(JdbcClient는 테스트 준비·검증에도 쓴다는 문장, 새 ArchUnit 규칙), `docs/test/*.md`(JdbcClient 언급·`LikeStorageIntegrationTest` 행·개수), R03 [04](../r03-jdbc-and-like-aggregation/trade_off/04-query-conversion.md) §6에 R08 후속 결정 안내, `AGENTS.md`에 관련 문장이 있으면 갱신.
-- [ ] 검증 기록 작성.
-- [ ] 커밋: `docs: 테스트 JDBC 제거와 아키텍처 규칙을 관련 문서에 반영`
+- [x] `CLAUDE.md`(JdbcClient는 테스트 준비·검증에도 쓴다는 문장, 새 ArchUnit 규칙), `docs/test/*.md`(JdbcClient 언급·`LikeStorageIntegrationTest` 행·개수), R03 [04](../r03-jdbc-and-like-aggregation/trade_off/04-query-conversion.md) §6에 R08 후속 결정 안내, `AGENTS.md`에 관련 문장이 있으면 갱신.
+- [x] 검증 기록 작성.
+- [x] 커밋: `docs: 테스트 JDBC 제거와 아키텍처 규칙을 관련 문서에 반영`
 
 ## 검증 계획
 
@@ -64,11 +64,14 @@
 
 ## 완료 체크리스트
 
-- [ ] 테스트 코드의 `JdbcClient`·`JdbcTemplate` 사용 없음
-- [ ] 운영 코드 JDBC 의존 ArchUnit 규칙 추가, 위반 시 실패 확인
-- [ ] 기존 테스트 기대값 변경 없음
-- [ ] `./gradlew :apps:commerce-api:check` 통과
+- [x] 테스트 코드의 `JdbcClient`·`JdbcTemplate` 사용 없음
+- [x] 운영 코드 JDBC 의존 ArchUnit 규칙 추가, 위반 시 실패 확인
+- [x] 기존 테스트 기대값 변경 없음
+- [x] `./gradlew :apps:commerce-api:check` 통과
 
 ## 검증 기록
 
-(구현 중 작성)
+- 커밋 1 위험 규칙 확인: `BrandService`에 `JdbcClient` 필드를 임시로 넣고 `com.loopers.architecture.*`를 실행하니 `LayerArchitectureTest.JDBC_DEPENDENCY_RULE`이 실패했다. 되돌린 뒤(커밋하지 않음) 8건 모두 통과. `DataSourceConfig`는 `com.loopers.config..`라 규칙 대상(`domain`·`application`·`interfaces`·`infrastructure` 계층 패키지)에 포함되지 않아 범위 조정이 필요 없었다. 규칙은 `Jdbc`로 시작하는 클래스(`JdbcLikeCountAggregationDao`)만 예외로 둔다.
+- QueryDSL `update`로 `products.like_count`(insertable/updatable=false)와 `orders.created_at`·`products.created_at`·`product_likes.created_at`(updatable=false)를 갱신할 수 있음을 확인했다(증감분 7 = 5 + 2 등 기존 기대값 통과).
+- `./gradlew :apps:commerce-api:check`: BUILD SUCCESSFUL. `build/test-results/test/*.xml` 합계 260건, 실패 0, 오류 0, skip 0 (260 - `LikeStorageIntegrationTest` 1 + ArchUnit 규칙 1 = 260). `test` 태스크가 slow 태그 포함 전체를 실행한다.
+- `git grep -nE "JdbcClient|JdbcTemplate" apps/commerce-api/src/test` 결과: 없음(0건).
