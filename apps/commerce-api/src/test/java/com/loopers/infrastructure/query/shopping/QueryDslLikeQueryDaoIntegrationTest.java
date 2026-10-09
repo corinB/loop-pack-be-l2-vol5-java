@@ -114,7 +114,7 @@ class QueryDslLikeQueryDaoIntegrationTest {
     }
 
     private void insertLikeCount(long productId, long likeCount) {
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (:productId, :likeCount)")
+        jdbcClient.sql("UPDATE products SET like_count = :likeCount WHERE id = :productId")
             .param("productId", productId)
             .param("likeCount", likeCount)
             .update();

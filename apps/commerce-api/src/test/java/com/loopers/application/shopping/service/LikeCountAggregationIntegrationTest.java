@@ -1,9 +1,6 @@
 package com.loopers.application.shopping.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.reset;
 
 import com.loopers.application.shopping.usecase.LikeCountAggregationUseCase;
 import com.loopers.infrastructure.dao.shopping.JdbcLikeCountAggregationDao;
@@ -32,12 +29,13 @@ class LikeCountAggregationIntegrationTest {
         databaseCleanUp.truncateAllTables();
     }
 
-    @DisplayName("전체 관계 COUNT를 저장하고 관계가 사라진 기존 집계는 0으로 갱신한다")
+    @DisplayName("전체 관계 COUNT를 상품에 저장하고 관계가 사라진 기존 값은 0으로 갱신한다")
     @Test
     void aggregatesAllCounts_andResetsStaleCount() {
+        insertProduct(10L, 0L);
+        insertProduct(99L, 4L);
         insertLike(1L, 10L);
         insertLike(2L, 10L);
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (99, 4)").update();
 
         aggregationUseCase.execute();
 
@@ -45,36 +43,11 @@ class LikeCountAggregationIntegrationTest {
         assertThat(findCount(99L)).isZero();
     }
 
-    @DisplayName("집계 저장 중 실패하면 앞선 0 초기화도 함께 롤백한다")
-    @Test
-    void rollsBackAllCounts_whenAggregationFails() {
-        insertLike(1L, 10L);
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (10, 7)").update();
-        doThrow(new IllegalStateException("forced aggregation failure"))
-            .when(aggregationDao).aggregateAllCounts();
-
-        try {
-            assertThatThrownBy(aggregationUseCase::execute).isInstanceOf(RuntimeException.class);
-
-            assertThat(findCount(10L)).isEqualTo(7L);
-        } finally {
-            reset(aggregationDao);
-        }
-    }
-
-    @DisplayName("증감분 반영은 집계 행이 없으면 생성한다")
-    @Test
-    void addDeltas_createsMissingRow() {
-        aggregationDao.addDeltas(Map.of(10L, 3L));
-
-        assertThat(findCount(10L)).isEqualTo(3L);
-    }
-
-    @DisplayName("증감분 반영은 기존 집계 값에 더한다")
+    @DisplayName("증감분 반영은 기존 좋아요 수에 더한다")
     @Test
     void addDeltas_addsToExistingCount() {
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (10, 5)").update();
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (20, 5)").update();
+        insertProduct(10L, 5L);
+        insertProduct(20L, 5L);
 
         aggregationDao.addDeltas(Map.of(10L, 2L, 20L, -3L));
 
@@ -85,12 +58,34 @@ class LikeCountAggregationIntegrationTest {
     @DisplayName("증감분 반영은 결과가 음수가 되면 0으로 맞춘다")
     @Test
     void addDeltas_clampsAtZero() {
-        jdbcClient.sql("INSERT INTO product_like_counts (product_id, like_count) VALUES (10, 1)").update();
+        insertProduct(10L, 1L);
+        insertProduct(30L, 0L);
 
         aggregationDao.addDeltas(Map.of(10L, -5L, 30L, -2L));
 
         assertThat(findCount(10L)).isZero();
         assertThat(findCount(30L)).isZero();
+    }
+
+    @DisplayName("증감분 반영은 없는 상품 id의 증감분을 무시한다")
+    @Test
+    void addDeltas_ignoresUnknownProduct() {
+        insertProduct(10L, 1L);
+
+        aggregationDao.addDeltas(Map.of(10L, 1L, 404L, 3L));
+
+        assertThat(findCount(10L)).isEqualTo(2L);
+        assertThat(jdbcClient.sql("SELECT COUNT(*) FROM products").query(Long.class).single()).isEqualTo(1L);
+    }
+
+    private void insertProduct(long productId, long likeCount) {
+        jdbcClient.sql("""
+                INSERT INTO products (id, brand_id, name, price, stock, like_count, deleted, created_at, updated_at)
+                VALUES (:id, 1, '상품', 1000, 10, :likeCount, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """)
+            .param("id", productId)
+            .param("likeCount", likeCount)
+            .update();
     }
 
     private void insertLike(long userId, long productId) {
@@ -104,10 +99,9 @@ class LikeCountAggregationIntegrationTest {
     }
 
     private long findCount(long productId) {
-        return jdbcClient.sql("SELECT like_count FROM product_like_counts WHERE product_id = :productId")
+        return jdbcClient.sql("SELECT like_count FROM products WHERE id = :productId")
             .param("productId", productId)
             .query(Long.class)
             .single();
     }
-
 }

@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r04-like-sort-index` · PR 대상: `volume-3/main`
 
-상태: 문서 준비. 트레이드오프 문답 전이며 채택안은 없다. R03 병합 후 시작한다.
+상태: 구현·검증 완료([결과](result.md)). 최종 check: test 241건, slowTest 17건 통과. R03 병합 후 main 기준으로 리베이스했다. [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 리뷰 중.
 기준 항목: 분석 항목 2(좋아요순 정렬 인덱스 부재와 매 요청 `COUNT`).
 
 ## 1. 목적
@@ -57,6 +57,7 @@
 
 트레이드오프 문답으로 결정한다. 아래는 후보 목록이며 채택을 의미하지 않는다.
 
-- 좋아요 수 위치: `products.like_count` 비정규화 + 복합 인덱스 / `product_like_counts`에 정렬용 인덱스 추가 후 집계 테이블 기준 조회.
-- 비정규화 시 `products` 행 갱신과 주문 확정의 상품 잠금 간 경합 허용 여부.
-- 전체 개수 처리: 매 요청 `COUNT` 유지 / 개수 캐시 / 다음 페이지 존재 여부만 반환.
+- ~~좋아요 수 위치~~ → 결정: [저장 위치](trade_off/01-like-count-location.md).
+- ~~비정규화 시 상품 잠금 경합~~ → 결정: [반영·재집계와 상품 잠금](trade_off/02-flush-and-recount.md).
+- ~~전체 개수 처리~~ → 결정: [목록 전체 개수](trade_off/03-list-count.md).
+- ~~범위·검증 방식~~ → 결정: [범위와 검증](trade_off/04-scope-and-verification.md).

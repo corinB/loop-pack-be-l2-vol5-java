@@ -8,7 +8,6 @@ import com.loopers.application.shopping.query.LikedProductView;
 import com.loopers.infrastructure.persistence.mall.entity.QBrandJpaEntity;
 import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
 import com.loopers.infrastructure.persistence.shopping.entity.QLikeJpaEntity;
-import com.loopers.infrastructure.persistence.shopping.entity.QProductLikeCountJpaEntity;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
@@ -23,8 +22,6 @@ public class QueryDslLikeQueryDao implements LikeQueryDao {
     private static final QLikeJpaEntity LIKE = QLikeJpaEntity.likeJpaEntity;
     private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
     private static final QBrandJpaEntity BRAND = QBrandJpaEntity.brandJpaEntity;
-    private static final QProductLikeCountJpaEntity LIKE_COUNT_ROW =
-        QProductLikeCountJpaEntity.productLikeCountJpaEntity;
 
     private final JPAQueryFactory queryFactory;
 
@@ -41,11 +38,10 @@ public class QueryDslLikeQueryDao implements LikeQueryDao {
         List<LikedProductView> items = queryFactory.select(Projections.constructor(LikedProductView.class,
                 PRODUCT.id, PRODUCT.name, PRODUCT.price,
                 Projections.constructor(BrandSummaryView.class, BRAND.id, BRAND.name),
-                LIKE_COUNT_ROW.likeCount.coalesce(0L), LIKE.createdAt))
+                PRODUCT.likeCount, LIKE.createdAt))
             .from(LIKE)
             .join(PRODUCT).on(PRODUCT.id.eq(LIKE.productId))
             .join(BRAND).on(BRAND.id.eq(PRODUCT.brandId))
-            .leftJoin(LIKE_COUNT_ROW).on(LIKE_COUNT_ROW.productId.eq(PRODUCT.id))
             .where(LIKE.userId.eq(userId), PRODUCT.deleted.isFalse())
             .orderBy(LIKE.createdAt.desc(), LIKE.productId.desc())
             .offset(criteria.offset())

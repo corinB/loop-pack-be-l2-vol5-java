@@ -12,11 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class LikeCountAggregationService implements LikeCountAggregationUseCase {
     private final LikeCountAggregationDao aggregationDao;
 
-    // 카운트 초기화 후 재집계
+    // 전체 재집계
     @Override
     @Transactional
     public void execute() {
-        aggregationDao.resetAllCounts();
-        aggregationDao.aggregateAllCounts();
+        aggregationDao.recountAll();
     }
 }
