@@ -49,4 +49,16 @@ public class BrandRepositoryImpl implements BrandRepository {
     public Optional<Brand> findForDeletion(long brandId) {
         return brandJpaRepository.findForDeletion(brandId).map(mapper::toDomainForDeletion);
     }
+
+    // 비관적 쓰기 잠금으로 조회
+    @Override
+    public Optional<Brand> findByIdForUpdate(long brandId) {
+        return brandJpaRepository.findByIdForUpdate(brandId).map(mapper::toDomain);
+    }
+
+    // 비관적 공유 잠금으로 조회
+    @Override
+    public Optional<Brand> findByIdForShare(long brandId) {
+        return brandJpaRepository.findByIdForShare(brandId).map(mapper::toDomain);
+    }
 }

@@ -16,4 +16,14 @@ public interface BrandJpaRepository extends JpaRepository<BrandJpaEntity, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from BrandJpaEntity b left join fetch b.products p where b.id = :brandId order by p.id")
     Optional<BrandJpaEntity> findForDeletion(@Param("brandId") long brandId);
+
+    // 비관적 쓰기 잠금으로 조회
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select b from BrandJpaEntity b where b.id = :id")
+    Optional<BrandJpaEntity> findByIdForUpdate(@Param("id") long id);
+
+    // 비관적 공유 잠금으로 조회
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select b from BrandJpaEntity b where b.id = :id")
+    Optional<BrandJpaEntity> findByIdForShare(@Param("id") long id);
 }

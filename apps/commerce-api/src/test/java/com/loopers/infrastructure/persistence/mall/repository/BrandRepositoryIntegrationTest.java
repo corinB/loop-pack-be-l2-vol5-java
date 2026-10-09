@@ -63,4 +63,18 @@ class BrandRepositoryIntegrationTest {
         assertThat(restoredProduct2.getPrice()).isEqualTo(2_000L);
         assertThat(restoredProduct2.getStock()).isZero();
     }
+
+    @DisplayName("쓰기·공유 잠금 조회로도 브랜드를 읽는다")
+    @Test
+    @Transactional
+    void readsBrand_withWriteAndShareLocks() {
+        Brand brand = brandRepository.save(Brand.create("브랜드", "설명"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(brandRepository.findByIdForUpdate(brand.getId()).orElseThrow().getName()).isEqualTo("브랜드");
+        assertThat(brandRepository.findByIdForShare(brand.getId()).orElseThrow().getDescription()).isEqualTo("설명");
+        assertThat(brandRepository.findByIdForUpdate(brand.getId() + 1)).isEmpty();
+        assertThat(brandRepository.findByIdForShare(brand.getId() + 1)).isEmpty();
+    }
 }

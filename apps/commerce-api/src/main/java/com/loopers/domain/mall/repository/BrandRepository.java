@@ -11,4 +11,10 @@ public interface BrandRepository {
 
     // 브랜드와 연결된 미삭제 상품 전체를 함께 조회 (삭제 전용)
     Optional<Brand> findForDeletion(long brandId);
+
+    // 비관적 쓰기 잠금으로 조회
+    Optional<Brand> findByIdForUpdate(long brandId);
+
+    // 비관적 공유 잠금으로 조회
+    Optional<Brand> findByIdForShare(long brandId);
 }

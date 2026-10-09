@@ -56,9 +56,9 @@ POST /api-admin/v1/products
 
 ### 커밋 2 — 브랜드 잠금 조회 추가
 
-- [ ] `BrandRepository.findByIdForUpdate`·`findByIdForShare`와 구현을 추가한다(`BrandJpaRepository`에 `@Lock` + `@Query` 단건 조회). 기존 `ProductJpaRepository.findByIdForUpdate` 형식을 따른다.
-- [ ] 통합 테스트는 기존 `BrandRepositoryIntegrationTest`에 "잠금 조회로도 브랜드를 읽는다" 수준 1개만 추가한다(잠금 동작 자체는 검증하지 않음).
-- [ ] 커밋: `refactor: 브랜드 쓰기·공유 잠금 조회 추가`
+- [x] `BrandRepository.findByIdForUpdate`·`findByIdForShare`와 구현을 추가한다(`BrandJpaRepository`에 `@Lock` + `@Query` 단건 조회). 기존 `ProductJpaRepository.findByIdForUpdate` 형식을 따른다.
+- [x] 통합 테스트는 기존 `BrandRepositoryIntegrationTest`에 "잠금 조회로도 브랜드를 읽는다" 수준 1개만 추가한다(잠금 동작 자체는 검증하지 않음).
+- [x] 커밋: `refactor: 브랜드 쓰기·공유 잠금 조회 추가`
 
 ### 커밋 3 — 브랜드 삭제를 서비스 호출과 상품 일괄 삭제로 전환
 
