@@ -69,9 +69,9 @@ POST /api-admin/v1/products
 
 ### 커밋 4 — 상품 등록의 브랜드 공유 잠금
 
-- [ ] `ProductServiceTest`(Mockito, 신규 또는 기존)에 등록이 `findByIdForShare`로 브랜드를 읽고, 삭제된 브랜드면 `DELETED_BRAND`로 거절하며 저장하지 않는지 확인한다.
-- [ ] `ProductService` 등록만 `findByIdForShare`로 바꾼다. 수정·재고 설정의 `findBrand`는 그대로 둔다.
-- [ ] 커밋: `refactor: 상품 등록 시 브랜드를 공유 잠금으로 읽어 동시 삭제와 순서를 정함`
+- [x] `ProductServiceTest`(Mockito, 신규 또는 기존)에 등록이 `findByIdForShare`로 브랜드를 읽고, 삭제된 브랜드면 `DELETED_BRAND`로 거절하며 저장하지 않는지 확인한다.
+- [x] `ProductService` 등록만 `findByIdForShare`로 바꾼다. 수정·재고 설정의 `findBrand`는 그대로 둔다.
+- [x] 커밋: `refactor: 상품 등록 시 브랜드를 공유 잠금으로 읽어 동시 삭제와 순서를 정함`
 
 ### 커밋 5 — 브랜드→상품 연관관계와 삭제 전용 조회 제거
 
