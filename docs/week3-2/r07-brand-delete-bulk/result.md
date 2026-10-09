@@ -2,7 +2,7 @@
 
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
-작업 브랜치: `volume-3/r07-brand-delete-bulk` (R04 브랜치에서 분기, R04 병합(PR #18) 후 main 기준으로 리베이스 예정) · PR 대상: `volume-3/main`
+작업 브랜치: `volume-3/r07-brand-delete-bulk` (R04 브랜치에서 분기, R04 병합(PR #18) 후 main 위로 리베이스, 트리 동일) · PR 대상: `volume-3/main`
 
 상태: 구현·검증 완료. `./gradlew :apps:commerce-api:check`(test 태스크 한 번으로 slow 포함 전체 실행)에서 테스트 260건 모두 통과했다(실패·오류·skip 0). Checkstyle·ArchUnit도 통과했다.
 

@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r04-like-sort-index` · PR 대상: `volume-3/main`
 
-상태: 구현·검증 완료([결과](result.md)). 최종 check: test 241건, slowTest 17건 통과. R03 병합 후 main 기준으로 리베이스했다. [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 리뷰 중.
+상태: 구현·검증 완료([결과](result.md)). 최종 check: test 241건, slowTest 17건 통과. R03 병합 후 main 기준으로 리베이스했다. [PR #18](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/18) 병합 완료.
 기준 항목: 분석 항목 2(좋아요순 정렬 인덱스 부재와 매 요청 `COUNT`).
 
 ## 1. 목적
