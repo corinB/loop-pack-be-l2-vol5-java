@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r09-order-confirm-facade` · PR 대상: `volume-3/main`
 
-상태: 구현·검증 완료([결과](result.md)). 최종 check 271건 통과. 브랜치는 R08 브랜치(PR #20)에서 분기했고 R08 병합 후 main 기준으로 리베이스한다.
+상태: 구현·검증 완료([결과](result.md)). 최종 check 271건 통과. 브랜치는 R08 브랜치(PR #20)에서 분기했고 R08 병합(PR #20) 후 main 기준으로 리베이스했다.
 기준 자료: 2026-10-09 사용자 제안 다이어그램(`OrderController → ConfirmOrderUseCase ← ConfirmOrderFacade → OrderService / ProductService → 각 Repository`).
 
 ## 1. 목적
