@@ -10,24 +10,31 @@ import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.ordering.model.OrderItem;
 import com.loopers.domain.ordering.repository.OrderRepository;
+import com.loopers.infrastructure.persistence.ordering.entity.QOrderJpaEntity;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
 class QueryDslOrderQueryDaoIntegrationTest {
+    private static final QOrderJpaEntity ORDER = QOrderJpaEntity.orderJpaEntity;
+
     @Autowired
     private OrderQueryDao orderQueryDao;
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -41,8 +48,8 @@ class QueryDslOrderQueryDaoIntegrationTest {
     void returnsOrders_orderedByCreatedAtDescending() {
         Order older = orderRepository.save(order(1L));
         Order newer = orderRepository.save(order(1L));
-        setCreatedAt(older.getId(), "2026-01-01 00:00:00");
-        setCreatedAt(newer.getId(), "2026-01-02 00:00:00");
+        setCreatedAt(older.getId(), "2026-01-01T00:00:00Z");
+        setCreatedAt(newer.getId(), "2026-01-02T00:00:00Z");
 
         PageResult<OrderView> result = orderQueryDao.findOrders(1L, new PageCriteria(0, 20));
 
@@ -104,9 +111,9 @@ class QueryDslOrderQueryDaoIntegrationTest {
     }
 
     private void setCreatedAt(long orderId, String createdAt) {
-        jdbcClient.sql("UPDATE orders SET created_at = :createdAt WHERE id = :orderId")
-            .param("createdAt", createdAt)
-            .param("orderId", orderId)
-            .update();
+        transactionTemplate.executeWithoutResult(status -> queryFactory.update(ORDER)
+            .set(ORDER.createdAt, Instant.parse(createdAt))
+            .where(ORDER.id.eq(orderId))
+            .execute());
     }
 }

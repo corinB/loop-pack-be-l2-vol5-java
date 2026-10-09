@@ -24,6 +24,7 @@ import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
 import com.loopers.support.test.IntegrationTest;
+import com.loopers.support.test.OrderConfirmProbe;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @IntegrationTest
 // 저장 전 검증 실패와 구분되는, 실제 변경 SQL 실행 이후 전체 롤백을 검증
@@ -52,7 +52,7 @@ class ConfirmOrderSqlRollbackIntegrationTest {
     @Autowired
     private EntityManager entityManager;
     @Autowired
-    private JdbcClient jdbcClient;
+    private OrderConfirmProbe probe;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
     @Autowired
@@ -106,13 +106,12 @@ class ConfirmOrderSqlRollbackIntegrationTest {
                 () -> assertThat(productRepository.findById(productAId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(productRepository.findById(productBId).orElseThrow().getStock()).isEqualTo(5),
                 () -> assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L),
-                () -> assertThat(orderStatus(order.getId())).isEqualTo("DRAFT"),
-                () -> assertThat(countUsePointBills(1L, order.getId())).isZero(),
-                () -> assertThat(countPaidOrderRecords(order.getId())).isZero(),
-                () -> assertThat(orderStatus(unrelatedOrder.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(probe.orderStatus(order.getId())).isEqualTo("DRAFT"),
+                () -> assertThat(probe.countUsePointBills(1L, order.getId())).isZero(),
+                () -> assertThat(probe.countPaidOrderRecords(order.getId())).isZero(),
+                () -> assertThat(probe.orderStatus(unrelatedOrder.getId())).isEqualTo("DRAFT"),
                 () -> assertThat(productRepository.findById(unrelatedProductId).orElseThrow().getStock()).isEqualTo(5),
-                () -> assertThat(jdbcClient.sql("SELECT amount FROM point_bills WHERE user_id = 1 AND type = 'CHARGE'")
-                    .query(Long.class).list()).containsExactly(10_000L)
+                () -> assertThat(probe.chargeAmounts(1L)).containsExactly(10_000L)
             );
         } finally {
             reset(orderRepository);
@@ -126,28 +125,5 @@ class ConfirmOrderSqlRollbackIntegrationTest {
 
     private Order createOrder(long userId, List<OrderItem> items) {
         return orderRepository.save(Order.create(userId, items));
-    }
-
-    private long countUsePointBills(long userId, long orderId) {
-        return jdbcClient.sql(
-                "SELECT COUNT(*) FROM point_bills WHERE user_id = :userId AND type = 'USE' AND order_id = :orderId")
-            .param("userId", userId)
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
-    }
-
-    private long countPaidOrderRecords(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
-    }
-
-    private String orderStatus(long orderId) {
-        return jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
-            .param("orderId", orderId)
-            .query(String.class)
-            .single();
     }
 }

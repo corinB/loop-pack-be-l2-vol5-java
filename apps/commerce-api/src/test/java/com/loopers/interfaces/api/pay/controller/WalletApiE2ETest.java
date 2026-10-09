@@ -3,15 +3,18 @@ package com.loopers.interfaces.api.pay.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
+import com.loopers.domain.pay.model.PointBillType;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
+import com.loopers.infrastructure.persistence.pay.entity.QPointBillJpaEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.pay.dto.WalletApiDto;
 import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,10 +27,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @E2ETest
 class WalletApiE2ETest {
+    private static final QPointBillJpaEntity BILL = QPointBillJpaEntity.pointBillJpaEntity;
+
     @Autowired
     private TestRestTemplate restTemplate;
     @Autowired
@@ -35,7 +39,7 @@ class WalletApiE2ETest {
     @Autowired
     private WalletRepository walletRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -134,9 +138,8 @@ class WalletApiE2ETest {
     }
 
     private long countChargeBills(long userId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM point_bills WHERE user_id = :userId AND type = 'CHARGE'")
-            .param("userId", userId)
-            .query(Long.class)
-            .single();
+        return queryFactory.select(BILL.count()).from(BILL)
+            .where(BILL.userId.eq(userId), BILL.type.eq(PointBillType.CHARGE))
+            .fetchOne();
     }
 }

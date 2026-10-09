@@ -12,17 +12,21 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
 class QueryDslProductQueryDaoIntegrationTest {
+    private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
+
     @Autowired
     private ProductQueryDao productQueryDao;
     @Autowired
@@ -30,7 +34,9 @@ class QueryDslProductQueryDaoIntegrationTest {
     @Autowired
     private ProductRepository productRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -96,10 +102,10 @@ class QueryDslProductQueryDaoIntegrationTest {
 
     private Product saveProduct(Brand brand, String name, long likeCount) {
         Product product = productRepository.save(Product.create(brand.getId(), name, null, 1_000L, 5));
-        jdbcClient.sql("UPDATE products SET like_count = :likeCount WHERE id = :id")
-            .param("likeCount", likeCount)
-            .param("id", product.getId())
-            .update();
+        transactionTemplate.executeWithoutResult(status -> queryFactory.update(PRODUCT)
+            .set(PRODUCT.likeCount, likeCount)
+            .where(PRODUCT.id.eq(product.getId()))
+            .execute());
         return product;
     }
 }

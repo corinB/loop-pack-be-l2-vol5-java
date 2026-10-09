@@ -10,16 +10,25 @@ import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.domain.mall.repository.ProductRepository;
+import com.loopers.domain.shopping.model.Like;
+import com.loopers.domain.shopping.repository.LikeRepository;
+import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
+import com.loopers.infrastructure.persistence.shopping.entity.QLikeJpaEntity;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
 class QueryDslLikeQueryDaoIntegrationTest {
+    private static final QLikeJpaEntity LIKE = QLikeJpaEntity.likeJpaEntity;
+    private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
+
     @Autowired
     private LikeQueryDao likeQueryDao;
     @Autowired
@@ -27,7 +36,11 @@ class QueryDslLikeQueryDaoIntegrationTest {
     @Autowired
     private ProductRepository productRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private LikeRepository likeRepository;
+    @Autowired
+    private JPAQueryFactory queryFactory;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -42,8 +55,8 @@ class QueryDslLikeQueryDaoIntegrationTest {
         Brand brand = brandRepository.save(Brand.create("브랜드", null));
         Product older = productRepository.save(Product.create(brand.getId(), "오래된 상품", null, 1_000L, 5));
         Product newer = productRepository.save(Product.create(brand.getId(), "최근 상품", null, 2_000L, 5));
-        insertLike(1L, older.getId(), "2026-01-01 00:00:00");
-        insertLike(1L, newer.getId(), "2026-01-02 00:00:00");
+        insertLike(1L, older.getId(), "2026-01-01T00:00:00Z");
+        insertLike(1L, newer.getId(), "2026-01-02T00:00:00Z");
         insertLikeCount(newer.getId(), 3L);
 
         PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
@@ -65,8 +78,8 @@ class QueryDslLikeQueryDaoIntegrationTest {
         Brand brand = brandRepository.save(Brand.create("브랜드", null));
         Product first = productRepository.save(Product.create(brand.getId(), "상품1", null, 1_000L, 5));
         Product second = productRepository.save(Product.create(brand.getId(), "상품2", null, 1_000L, 5));
-        insertLike(1L, first.getId(), "2026-01-01 00:00:00");
-        insertLike(1L, second.getId(), "2026-01-01 00:00:00");
+        insertLike(1L, first.getId(), "2026-01-01T00:00:00Z");
+        insertLike(1L, second.getId(), "2026-01-01T00:00:00Z");
 
         PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
@@ -81,7 +94,7 @@ class QueryDslLikeQueryDaoIntegrationTest {
         Product deleted = productRepository.save(Product.create(brand.getId(), "삭제 상품", null, 1_000L, 5));
         deleted.delete();
         productRepository.save(deleted);
-        insertLike(1L, deleted.getId(), "2026-01-01 00:00:00");
+        insertLike(1L, deleted.getId(), "2026-01-01T00:00:00Z");
 
         PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 20));
 
@@ -95,7 +108,7 @@ class QueryDslLikeQueryDaoIntegrationTest {
         Brand brand = brandRepository.save(Brand.create("브랜드", null));
         for (int i = 0; i < 3; i++) {
             Product product = productRepository.save(Product.create(brand.getId(), "상품" + i, null, 1_000L, 5));
-            insertLike(1L, product.getId(), "2026-01-0" + (i + 1) + " 00:00:00");
+            insertLike(1L, product.getId(), "2026-01-0" + (i + 1) + "T00:00:00Z");
         }
 
         PageResult<LikedProductView> result = likeQueryDao.findByUserId(1L, new PageCriteria(0, 2));
@@ -106,17 +119,19 @@ class QueryDslLikeQueryDaoIntegrationTest {
     }
 
     private void insertLike(long userId, long productId, String createdAt) {
-        jdbcClient.sql("INSERT INTO product_likes (user_id, product_id, created_at) VALUES (:userId, :productId, :createdAt)")
-            .param("userId", userId)
-            .param("productId", productId)
-            .param("createdAt", createdAt)
-            .update();
+        transactionTemplate.executeWithoutResult(status -> {
+            likeRepository.save(Like.create(userId, productId));
+            queryFactory.update(LIKE)
+                .set(LIKE.createdAt, Instant.parse(createdAt))
+                .where(LIKE.userId.eq(userId), LIKE.productId.eq(productId))
+                .execute();
+        });
     }
 
     private void insertLikeCount(long productId, long likeCount) {
-        jdbcClient.sql("UPDATE products SET like_count = :likeCount WHERE id = :productId")
-            .param("productId", productId)
-            .param("likeCount", likeCount)
-            .update();
+        transactionTemplate.executeWithoutResult(status -> queryFactory.update(PRODUCT)
+            .set(PRODUCT.likeCount, likeCount)
+            .where(PRODUCT.id.eq(productId))
+            .execute());
     }
 }

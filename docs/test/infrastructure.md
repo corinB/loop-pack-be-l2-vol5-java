@@ -28,7 +28,6 @@
 | [`OrderRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/ordering/repository/OrderRepositoryIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 주문·품목 저장 후 flush/clear해도 스냅샷·합계 보존, 없는 주문 조회, 확정 시 `OrderRecord` cascade 저장/복원 | 3 | |
 | [`PointBillRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/PointBillRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 충전/사용 기록 저장 후 flush/clear해도 타입·금액·주문ID 보존 | 2 | |
 | [`WalletRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/pay/repository/WalletRepositoryIntegrationTest.java) | pay | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 지갑 저장·충전 후 flush/clear해도 잔액 보존, 없는 사용자 빈 결과 | 2 | |
-| [`LikeStorageIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/entity/LikeStorageIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | unique constraint 위반 → `DataIntegrityViolationException` | `@AfterEach` TRUNCATE | 사용자·상품 유일 관계 위반을 원시 JDBC INSERT로 검증 | 1 | |
 | [`UserEntityMapperTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/entity/UserEntityMapperTest.java) | shopping | 없음(순수 단위) | 불필요 | - | 해당 없음 | 도메인↔Entity 왕복 변환 시 사용자 ID 보존 | 1 | |
 | [`UserRepositoryIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/persistence/shopping/repository/UserRepositoryIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | - | `@Transactional`(rollback)만 | 할당 사용자 ID 저장 후 flush/clear해도 저장 상태 확인 | 1 | `UserFixture` 사용 |
 
@@ -36,11 +35,11 @@
 
 | 테스트 클래스 | 컨텍스트 | Spring 컨텍스트 | Docker | MySQL 고유 동작 | 정리 방식 | 검증 시나리오 | 테스트 수 | 비고 |
 |---|---|---|---|---|---|---|---|---|
-| [`QueryDslOrderQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/ordering/QueryDslOrderQueryDaoIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient`, `created_at` 직접 UPDATE) | `@AfterEach` TRUNCATE만 | 최근 생성순 정렬, 다른 사용자 주문 제외, 결제 필드 포함, 없는 주문, 관리자 목록 전체 조회 | 5 | |
+| [`QueryDslOrderQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/ordering/QueryDslOrderQueryDaoIntegrationTest.java) | ordering | @IntegrationTest(공유) | 필요 | QueryDSL update(`created_at` 직접 UPDATE) | `@AfterEach` TRUNCATE만 | 최근 생성순 정렬, 다른 사용자 주문 제외, 결제 필드 포함, 없는 주문, 관리자 목록 전체 조회 | 5 | |
 | [`QueryDslWalletQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/pay/QueryDslWalletQueryDaoIntegrationTest.java) | pay | @IntegrationTest(공유) + `@Transactional`(클래스 레벨) | 필요 | - | `@Transactional`(rollback)만 | JPA로 저장한 잔액을 JDBC로 재조회, 없는 사용자 빈 결과 | 2 | |
-| [`QueryDslProductQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/QueryDslProductQueryDaoIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient`로 `products.like_count` 갱신), 조회는 QueryDSL | `@AfterEach` TRUNCATE만 | 좋아요순 목록이 좋아요 수 내림차순·동점은 id 내림차순(좋아요 0건 포함), 삭제 상품은 목록·전체 개수에서 제외, 브랜드 필터 정렬·개수 | 3 | |
+| [`QueryDslProductQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/QueryDslProductQueryDaoIntegrationTest.java) | mall | @IntegrationTest(공유) | 필요 | QueryDSL update(`products.like_count` 갱신), 조회는 QueryDSL | `@AfterEach` TRUNCATE만 | 좋아요순 목록이 좋아요 수 내림차순·동점은 id 내림차순(좋아요 0건 포함), 삭제 상품은 목록·전체 개수에서 제외, 브랜드 필터 정렬·개수 | 3 | |
 | [`ExpiringCountCacheTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/mall/ExpiringCountCacheTest.java) | mall | 없음(순수 단위, 가변 Clock) | 불필요 | - | 해당 없음 | TTL 안에서는 재계산하지 않음, TTL이 지나면 재계산, TTL 0이면 매번 계산(전체 개수 캐시) | 3 | `test` 프로필은 `query.product-count-cache.ttl=0s`라 통합 테스트에서는 캐시가 꺼져 있다 |
-| [`QueryDslLikeQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslLikeQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient` 직접 INSERT), 조회는 QueryDSL, 검증 데이터 입력만 JdbcClient | `@AfterEach` TRUNCATE만 | 좋아요 상품을 브랜드·`products.like_count`와 함께 최근순 반환, 동시각 상품ID 내림차순, 삭제 상품 제외, 페이지네이션 | 4 | |
+| [`QueryDslLikeQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslLikeQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | `LikeRepository.save`로 좋아요 저장 후 QueryDSL update로 `created_at`·`products.like_count` 설정, 조회는 QueryDSL | `@AfterEach` TRUNCATE만 | 좋아요 상품을 브랜드·`products.like_count`와 함께 최근순 반환, 동시각 상품ID 내림차순, 삭제 상품 제외, 페이지네이션 | 4 | |
 | [`QueryDslUserQueryDaoIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/query/shopping/QueryDslUserQueryDaoIntegrationTest.java) | shopping | @IntegrationTest(공유) + `@Transactional`(클래스 레벨) | 필요 | - | `@Transactional`(rollback)만, 별도 TRUNCATE 없음 | JPA 저장 사용자를 JDBC 조회 모델로 조회, 없는 사용자는 빈 결과이며 기존 저장 상태 유지 | 2 | TRUNCATE 호출 없이 rollback에만 의존 |
 
 ### dao
@@ -61,7 +60,7 @@
 | 테스트 클래스 | 컨텍스트 | Spring 컨텍스트 | Docker | MySQL 고유 동작 | 정리 방식 | 검증 시나리오 | 테스트 수 | 비고 |
 |---|---|---|---|---|---|---|---|---|
 | [`LocalUserFixtureInitializerTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/initializer/shopping/LocalUserFixtureInitializerTest.java) | shopping | 없음(인메모리 페이크 리포지토리) | 불필요 | - | 해당 없음 | 반복 실행해도 사용자1·2와 지갑만 한 번씩 저장, 기존 사용자·지갑 보존하며 누락분만 저장 | 2 | `InMemoryUserRepository`/`InMemoryWalletRepository` 사용 |
-| [`LocalUserFixtureInitializerIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/initializer/shopping/LocalUserFixtureInitializerIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | native SQL(`JdbcClient` id 목록 조회) | `@AfterEach` TRUNCATE만 | 실제 DB에서 `TransactionTemplate`로 두 번 실행해도 기존 사용자·fixture 보존 | 1 | `LocalUserFixtureInitializerTest`와 검증 내용 중복 |
+| [`LocalUserFixtureInitializerIntegrationTest`](../../apps/commerce-api/src/test/java/com/loopers/infrastructure/initializer/shopping/LocalUserFixtureInitializerIntegrationTest.java) | shopping | @IntegrationTest(공유) | 필요 | QueryDSL 조회(users·wallets id 목록) | `@AfterEach` TRUNCATE만 | 실제 DB에서 `TransactionTemplate`로 두 번 실행해도 기존 사용자·fixture 보존 | 1 | `LocalUserFixtureInitializerTest`와 검증 내용 중복 |
 
 ### 컨텍스트 로딩
 
@@ -100,7 +99,8 @@
 
 ## 참고: 확인 사항
 
-- `LikeStorageIntegrationTest`는 엔티티가 아닌 `JdbcClient` 원시 SQL로 `product_likes` 유일 제약을 검증하는 테스트로, `infrastructure.persistence.shopping.entity` 패키지에 있지만 실제로는 엔티티 클래스를 직접 다루지 않는다.
+- R08: 테스트의 데이터 준비·검증은 `JdbcClient` 대신 `JPAQueryFactory`(QueryDSL)와 도메인 저장소를 쓴다. 원시 JDBC로 유일 제약만 확인하던 `LikeStorageIntegrationTest`는 삭제했고, 같은 관계의 중복 저장은 `LikeRepositoryIntegrationTest`가 다룬다. 주문 확정 결과 조회는 `com.loopers.support.test.OrderConfirmProbe`를 공유한다.
+
 
 ## 5. 실행 방법
 

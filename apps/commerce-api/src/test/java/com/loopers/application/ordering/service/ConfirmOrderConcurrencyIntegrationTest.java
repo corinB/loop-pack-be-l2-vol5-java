@@ -26,6 +26,7 @@ import com.loopers.domain.support.error.DomainException;
 import com.loopers.support.concurrency.ConcurrentRequests.Outcome;
 import com.loopers.support.concurrency.ConcurrentRequests;
 import com.loopers.support.test.IntegrationTest;
+import com.loopers.support.test.OrderConfirmProbe;
 import com.loopers.utils.DatabaseCleanUp;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @IntegrationTest
 @Tag("slow")
@@ -60,7 +60,7 @@ class ConfirmOrderConcurrencyIntegrationTest {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private OrderConfirmProbe probe;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -90,8 +90,8 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(technicalErrorCount(results, Set.of(DomainErrorCode.ORDER_ALREADY_CONFIRMED))).isZero(),
             () -> assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(4),
             () -> assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(9_000L),
-            () -> assertThat(countUsePointBills(userId, order.getId())).isEqualTo(1L),
-            () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(1L)
+            () -> assertThat(probe.countUsePointBills(userId, order.getId())).isEqualTo(1L),
+            () -> assertThat(probe.countPaidOrderRecords(order.getId())).isEqualTo(1L)
         );
         assertOrderOutcome(order, true);
     }
@@ -175,12 +175,11 @@ class ConfirmOrderConcurrencyIntegrationTest {
             () -> assertThat(successCount(results)).isEqualTo(2),
             () -> assertThat(technicalErrorCount(results, Set.of())).isZero(),
             () -> assertThat(walletRepository.findByUserId(userId).orElseThrow().getBalance()).isEqualTo(5_000L),
-            () -> assertThat(countUsePointBills(userId, order.getId())).isEqualTo(1L)
+            () -> assertThat(probe.countUsePointBills(userId, order.getId())).isEqualTo(1L)
         );
         assertOrderOutcome(order, true);
         assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(4);
-        assertThat(jdbcClient.sql("SELECT amount FROM point_bills WHERE user_id = :userId AND type = 'CHARGE'")
-            .param("userId", userId).query(Long.class).list()).containsExactly(2_000L);
+        assertThat(probe.chargeAmounts(userId)).containsExactly(2_000L);
     }
 
     @DisplayName("관리자 재고 설정과 주문 확정을 동시에 실행해도 순차 실행에 해당하는 결과만 나온다")
@@ -242,20 +241,15 @@ class ConfirmOrderConcurrencyIntegrationTest {
 
     private void assertOrderOutcome(Order order, boolean succeeded) {
         assertAll(
-            () -> assertThat(jdbcClient.sql("SELECT status FROM orders WHERE id = :orderId")
-                .param("orderId", order.getId()).query(String.class).single())
+            () -> assertThat(probe.orderStatus(order.getId()))
                 .isEqualTo(succeeded ? "CONFIRMED" : "DRAFT"),
-            () -> assertThat(jdbcClient.sql("SELECT total_amount FROM orders WHERE id = :orderId")
-                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(order.getTotalAmount()),
-            () -> assertThat(jdbcClient.sql("SELECT SUM(quantity) FROM order_items WHERE order_id = :orderId")
-                .param("orderId", order.getId()).query(Long.class).single())
+            () -> assertThat(probe.orderTotalAmount(order.getId())).isEqualTo(order.getTotalAmount()),
+            () -> assertThat(probe.sumOrderItemQuantity(order.getId()))
                 .isEqualTo(order.getItems().stream().mapToLong(OrderItem::getQuantity).sum()),
-            () -> assertThat(countUsePointBills(order.getUserId(), order.getId())).isEqualTo(succeeded ? 1 : 0),
-            () -> assertThat(countPaidOrderRecords(order.getId())).isEqualTo(succeeded ? 1 : 0),
-            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM point_bills WHERE order_id = :orderId")
-                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0),
-            () -> assertThat(jdbcClient.sql("SELECT COALESCE(SUM(amount), 0) FROM order_records WHERE order_id = :orderId")
-                .param("orderId", order.getId()).query(Long.class).single()).isEqualTo(succeeded ? order.getTotalAmount() : 0)
+            () -> assertThat(probe.countUsePointBills(order.getUserId(), order.getId())).isEqualTo(succeeded ? 1 : 0),
+            () -> assertThat(probe.countPaidOrderRecords(order.getId())).isEqualTo(succeeded ? 1 : 0),
+            () -> assertThat(probe.sumPointBillAmountByOrder(order.getId())).isEqualTo(succeeded ? order.getTotalAmount() : 0),
+            () -> assertThat(probe.sumOrderRecordAmount(order.getId())).isEqualTo(succeeded ? order.getTotalAmount() : 0)
         );
     }
 
@@ -296,21 +290,5 @@ class ConfirmOrderConcurrencyIntegrationTest {
 
     private Order createOrder(long userId, List<OrderItem> items) {
         return orderRepository.save(Order.create(userId, items));
-    }
-
-    private long countUsePointBills(long userId, long orderId) {
-        return jdbcClient.sql(
-                "SELECT COUNT(*) FROM point_bills WHERE user_id = :userId AND type = 'USE' AND order_id = :orderId")
-            .param("userId", userId)
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
-    }
-
-    private long countPaidOrderRecords(long orderId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM order_records WHERE order_id = :orderId AND status = 'PAID'")
-            .param("orderId", orderId)
-            .query(Long.class)
-            .single();
     }
 }

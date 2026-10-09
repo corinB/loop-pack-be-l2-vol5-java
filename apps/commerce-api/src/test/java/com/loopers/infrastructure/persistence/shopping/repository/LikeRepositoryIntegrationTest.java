@@ -4,24 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.domain.shopping.model.Like;
 import com.loopers.domain.shopping.repository.LikeRepository;
+import com.loopers.infrastructure.persistence.shopping.entity.QLikeJpaEntity;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
 @IntegrationTest
 @Transactional
 class LikeRepositoryIntegrationTest {
+    private static final QLikeJpaEntity LIKE = QLikeJpaEntity.likeJpaEntity;
+
     @Autowired
     private LikeRepository likeRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -78,19 +81,14 @@ class LikeRepositoryIntegrationTest {
     }
 
     private long countLikes(long userId, long productId) {
-        return jdbcClient.sql("SELECT COUNT(*) FROM product_likes WHERE user_id = :userId AND product_id = :productId")
-            .param("userId", userId)
-            .param("productId", productId)
-            .query(Long.class)
-            .single();
+        return queryFactory.select(LIKE.count()).from(LIKE)
+            .where(LIKE.userId.eq(userId), LIKE.productId.eq(productId))
+            .fetchOne();
     }
 
     private Instant createdAt(long userId, long productId) {
-        return jdbcClient.sql("SELECT created_at FROM product_likes WHERE user_id = :userId AND product_id = :productId")
-            .param("userId", userId)
-            .param("productId", productId)
-            .query(java.sql.Timestamp.class)
-            .single()
-            .toInstant();
+        return queryFactory.select(LIKE.createdAt).from(LIKE)
+            .where(LIKE.userId.eq(userId), LIKE.productId.eq(productId))
+            .fetchOne();
     }
 }

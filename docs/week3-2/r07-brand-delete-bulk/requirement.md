@@ -2,7 +2,7 @@
 
 [전체 요구사항](../total_requirement.md) · 작업 브랜치: `volume-3/r07-brand-delete-bulk` · PR 대상: `volume-3/main`
 
-상태: 구현·검증 완료([결과](result.md)). 최종 check 260건 통과. 브랜치는 R04 브랜치(PR #18)에서 분기했고 R04 병합(PR #18) 후 main 기준으로 리베이스했다. [PR #19](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/19) 리뷰 중.
+상태: 구현·검증 완료([결과](result.md)). 최종 check 260건 통과. 브랜치는 R04 브랜치(PR #18)에서 분기했고 R04 병합(PR #18) 후 main 기준으로 리베이스했다. [PR #19](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/19) 병합 완료.
 기준 자료: 2026-10-09 브랜드 삭제 방식 조사(아래 2절 측정), 사용자 제안 "애플리케이션 레이어에서 브랜드를 삭제하고 그 브랜드 id를 가진 상품을 모두 삭제".
 
 ## 1. 목적
