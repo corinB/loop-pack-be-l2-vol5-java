@@ -31,9 +31,9 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ### 커밋 1 — 주문의 상품별 합산 수량
 
-- [ ] `OrderTest`(또는 기존 Order 도메인 테스트)에 먼저 추가: 같은 상품 품목 수량 합산, 품목 등장 순서 유지(`LinkedHashMap`), 합산 overflow 시 `DomainException(CALCULATION_OVERFLOW)`.
-- [ ] `Order.quantitiesByProductId()` 추가(정책의 `aggregateQuantities`·`addExact` 로직을 옮김). 정책은 아직 지우지 않는다.
-- [ ] 커밋: `refactor: 주문에 상품별 합산 수량 계산을 추가`
+- [x] `OrderTest`(또는 기존 Order 도메인 테스트)에 먼저 추가: 같은 상품 품목 수량 합산, 품목 등장 순서 유지(`LinkedHashMap`), 합산 overflow 시 `DomainException(CALCULATION_OVERFLOW)`.
+- [x] `Order.quantitiesByProductId()` 추가(정책의 `aggregateQuantities`·`addExact` 로직을 옮김). 정책은 아직 지우지 않는다.
+- [x] 커밋: `refactor: 주문에 상품별 합산 수량 계산을 추가`
 
 ### 커밋 2 — Service 메서드 추가
 
