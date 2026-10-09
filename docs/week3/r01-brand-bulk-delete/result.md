@@ -3,6 +3,8 @@
 [요구사항](requirement.md) · [트레이드오프](trade_off/total_trade_off.md) · [구현 계획](plan.md) · [전체 요구사항](../total_requirement.md)
 
 > 후속 결정: 이 문서는 작성 당시의 패키지·클래스 이름을 기록한다. 이후 패키지 구조 리팩토링으로 경로가 `<layer>.<ctx>.<종류>` 구조로 바뀌었다([결정 기록](../../refactor/context-notes.md)).
+>
+> 후속 결정(R07): 브랜드→상품 연관관계, `Brand.restoreForDeletion`, `findForDeletion`은 R07에서 제거됐다. 현재 삭제는 `BrandService`가 브랜드를 저장한 뒤 상품을 JPQL 일괄 UPDATE로 삭제한다([R07](../../week3-2/r07-brand-delete-bulk/requirement.md)). 이 문서는 R01 시점의 구현을 기록한다.
 
 ## 1. 구현 결과
 

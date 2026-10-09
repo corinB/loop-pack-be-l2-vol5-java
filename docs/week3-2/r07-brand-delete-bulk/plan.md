@@ -85,13 +85,13 @@ POST /api-admin/v1/products
 
 ### 커밋 6 — 잠금 범위 측정과 문서 갱신
 
-- [ ] R04 [explain 스크립트](../r04-like-sort-index/explain/)(`before.sql` → `seed.sql` → `after.sql`)로 로컬 Docker MySQL의 스크래치 스키마에 상품 100만 건을 넣는다. 트랜잭션 안에서 아래를 실행하고 `performance_schema.data_locks`를 테이블·인덱스별로 센 뒤 롤백한다. 측정 후 스크래치 스키마를 삭제한다.
+- [x] R04 [explain 스크립트](../r04-like-sort-index/explain/)(`before.sql` → `seed.sql` → `after.sql`)로 로컬 Docker MySQL의 스크래치 스키마에 상품 100만 건을 넣는다. 트랜잭션 안에서 아래를 실행하고 `performance_schema.data_locks`를 테이블·인덱스별로 센 뒤 롤백한다. 측정 후 스크래치 스키마를 삭제한다.
   - 변경 후 삭제: `SELECT … FROM brands WHERE id = ? FOR UPDATE` → `UPDATE brands SET deleted = 1 …` → `UPDATE products SET deleted = 1, updated_at = NOW(6) WHERE brand_id = ? AND deleted = 0`
   - 변경 후 등록: `SELECT … FROM brands WHERE id = ? FOR SHARE`
   - 비교용 변경 전 수치는 [요구사항 2절](requirement.md#2-현재-동작과-변경점)을 쓴다.
-- [ ] 결과를 이 문서의 검증 기록에 적는다.
-- [ ] `docs/test/*.md`, `CLAUDE.md`(브랜드 삭제 설명이 있으면), R01 `result.md` 상단의 후속 결정 안내를 갱신한다.
-- [ ] 커밋: `docs: 브랜드 삭제 잠금 범위 측정 결과와 관련 문서 갱신`
+- [x] 결과를 이 문서의 검증 기록에 적는다.
+- [x] `docs/test/*.md`, `CLAUDE.md`(브랜드 삭제 설명이 있으면), R01 `result.md` 상단의 후속 결정 안내를 갱신한다.
+- [x] 커밋: `docs: 브랜드 삭제 잠금 범위 측정 결과와 관련 문서 갱신`
 
 ## 검증 계획
 
@@ -101,11 +101,32 @@ POST /api-admin/v1/products
 
 ## 완료 체크리스트
 
-- [ ] 브랜드 삭제가 해당 브랜드 활성 상품만 잠그는 것을 측정으로 기록
-- [ ] 삭제 전용 조회·연관관계 제거
-- [ ] 기존 브랜드 삭제 E2E·롤백 테스트가 기대값 변경 없이 통과
-- [ ] `./gradlew :apps:commerce-api:check` 통과
+- [x] 브랜드 삭제가 해당 브랜드 활성 상품만 잠그는 것을 측정으로 기록
+- [x] 삭제 전용 조회·연관관계 제거
+- [x] 기존 브랜드 삭제 E2E·롤백 테스트가 기대값 변경 없이 통과
+- [x] `./gradlew :apps:commerce-api:check` 통과
 
 ## 검증 기록
 
-(구현 중 작성)
+### 생성된 SQL (테스트 로그의 Hibernate SQL)
+
+- 상품 일괄 삭제: `update products pje1_0 set deleted=1,updated_at=? where pje1_0.brand_id=? and pje1_0.deleted=0`
+- 브랜드 삭제 조회: `select … from brands bje1_0 where bje1_0.id=? for update`
+- 상품 등록의 브랜드 조회: `select … from brands bje1_0 where bje1_0.id=? for share` (`PESSIMISTIC_READ`가 `FOR SHARE`로 나감)
+
+### 잠금 범위 측정 (2026-10-09, MySQL 8.0 Docker, R04 스크립트로 `r04_after`에 상품 100만 건, 브랜드 500에 활성 상품 1,000건, 트랜잭션 후 ROLLBACK, 측정 후 스크래치 스키마 삭제)
+
+`EXPLAIN UPDATE products SET deleted = 1, updated_at = NOW(6) WHERE brand_id = 500 AND deleted = 0`: `type=range`, `key=idx_products_deleted_brand_created`(key_len 9, ref `const,const`), `rows=1000`, `Using where; Using temporary`.
+
+| 구분 | 실행 | 잠긴 행/락(`performance_schema.data_locks`) |
+|---|---|---|
+| 변경 전 삭제(요구사항 2절) | `findForDeletion` 조회 | 상품 PRIMARY 1,000,000 + 보조 인덱스 1,002,941 |
+| 변경 후 삭제 | `SELECT … FROM brands WHERE id = 500 FOR UPDATE` → `UPDATE brands SET deleted = 1` → 위 상품 UPDATE(영향 행 1,000) | brands PRIMARY RECORD 1, products PRIMARY RECORD 1,000, products `idx_products_deleted_brand_created` RECORD 1,004 (+ 테이블 의도 락 각 1) |
+| 변경 후 등록 | `SELECT id FROM brands WHERE id = 500 FOR SHARE` | brands PRIMARY RECORD 1 (`S,REC_NOT_GAP`), 상품 락 없음 |
+
+대상 브랜드의 활성 상품 수(1,000) 수준이며 중단 조건에 해당하지 않는다.
+
+### 최종 `./gradlew :apps:commerce-api:check`
+
+BUILD SUCCESSFUL. 테스트 260건(클래스 99개), 실패 0, 오류 0, skip 0(`build/test-results/test/*.xml` 집계, Checkstyle·ArchUnit 포함 통과).
+`git grep -n "findForDeletion\|restoreForDeletion\|toDomainForDeletion\|OneToMany" apps/commerce-api/src`는 무관한 `OrderJpaEntity`의 `@OneToMany`만 남는다.
