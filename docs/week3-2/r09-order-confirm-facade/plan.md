@@ -37,12 +37,12 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ### 커밋 2 — Service 메서드 추가
 
-- [ ] Service 단위 테스트(Mockito)를 먼저 쓴다. 정책 테스트 10건의 규칙 조합을 해당 Service로 옮긴다.
+- [x] Service 단위 테스트(Mockito)를 먼저 쓴다. 정책 테스트 10건의 규칙 조합을 해당 Service로 옮긴다.
   - `ProductService.decreaseStocks`: 상품 id 오름차순으로 잠금 조회(`InOrder`), 없는 상품은 `PRODUCT_NOT_FOUND`, 삭제된 상품·재고 부족은 기존 도메인 오류, 품목 등장 순서로 검증, 뒤쪽 품목이 실패하면 앞쪽 재고도 메모리에서 바뀌지 않고 저장도 없음, 성공 시 차감 후 저장.
   - `WalletService.pay`: 잔액 부족이면 `INSUFFICIENT_POINT`이고 저장 없음, 성공 시 잔액 차감·사용 기록 반환·지갑과 사용 기록 저장(현재 상품 가격이 아니라 주문 합계로 결제).
   - `OrderService.lockForConfirm`: 없으면 `ORDER_NOT_FOUND`, 이미 확정된 주문은 기존 상태 오류. `OrderService.confirm`: 확정 후 저장, 주문 기록이 주문과 일치.
-- [ ] `OrderService.lockForConfirm/confirm`, `WalletService.lockByUserId/pay`, `ProductService.decreaseStocks` 구현. 필요한 저장소 의존을 각 Service에 추가한다(`WalletService`는 이미 `WalletRepository`·`PointBillRepository` 보유).
-- [ ] 커밋: `refactor: 주문 확정 단계를 주문·지갑·상품 서비스 메서드로 분리`
+- [x] `OrderService.lockForConfirm/confirm`, `WalletService.lockByUserId/pay`, `ProductService.decreaseStocks` 구현. 필요한 저장소 의존을 각 Service에 추가한다(`WalletService`는 이미 `WalletRepository`·`PointBillRepository` 보유).
+- [x] 커밋: `refactor: 주문 확정 단계를 주문·지갑·상품 서비스 메서드로 분리`
 
 ### 커밋 3 — 파사드
 

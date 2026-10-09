@@ -3,6 +3,7 @@ package com.loopers.application.pay.service;
 import com.loopers.application.pay.command.WalletCommand;
 import com.loopers.application.pay.result.WalletResult;
 import com.loopers.application.pay.usecase.ChargeWalletUseCase;
+import com.loopers.domain.ordering.model.Order;
 import com.loopers.domain.pay.model.PointBill;
 import com.loopers.domain.pay.model.Wallet;
 import com.loopers.domain.pay.repository.PointBillRepository;
@@ -28,5 +29,17 @@ public class WalletService implements ChargeWalletUseCase {
         Wallet saved = walletRepository.save(wallet);
         pointBillRepository.save(pointBill);
         return new WalletResult(saved.getBalance());
+    }
+
+    // 사용자 지갑을 쓰기 잠금으로 조회한다. 트랜잭션 안(파사드)에서만 호출한다
+    public Wallet lockByUserId(long userId) {
+        return walletRepository.findByUserIdForUpdate(userId).orElseThrow();
+    }
+
+    // 주문 합계만큼 잔액을 차감하고 지갑과 사용 기록을 저장한다
+    public PointBill pay(Wallet wallet, Order order) {
+        PointBill pointBill = wallet.use(Money.positive(order.getTotalAmount()), order.getId());
+        walletRepository.save(wallet);
+        return pointBillRepository.save(pointBill);
     }
 }
