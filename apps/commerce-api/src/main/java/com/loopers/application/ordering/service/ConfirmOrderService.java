@@ -11,10 +11,8 @@ import com.loopers.domain.ordering.model.OrderConfirmation;
 import com.loopers.domain.ordering.model.OrderRecord;
 import com.loopers.domain.ordering.policy.OrderConfirmationPolicy;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
 @RequiredArgsConstructor
 // 주문 확정 유스케이스 구현체
 public class ConfirmOrderService implements ConfirmOrderUseCase {

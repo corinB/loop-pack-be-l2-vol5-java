@@ -46,10 +46,10 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ### 커밋 3 — 파사드
 
-- [ ] `ConfirmOrderFacadeTest`(Mockito)를 먼저 쓴다: 위 설계 순서대로 호출(`InOrder`), 주문 단계 실패 시 지갑·상품·결제·확정 미호출, 상품 단계 실패 시 결제·확정 미호출, 결과가 확정된 주문·주문 기록을 담음. 기존 `ConfirmOrderServiceTest`의 "현재 상품 가격이 바뀌어도 저장된 주문 합계로 결제" 케이스를 파사드 또는 `WalletService` 테스트로 옮긴다.
-- [ ] `application/ordering/facade/ConfirmOrderFacade implements ConfirmOrderUseCase` 추가, `@Service` + `@Transactional`. `ConfirmOrderService`의 `@Service`를 제거하거나 클래스를 이 커밋에서 지워 UseCase 빈이 하나만 남게 한다.
-- [ ] 기존 `ConfirmOrderIntegrationTest`·`ConfirmOrderSqlRollbackIntegrationTest`·`OrderApiE2ETest`가 기대값 변경 없이 통과해야 한다.
-- [ ] 커밋: `refactor: 주문 확정 진입점을 서비스 조율 파사드로 전환`
+- [x] `ConfirmOrderFacadeTest`(Mockito)를 먼저 쓴다: 위 설계 순서대로 호출(`InOrder`), 주문 단계 실패 시 지갑·상품·결제·확정 미호출, 상품 단계 실패 시 결제·확정 미호출, 결과가 확정된 주문·주문 기록을 담음. 기존 `ConfirmOrderServiceTest`의 "현재 상품 가격이 바뀌어도 저장된 주문 합계로 결제" 케이스를 파사드 또는 `WalletService` 테스트로 옮긴다.
+- [x] `application/ordering/facade/ConfirmOrderFacade implements ConfirmOrderUseCase` 추가, `@Service` + `@Transactional`. `ConfirmOrderService`의 `@Service`를 제거하거나 클래스를 이 커밋에서 지워 UseCase 빈이 하나만 남게 한다.
+- [x] 기존 `ConfirmOrderIntegrationTest`·`ConfirmOrderSqlRollbackIntegrationTest`·`OrderApiE2ETest`가 기대값 변경 없이 통과해야 한다.
+- [x] 커밋: `refactor: 주문 확정 진입점을 서비스 조율 파사드로 전환`
 
 ### 커밋 4 — 이전 구조 제거
 
