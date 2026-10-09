@@ -46,9 +46,9 @@
 
 ### 커밋 4 — mall·ordering·pay 조회·E2E 테스트
 
-- [ ] `QueryDslProductQueryDaoIntegrationTest`, `ProductApiE2ETest`(`like_count`·`created_at` 준비, 상품 수), `QueryDslOrderQueryDaoIntegrationTest`(`created_at` 준비), `OrderApiE2ETest`(주문 수), `WalletApiE2ETest`(충전 기록 수).
-- [ ] `git grep -nE "JdbcClient|JdbcTemplate" apps/commerce-api/src/test` 결과가 ArchUnit 규칙 정의 외에는 없어야 한다.
-- [ ] 커밋: `test: 상품·주문·지갑 테스트의 JDBC 준비·검증을 QueryDSL로 교체`
+- [x] `QueryDslProductQueryDaoIntegrationTest`, `ProductApiE2ETest`(`like_count`·`created_at` 준비, 상품 수), `QueryDslOrderQueryDaoIntegrationTest`(`created_at` 준비), `OrderApiE2ETest`(주문 수), `WalletApiE2ETest`(충전 기록 수).
+- [x] `git grep -nE "JdbcClient|JdbcTemplate" apps/commerce-api/src/test` 결과가 ArchUnit 규칙 정의 외에는 없어야 한다.
+- [x] 커밋: `test: 상품·주문·지갑 테스트의 JDBC 준비·검증을 QueryDSL로 교체`
 
 ### 커밋 5 — 문서
 

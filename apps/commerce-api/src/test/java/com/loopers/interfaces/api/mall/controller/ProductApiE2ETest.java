@@ -9,11 +9,14 @@ import com.loopers.application.mall.query.AdminProductView;
 import com.loopers.application.mall.query.ProductDetailView;
 import com.loopers.application.mall.query.ProductSummaryView;
 import com.loopers.application.mall.usecase.DeleteBrandUseCase;
+import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.mall.dto.BrandApiDto;
 import com.loopers.interfaces.api.mall.dto.ProductApiDto;
 import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,16 +29,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @E2ETest
 class ProductApiE2ETest {
+    private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
+
     @Autowired
     private TestRestTemplate restTemplate;
     @Autowired
     private DeleteBrandUseCase deleteBrandUseCase;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -150,7 +157,7 @@ class ProductApiE2ETest {
                 () -> assertThat(invalidPage.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(invalidProductId.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
                 () -> assertThat(invalidPrice.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST),
-                () -> assertThat(jdbcClient.sql("SELECT COUNT(*) FROM products").query(Long.class).single()).isZero()
+                () -> assertThat(queryFactory.select(PRODUCT.count()).from(PRODUCT).fetchOne()).isZero()
             );
         }
     }
@@ -179,20 +186,17 @@ class ProductApiE2ETest {
     }
 
     private void saveLikeCount(long productId, long count) {
-        jdbcClient.sql("UPDATE products SET like_count = :count WHERE id = :productId")
-            .param("productId", productId)
-            .param("count", count)
-            .update();
+        transactionTemplate.executeWithoutResult(status -> queryFactory.update(PRODUCT)
+            .set(PRODUCT.likeCount, count)
+            .where(PRODUCT.id.eq(productId))
+            .execute());
     }
 
     private void alignCreatedAt(long firstProductId, long secondProductId) {
-        jdbcClient.sql("""
-                UPDATE products SET created_at = '2026-09-18 00:00:00'
-                WHERE id IN (:firstProductId, :secondProductId)
-                """)
-            .param("firstProductId", firstProductId)
-            .param("secondProductId", secondProductId)
-            .update();
+        transactionTemplate.executeWithoutResult(status -> queryFactory.update(PRODUCT)
+            .set(PRODUCT.createdAt, Instant.parse("2026-09-18T00:00:00Z"))
+            .where(PRODUCT.id.in(firstProductId, secondProductId))
+            .execute());
     }
 
     private ResponseEntity<ApiResponse<PageResult<ProductSummaryView>>> getProducts(String sort) {

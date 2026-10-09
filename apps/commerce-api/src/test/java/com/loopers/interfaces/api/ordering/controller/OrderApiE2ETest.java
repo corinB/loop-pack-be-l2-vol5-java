@@ -19,10 +19,12 @@ import com.loopers.domain.pay.repository.WalletRepository;
 import com.loopers.domain.shared.Money;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.UserRepository;
+import com.loopers.infrastructure.persistence.ordering.entity.QOrderJpaEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.ordering.dto.OrderApiDto;
 import com.loopers.support.test.E2ETest;
 import com.loopers.utils.DatabaseCleanUp;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,10 +38,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @E2ETest
 class OrderApiE2ETest {
+    private static final QOrderJpaEntity ORDER = QOrderJpaEntity.orderJpaEntity;
+
     @Autowired
     private TestRestTemplate restTemplate;
     @Autowired
@@ -53,7 +56,7 @@ class OrderApiE2ETest {
     @Autowired
     private WalletRepository walletRepository;
     @Autowired
-    private JdbcClient jdbcClient;
+    private JPAQueryFactory queryFactory;
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
@@ -372,7 +375,7 @@ class OrderApiE2ETest {
     }
 
     private long orderCount() {
-        return jdbcClient.sql("SELECT COUNT(*) FROM orders").query(Long.class).single();
+        return queryFactory.select(ORDER.count()).from(ORDER).fetchOne();
     }
 
     private ResponseEntity<ApiResponse<OrderView>> createOrder(long userId, List<OrderApiDto.ItemRequest> items) {
