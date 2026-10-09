@@ -53,10 +53,10 @@ ConfirmOrderFacade.execute(command)  @Transactional
 
 ### 커밋 4 — 이전 구조 제거
 
-- [ ] 제거: `ConfirmOrderService`(커밋 3에서 남았다면), `ConfirmOrderWriter`, `ConfirmOrderLoad`, `JpaConfirmOrderWriter`, `OrderConfirmationPolicy`, `OrderConfirmation`.
-- [ ] 테스트 제거: `ConfirmOrderServiceTest`, `JpaConfirmOrderWriterTest`, `OrderConfirmationPolicyTest`(규칙 조합은 커밋 1~3의 테스트로 옮겨졌음을 확인한 뒤).
-- [ ] `git grep -n "ConfirmOrderWriter\|ConfirmOrderLoad\|OrderConfirmationPolicy\|OrderConfirmation\b\|ConfirmOrderService" apps/commerce-api/src` 결과가 없어야 한다.
-- [ ] 커밋: `refactor: 주문 확정 Writer 포트와 도메인 정책 제거`
+- [x] 제거: `ConfirmOrderService`(커밋 3에서 남았다면), `ConfirmOrderWriter`, `ConfirmOrderLoad`, `JpaConfirmOrderWriter`, `OrderConfirmationPolicy`, `OrderConfirmation`.
+- [x] 테스트 제거: `ConfirmOrderServiceTest`, `JpaConfirmOrderWriterTest`, `OrderConfirmationPolicyTest`(규칙 조합은 커밋 1~3의 테스트로 옮겨졌음을 확인한 뒤).
+- [x] `git grep -n "ConfirmOrderWriter\|ConfirmOrderLoad\|OrderConfirmationPolicy\|OrderConfirmation\b\|ConfirmOrderService" apps/commerce-api/src` 결과가 없어야 한다.
+- [x] 커밋: `refactor: 주문 확정 Writer 포트와 도메인 정책 제거`
 
 ### 커밋 5 — 문서
 
