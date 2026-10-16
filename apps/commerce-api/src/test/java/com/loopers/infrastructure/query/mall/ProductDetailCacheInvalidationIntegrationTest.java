@@ -309,6 +309,34 @@ class ProductDetailCacheInvalidationIntegrationTest {
             assertThat(detail(otherId)).isSameAs(other);
         }
 
+        @DisplayName("외부 TX에서 증감 집계 SQL 실행 뒤 롤백하면 DB와 대상·무관 상세 캐시를 보존한다")
+        @Test
+        void keepsCachedDetailsAndStoredCountAfterDeltaFlushRollback() {
+            // arrange: 관계는 먼저 커밋하고, 아직 0인 저장 집계의 상세를 캐시에 채운다.
+            long productId = createProduct(createBrand());
+            long otherId = createProduct(createBrand());
+            userRepository.save(User.create(1L));
+            registerLike.execute(new LikeCommand.Register(1L, productId));
+            ProductDetailView before = detail(productId);
+            ProductDetailView other = detail(otherId);
+            assertThat(before.likeCount()).isZero();
+
+            // act: JDBC 집계 쓰기와 검증용 SELECT만 수행하며 JPA 쓰기는 섞지 않는다.
+            transactionTemplate.executeWithoutResult(status -> {
+                flushDeltas.execute();
+                assertThat(queryFactory.select(PRODUCT.likeCount).from(PRODUCT)
+                    .where(PRODUCT.id.eq(productId)).fetchOne()).isEqualTo(1L);
+                status.setRollbackOnly();
+            });
+
+            // assert: 외부 TX 사후 rollback의 delta 버퍼 복원 여부는 기존 범위 밖이다.
+            assertThat(queryFactory.select(PRODUCT.likeCount).from(PRODUCT)
+                .where(PRODUCT.id.eq(productId)).fetchOne()).isEqualTo(0L);
+            assertThat(detail(productId)).isSameAs(before);
+            assertThat(detail(productId).likeCount()).isZero();
+            assertThat(detail(otherId)).isSameAs(other);
+        }
+
         @DisplayName("좋아요 관계 롤백은 상세 캐시와 증감 버퍼를 바꾸지 않는다")
         @Test
         void keepsCachedDetailWhenRelationshipRollsBack() {
