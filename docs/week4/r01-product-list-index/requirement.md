@@ -4,7 +4,8 @@
 
 작업 브랜치: `volume-4/r01-product-list-index` · PR 대상: `volume-4/main`
 
-상태: 2026-10-16 전용 프로필의 SQL seed 실행기와 인덱스 추가 전 기준선 준비를 구현하기로 결정했다. 실제 결과는 실행 후 기록한다.
+상태: 2026-10-16 SQL seed 실행기·상품 100만 개 적재와 검증을 완료했다. [실제 결과](result.md)를 참고한다.
+상품 조회 HTTP SQL·실행 계획과 JMeter 전후 측정은 아직 수집하지 않았다.
 기준 커밋은 `72ae005d40bc5689618898340c488a19aee70993`이다. 현재 브랜치는 `volume-4/main`에서 분기했다.
 
 ## 1. 목적과 이번 단계
@@ -19,9 +20,9 @@
 
 | 조회 | 인덱스 이름 | 열 순서 | 결정 |
 |---|---|---|---|
-| 전체 최신순 | `idx_products_deleted_created` | `deleted, created_at DESC, id DESC` | 추가 |
+| 전체 최신순 | `idx_products_deleted_created` | `deleted, created_at DESC, id DESC` | 추가 예정 |
 | 브랜드별 최신순 | `idx_products_deleted_brand_created` | `deleted, brand_id, created_at DESC, id DESC` | 기존 유지 |
-| 전체 가격순 | `idx_products_deleted_price` | `deleted, price ASC, id DESC` | 추가 |
+| 전체 가격순 | `idx_products_deleted_price` | `deleted, price ASC, id DESC` | 추가 예정 |
 | 브랜드별 가격순 | `idx_products_deleted_brand_price` | `deleted, brand_id, price ASC, id DESC` | 기존 유지 |
 | 전체 좋아요순 | `idx_products_deleted_like` | `deleted, like_count DESC, id DESC` | 기존 유지 |
 | 브랜드별 좋아요순 | `idx_products_deleted_brand_like` | `deleted, brand_id, like_count DESC, id DESC` | 기존 유지 |
@@ -66,16 +67,17 @@ API·Product 모델·QueryDSL 조회 조건·Projection·응답 필드·페이�
 - 이 스키마를 현재 애플리케이션의 완성된 실험 DB로 간주하지 않는다. 후속 실험은 별도 스키마에서 현재 전체 모델로 준비한다.
 - local/test의 `ddl-auto=create`는 재시작 시 스키마를 재생성한다. 실험 데이터 준비 후 측정은 `ddl-auto=none`으로 고정해야 한다.
 - `jmeter.bat`은 현재 PATH에서 확인되지 않았다. 설치 여부·실행 경로·버전은 후속 준비 단계에서 확인한다.
-- 현재까지 DB·테이블·데이터·인덱스 생성/변경과 실제 실행 계획·JMeter 수집은 수행하지 않았다.
+- 위 항목은 최초 준비 단계의 환경 조사 기록이다. 이후 전용 스키마·전체 엔티티 스키마·100만 seed를 준비하고
+  INSERT 실행 전 EXPLAIN과 실제 적재·검증 결과를 보존했다. 상품 목록 쿼리 계획·JMeter 수집은 아직 수행하지 않았다.
 
 ## 6. 후속 완료 조건
 
 - [ ] 기존 4개 정의를 유지하고 엔티티와 적용 SQL에 새 2개를 추가했다.
-- [ ] 격리 DB에 현재 모델의 상품 100만 개·재현 seed와 동일한 전후 데이터를 준비했다.
+- [x] 격리 DB에 현재 모델의 상품 100만 개와 재현 seed를 준비했다. 인덱스 추가 후에도 이 데이터를 유지한다.
 - [ ] 3종 요청 × 동시 1명/10명의 JMeter 파일·초보자 실행 안내·결과 저장 규칙을 준비했다.
 - [ ] 실제 SQL·SQL 수·EXPLAIN·EXPLAIN ANALYZE를 전후 수집·분석했다.
 - [ ] 사용자가 실행한 JMeter 결과와 표본·환경·한계를 기록하고 응답 동일성을 확인했다.
-- [ ] 상품 목록 관련 회귀와 Checkstyle·ArchUnit·모듈 검사를 실행했다.
+- [x] 상품 목록 관련 회귀와 Checkstyle·ArchUnit·모듈 검사를 실행했다.
 - [ ] 실제 근거·결정과 차이·한계를 `result.md`에 작성하고 전체 요구사항의 상태를 갱신했다.
 
 Redis 캐시·조회 Projection 축소·COUNT 정책 변경·페이지 API 변경·전체 6종 부하/깊은 페이지 실험은 이번 PR의 확정 범위에 포함하지 않는다.

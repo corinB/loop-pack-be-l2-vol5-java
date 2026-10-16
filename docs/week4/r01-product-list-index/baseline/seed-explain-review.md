@@ -2,7 +2,9 @@
 
 [계획](../plan.md) · [사전 상태](seed-preflight.txt) · [EXPLAIN SQL](seed-explain-before.sql) · [계획 원문](seed-explain-before.txt)
 
-상태: 사용자에게 실행 계획을 설명한 뒤 **적재 승인 대기**. 이 검토에서는 INSERT를 실행하지 않았다.
+상태: 실행 계획 설명 뒤 **사용자 승인 완료, 적재·검증 성공**. 승인한 실행 결과는 [seed 실행 기록](seed-run.json)과
+[전체 결과](../result.md)에 별도로 기록한다.
+이 사전 검토의 원문을 수집할 때는 INSERT를 실행하지 않았다.
 MySQL 8.0.46의 EXPLAIN과 EXPLAIN FORMAT=TREE만 실행했다. ANALYZE TABLE·EXPLAIN ANALYZE·설정 변경은 하지 않았다.
 
 ## 현재 상태
