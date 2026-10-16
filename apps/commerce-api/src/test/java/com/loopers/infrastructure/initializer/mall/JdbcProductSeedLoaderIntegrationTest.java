@@ -6,21 +6,36 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.repository.BrandRepository;
 import com.loopers.support.test.IntegrationTest;
+import com.loopers.testcontainers.MySqlTestContainersConfig;
 import com.loopers.utils.DatabaseCleanUp;
 import jakarta.persistence.EntityManager;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
 class JdbcProductSeedLoaderIntegrationTest {
     private static final ProductSeedResult EXPECTED = new ProductSeedResult(2, 2, 2, 2, 1, 1, 3000, 2, 1, 0, 1, 1000);
+    private static final String REMOVE_LIST_INDEXES = """
+        ALTER TABLE products
+            DROP INDEX idx_products_deleted_created,
+            DROP INDEX idx_products_deleted_price
+        """;
+    private static final String RESTORE_LIST_INDEXES = """
+        ALTER TABLE products
+            ADD INDEX idx_products_deleted_created (deleted, created_at DESC, id DESC),
+            ADD INDEX idx_products_deleted_price (deleted, price ASC, id DESC)
+        """;
     private static final String SCRIPT = """
         INSERT INTO brands (id, name, deleted, created_at, updated_at) VALUES
             (7, 'active', false, '2026-10-01 00:00:00', '2026-10-01 00:00:00'),
@@ -46,9 +61,43 @@ class JdbcProductSeedLoaderIntegrationTest {
     @Autowired
     private DatabaseCleanUp databaseCleanUp;
 
+    private boolean testContainerVerified;
+    private boolean baselineIndexesPrepared;
+
+    @BeforeEach
+    void prepareBaselineIndexes() throws SQLException {
+        Object configuredContainer = ReflectionTestUtils.getField(MySqlTestContainersConfig.class, "mySqlContainer");
+        assertThat(configuredContainer).isNotNull();
+        assertThat(configuredContainer.getClass().getName()).isEqualTo("org.testcontainers.containers.MySQLContainer");
+        assertThat(ReflectionTestUtils.<Boolean>invokeMethod(configuredContainer, "isRunning"))
+            .as("Testcontainers MySQL 실행 여부").isTrue();
+        String testDatabaseUrl = ReflectionTestUtils.invokeMethod(configuredContainer, "getJdbcUrl");
+        String testDatabaseName = ReflectionTestUtils.invokeMethod(configuredContainer, "getDatabaseName");
+        assertThat(testDatabaseUrl).isNotBlank();
+        try (Connection connection = dataSource.getConnection()) {
+            // 설정 클래스는 URL 옵션을 생략하므로 호스트·매핑 포트·DB 경로를 비교한다.
+            assertThat(connection.getMetaData().getURL().split("\\?", 2)[0])
+                .as("실제 DataSource가 연결한 Testcontainers DB")
+                .isEqualTo(testDatabaseUrl.split("\\?", 2)[0]);
+            assertThat(connection.getCatalog()).isEqualTo(testDatabaseName);
+        }
+        testContainerVerified = true;
+        executeSql(REMOVE_LIST_INDEXES);
+        baselineIndexesPrepared = true;
+    }
+
     @AfterEach
     void tearDown() {
-        databaseCleanUp.truncateAllTables();
+        if (!testContainerVerified) {
+            return;
+        }
+        try {
+            databaseCleanUp.truncateAllTables();
+        } finally {
+            if (baselineIndexesPrepared) {
+                executeSql(RESTORE_LIST_INDEXES);
+            }
+        }
     }
 
     @DisplayName("실제 MySQL에서 전체 적재와 관계 검증을 마친 결과를 commit한다")
@@ -103,6 +152,22 @@ class JdbcProductSeedLoaderIntegrationTest {
             assertAllSeedTablesEmpty();
         } finally {
             executeSql("DROP INDEX idx_seed_test_price ON products");
+        }
+    }
+
+    @DisplayName("전체 최신순·가격순 인덱스가 추가된 6개 상태에서는 기준선 seed를 적재 전에 거절한다")
+    @Test
+    void rejectsNewListIndexesWithoutWriting() {
+        // arrange
+        executeSql(RESTORE_LIST_INDEXES);
+
+        try {
+            // act, assert
+            assertThatThrownBy(loader(SCRIPT, EXPECTED)::load)
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("인덱스");
+            assertAllSeedTablesEmpty();
+        } finally {
+            executeSql(REMOVE_LIST_INDEXES);
         }
     }
 
