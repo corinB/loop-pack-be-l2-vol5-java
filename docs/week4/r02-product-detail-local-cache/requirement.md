@@ -38,13 +38,13 @@
 
 ## 완료 조건
 
-- [ ] 기능·설정 단위 테스트: hit/miss/OFF, TTL 읽기 비연장, 미존재·예외 미저장, 용량, 잘못된 설정, 기존 TX 우회.
-- [ ] 실제 MySQL 통합 테스트: 모든 영향 쓰기의 commit/rollback, 다른 상품·브랜드 보존, 늦은 채움 순서 제어.
-- [ ] 실제 HTTP 응답 일치·400/404와 OFF/miss/hit SQL 수 확인.
-- [ ] 모듈 check 및 Checkstyle·ArchUnit 통과.
-- [ ] 동일 새 JAR의 OFF/ON × 1명/10명 × 2회 JMeter CLI 본 측정 8개 완료.
-- [ ] 워밍업 20초/본 측정 60초/램프업 5초, 응답 timeout 30초 조건과 실제 표본·오류율·분위수 보존.
-- [ ] 현재 100만 상품·보조 인덱스 6개·버퍼 풀 128MiB·주요 DB 설정 유지.
-- [ ] 사용자 GUI JMX 수정 보존·커밋 제외, 재현 도구·원본 해시·비교 한계와 결과 기록.
+- [x] 기능·설정 단위 테스트: hit/miss/OFF, TTL 읽기 비연장, 미존재·예외 미저장, 용량, 잘못된 설정, 기존 TX 우회.
+- [x] 실제 MySQL 통합 테스트: 모든 영향 쓰기의 commit/rollback과 다른 상품·브랜드 보존. 래치 단위 테스트로 늦은 채움 순서 제어.
+- [x] 실제 HTTP 응답 일치·400/404와 OFF/miss/hit SQL 수 확인.
+- [x] 모듈 check 및 Checkstyle·ArchUnit 통과.
+- [x] 동일 새 JAR의 OFF/ON × 1명/10명 × 2회 JMeter CLI 본 측정 8개 완료.
+- [x] 워밍업 20초/본 측정 60초/램프업 5초, 응답 timeout 30초 조건과 실제 표본·오류율·분위수 보존.
+- [x] 현재 100만 상품·보조 인덱스 6개·버퍼 풀 128MiB·주요 DB 설정 유지.
+- [x] 사용자 GUI JMX 수정 보존·커밋 제외, 재현 도구·원본 해시·비교 한계와 결과 기록.
 
 상위 기준은 [4주차 전체 요구사항](../total_requirement.md), 결정 근거는 [설계 판단](trade_off/total_trade_off.md), 작업 순서는 [계획](plan.md)이다.
