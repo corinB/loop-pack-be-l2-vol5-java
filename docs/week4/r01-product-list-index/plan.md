@@ -23,25 +23,25 @@
 
 ### 커밋 2 — 실행기·seed 구현
 
-- [ ] 전용 프로필을 추가한다. 웹 서버·집계·Redis health 비활성화, 기본 ddl-auto=none, 명시적 전용 DB 연결.
-- [ ] ProductSeedRunner는 프로필과 기본 false인 enable 조건으로 격리한다.
-- [ ] JdbcProductSeedLoader가 대상 DB·빈 테이블·기존 인덱스를 검사하고 ResourceDatabasePopulator로 INSERT SQL을 실행한다.
-- [ ] 적재·검증을 한 TX에서 처리하고 실패 시 rollback한다. 기존 데이터 삭제·TRUNCATE는 제공하지 않는다.
-- [ ] main은 run 반환 뒤 seed 프로필에서만 context를 닫는다. 일반 앱 기동은 유지한다.
-- [ ] 소량 SQL로 성공·실패 rollback·대상/기존 데이터 거절, 프로필·enable 격리를 검증한다.
-- [ ] 관련 검사 후 `feat: 실험용 프로필의 SQL seed 실행기 추가`로 커밋한다.
+- [x] 전용 프로필을 추가한다. 웹 서버·집계·Redis health 비활성화, 기본 ddl-auto=none, 명시적 전용 DB 연결.
+- [x] ProductSeedRunner는 프로필과 기본 false인 enable 조건으로 격리한다.
+- [x] JdbcProductSeedLoader가 대상 DB·빈 테이블·기존 인덱스를 검사하고 ResourceDatabasePopulator로 INSERT SQL을 실행한다.
+- [x] 적재·검증을 한 TX에서 처리하고 실패 시 rollback한다. 기존 데이터 삭제·TRUNCATE는 제공하지 않는다.
+- [x] main은 run 반환 뒤 seed 프로필에서만 context를 닫는다. 일반 앱 기동은 유지한다.
+- [x] 소량 SQL로 성공·실패 rollback·대상/기존 데이터 거절, 프로필·enable 격리를 검증한다.
+- [x] 관련 검사 후 `feat: 실험용 프로필의 SQL seed 실행기 추가`로 커밋한다.
 
 ### 실행·커밋 3 — 실제 변경 전 기준선
 
-- [ ] 기존 loopers와 별도의 새 스키마가 비어 있음을 확인하고 접근 권한을 준비한다.
-- [ ] seed를 끈 상태에서 현재 전체 엔티티의 스키마를 한 번 생성한 뒤 ddl-auto=none으로 전환한다.
+- [x] 기존 loopers와 별도의 새 스키마가 비어 있음을 확인하고 접근 권한을 준비한다.
+- [x] seed를 끈 상태에서 현재 전체 엔티티의 스키마를 한 번 생성한 뒤 ddl-auto=none으로 전환한다.
 - [ ] SQL seed를 실행하고 건수·가격·관계·집계·삭제 불변식을 검증한다. 재실행은 거절되는지 확인한다.
 - [ ] 기존 상품 인덱스 4개와 새 2개 미적용 상태를 SHOW INDEX로 남긴다.
 - [ ] seed 프로필 없이 조회 앱을 띄운다. 집계 비활성화·COUNT TTL 0s·명시적 실험 DB URL을 사용한다.
 - [ ] 전체 최신순·전체 가격순·브랜드 7 가격순을 page=0,size=20으로 호출한다. 실제 SQL·바인딩·SQL 수·응답을 저장한다.
 - [ ] 통계 갱신 후 각 목록·COUNT SQL의 준비 실행 1회, EXPLAIN·EXPLAIN ANALYZE 1회를 수집한다.
 - [ ] key·rows·loops·정렬·시간을 분석하고 baseline/에 실제 자료와 재현 명령을 보존한다.
-- [ ] 관련 테스트·Checkstyle·ArchUnit·모듈 check의 건수·실패·skip·종료 결과를 확인한다.
+- [x] 관련 테스트·Checkstyle·ArchUnit·모듈 check의 건수·실패·skip·종료 결과를 확인한다.
 - [ ] 결과·한계·후속 작업을 result.md와 상위 문서에 기록하고 `docs: 상품 100만 개의 인덱스 추가 전 실행 계획 기록`으로 커밋한다.
 
 ## 3. 후속 JMeter·인덱스 추가
@@ -55,6 +55,11 @@ SQL 캡처와 부하 측정은 분리하며, JMeter 결과가 모이기 전에�
 Hibernate DDL은 Runner보다 먼저 실행된다. 최초 schema 생성 전에 실제 대상 URL·빈 스키마를 확인한다.
 JDBC 의존은 Jdbc 클래스로 제한하며 일반 업무 쓰기와 JPA 트랜잭션에 fixture 작업을 섞지 않는다.
 기존 공유 DB·인덱스·컨테이너를 삭제하지 않는다. 실제 SQL은 전체 Projection·JOIN·삭제 조건·동점 기준을 보존한다.
+
+실제 대량 적재에서 최초 600초 제한보다 실행이 길어지는 것을 확인했다. 재실행 전 seed 트랜잭션 제한을
+3,600초로 늘리고, 상품·좋아요 INSERT SELECT에 PK 순서를 명시한다. 데이터 공식·건수·기존 인덱스와
+적재·검증의 단일 트랜잭션 경계는 유지한다. 최초 실행 결과와 재실행 결과는 별도로 기록한다.
+ApplicationRunner 전환과 이 보완 뒤 모듈 check는 284건, 실패·오류·skip 0으로 통과했다.
 
 ```powershell
 .\gradlew.bat :apps:commerce-api:test --tests '*ProductSeed*Test' --tests '*ProductQuery*Test' --tests '*ProductApiE2ETest'

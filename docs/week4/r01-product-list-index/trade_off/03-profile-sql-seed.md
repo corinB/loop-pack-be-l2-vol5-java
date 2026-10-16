@@ -14,12 +14,17 @@
 | Runner | ProductSeedRunner가 실행·완료 결과 출력 조율 |
 | SQL 실행 | JdbcProductSeedLoader가 ResourceDatabasePopulator 사용; Spring JDBC 의존은 Jdbc 클래스로 제한 |
 | 리소스 | `seed/product-benchmark.sql`, 현재 모델의 INSERT만 포함 |
-| TX | 대상 검사·적재·검증을 한 TX로 실행, 실패 시 rollback·예외 전파 |
+| TX | 대상 검사·적재·검증을 한 TX로 실행, 실패 시 rollback·예외 전파, 제한 3,600초 |
 | 종료 | 웹 서버 없이 실행, SpringApplication.run 반환 뒤 seed 프로필일 때 context 종료 |
 | 대상 | 같은 Docker MySQL의 전용 스키마 `week4_r01_index_benchmark` |
 
 일반 local/test 프로필에서는 실행되지 않는다. 기존 LocalUserFixtureInitializer와도 함께 실행하지 않는다.
 기존 데이터 삭제·초기화 기능은 제공하지 않으며, DB 이름이 다르거나 대상 데이터가 있으면 실행을 거절한다.
+
+사용자가 전체 적재·검증 뒤 한 번 커밋하는 방식을 재확인했다. 청크별 커밋은 사용하지 않는다.
+상품과 두 좋아요 INSERT SELECT의 결과를 삽입 PK 오름차순으로 정렬한다. 공식·ID·관계는 동일하며,
+정렬에 따른 적재 시간의 개선 폭은 재실행 전에는 단정하지 않는다.
+InnoDB의 PK 순서 적재 권장은 [MySQL 공식 문서](https://dev.mysql.com/doc/refman/8.0/en/optimizing-innodb-bulk-data-loading.html)를 참고한다.
 
 ## 스키마와 인덱스
 

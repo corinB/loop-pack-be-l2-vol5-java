@@ -49,7 +49,7 @@ public class JdbcProductSeedLoader {
         this.dataSource = dataSource;
         this.jdbc = new JdbcTemplate(dataSource);
         this.transaction = new TransactionTemplate(transactionManager);
-        this.transaction.setTimeout(600);
+        this.transaction.setTimeout(3600);
         this.script = script;
         this.expectedSchema = expectedSchema;
         this.expected = expected;
