@@ -34,12 +34,19 @@ Docker와 준비된 API는 켜 둔다. JMeter GUI와 다른 부하 테스트·�
 ramp-up 5초는 각 실행 시간 안에 포함된다. 목표 동시 수가 유지되는 구간을 60초 확보하는 설정은 아니다.
 실제 소요 시간은 응답 종료·프로세스 시작·보고서 생성 등에 따라 더 길어질 수 있다.
 
-## 2. 완료 후 HTML 열기
+## 2. HTML 보고서 열기
 
-같은 PowerShell 창에서 첫 번째 본 측정 보고서를 연다.
+측정이 오류로 중단되면 `$result`가 반환되지 않는다. 새 창에서도 사용할 수 있도록
+완료된 첫 번째 본 측정 HTML이 있는 최신 실행 폴더를 직접 찾는다. 보고서를 여는 동작은 측정을 다시 실행하지 않는다.
 
 ```powershell
-$report = Join-Path $result.OutputDirectory 'r01-latest-u1\measurement\html\index.html'
+$relativeReport = 'r01-latest-u1\measurement\html\index.html'
+$reportRun = Get-ChildItem '.\build\benchmark\jmeter' -Directory -Filter 'before-measure-*' |
+    Sort-Object Name -Descending |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName $relativeReport) -PathType Leaf } |
+    Select-Object -First 1
+if (-not $reportRun) { throw '아직 생성된 본 측정 HTML 보고서가 없습니다.' }
+$report = Join-Path $reportRun.FullName $relativeReport
 Invoke-Item -LiteralPath $report
 ```
 
@@ -54,6 +61,8 @@ r01-latest-u1/
 ```
 
 HTML은 `measurement` 폴더에만 있다. 워밍업 JTL은 본 측정에 합치지 않는다.
+첫 실행에서는 `r01-latest-u1`과 `r01-latest-u10` HTML이 생성됐다. 위 경로의 `u1`을 `u10`으로 바꾸면 timeout을 포함한 보고서를 연다.
+오류가 있는 HTML은 실패 표본을 포함한 결과이며 전체 조합이 성공했다는 뜻은 아니다.
 
 ## 3. 보고서에서 읽을 값
 
@@ -75,7 +84,7 @@ HTML은 `measurement` 폴더에만 있다. 워밍업 JTL은 본 측정에 합치
 
 ## 결과 보관과 오류 확인
 
-`$result.OutputDirectory`의 **폴더 전체**를 보관한다. JTL은 요청별 원본, manifest는 전체 설정·결과, HTML은 보고서다.
+선택한 실행 폴더(`$reportRun.FullName`)의 **폴더 전체**를 보관한다. JTL은 요청별 원본, manifest는 전체 설정·결과, HTML은 보고서다.
 결과는 Git에서 제외된 `build/` 아래에 있으므로 `clean` 전에 별도 보관한다.
 
 - 실행 실패: 콘솔에 나온 결과 폴더의 `manifest.json`, 해당 단계의 `console.log`, `jmeter.log`, `samples.jtl`, `arguments.json`을 확인한다.
@@ -108,7 +117,7 @@ Get-Content -LiteralPath $meta -Raw -Encoding UTF8 | ConvertFrom-Json | Select-O
 & "$bench\stop-benchmark-api.ps1" -MetadataPath $meta
 ```
 
-결과 변수가 사라졌다면 파일 탐색기에서 해당 실행의 `measurement/html/index.html`을 연다.
+결과 변수가 사라졌거나 실행이 중단됐어도 2단계 명령으로 기존 HTML을 열 수 있다.
 
 ## GUI 실행
 
