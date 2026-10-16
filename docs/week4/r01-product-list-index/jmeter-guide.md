@@ -2,8 +2,8 @@
 
 [측정 설정](trade_off/04-jmeter-run-settings.md) · [JMX](jmeter/product-list.jmx) · [요구사항](requirement.md)
 
-**API와 JMeter 준비는 끝났다. 본 측정은 아래 명령으로 직접 실행하면 된다.**
-세 시나리오의 1명·1회 full smoke는 이미 통과했다. 추가 smoke는 실행하지 않으며 본 측정 결과는 아직 없다.
+**실시간 화면으로 보려면 [GUI 실행 안내](jmeter-ui-guide.md)를 따른다.** 아래는 기존 CLI 전체 실행 절차다.
+사용자의 첫 CLI 본 측정은 최신순 10명에서 응답 timeout 10건으로 중단됐다. 원본은 보존하며 나머지 조합은 미실행이다.
 
 ## 1. 준비된 API로 측정 시작
 
@@ -110,8 +110,9 @@ Get-Content -LiteralPath $meta -Raw -Encoding UTF8 | ConvertFrom-Json | Select-O
 
 결과 변수가 사라졌다면 파일 탐색기에서 해당 실행의 `measurement/html/index.html`을 연다.
 
-## GUI는 선택 사항
+## GUI 실행
 
 공식 ZIP의 SHA-512를 확인한 JMeter 5.6.3은 저장소의 `apache-jmeter-5.6.3/`에 있고 실행 스크립트는 기존 JDK 21을 사용한다.
-GUI는 JMX 구성 확인용으로만 열어도 충분하다. 본 측정은 위 CLI 명령으로 진행하고 실행 전 GUI를 닫는다.
+사용자의 실시간 UI 요청에 따라 [GUI 전용 JMX와 실행 절차](jmeter-ui-guide.md)를 추가했다.
+워밍업·본 측정은 순서대로 실행하며 본 측정의 Aggregate Report를 실시간으로 본다. CLI와 동시에 실행하지 않는다.
 [Apache JMeter 실행 안내](https://jmeter.apache.org/usermanual/get-started.html) · [공식 권장 사항](https://jmeter.apache.org/usermanual/best-practices.html#lean_mean)

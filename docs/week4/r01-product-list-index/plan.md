@@ -4,7 +4,7 @@
 
 작업 브랜치: `volume-4/r01-product-list-index` · PR 대상: `volume-4/main`
 
-상태: **100만 seed·HTTP SQL/응답 확인·JMeter 실행 준비 완료, 사용자 본 측정 대기**.
+상태: **사용자 첫 CLI 본 측정이 최신순 10명에서 timeout으로 중단됐다. 실시간 GUI 실행을 추가 준비한다.**
 상품 목록 SQL의 EXPLAIN·EXPLAIN ANALYZE는 후속 작업이다.
 2026-10-16 사용자 승인 계획을 반영했다. 실제 결과는 [구현 결과](result.md)에 기록한다.
 이 문서의 미완료 항목은 실행 결과가 아니며, 구현·검증 후 실제 상태를 갱신한다.
@@ -98,6 +98,14 @@ seed 완료 시점에는 이후 조회 확인이 미진행이었다. 현재 추�
 DB 버퍼 풀 128MiB·기존 상품 인덱스 4개·데이터를 유지한다. 본 측정은 사용자가 시작하며,
 준비 단계의 Codex 실행은 설치 확인과 3종 각 1건의 연결·정합성 확인까지다.
 사용자가 실행 여부를 확인한 뒤에는 추가 JMeter·mock 실행 없이 문서·스크립트와 정적 확인만 마무리한다.
+
+## 6. 첫 본 측정 중단과 GUI 요청
+
+- 실제 CLI 원본·실패 10건과 미실행 조합을 보존한다. timeout·DB·인덱스를 임의 변경하지 않는다.
+- GUI용 JMX에 순차 워밍업 20초·본 측정 60초와 본 측정 Aggregate Report를 준비한다.
+- GUI 실행기는 새 결과 폴더·JTL 경로로 계획만 연다. 사용자가 Start를 누르기 전에는 측정을 시작하지 않는다.
+- 조회·동시 수를 한 조합씩 선택하는 방법과 원본 보관을 [GUI 안내](jmeter-ui-guide.md)에 적는다.
+- 파일을 정적으로 검사하고 GUI 로딩 로그·대기 상태를 확인한다. 추가 부하 측정은 사용자가 실행한다.
 
 ```powershell
 .\gradlew.bat :apps:commerce-api:test --tests '*ProductSeed*Test' --tests '*ProductQuery*Test' --tests '*ProductApiE2ETest'
