@@ -49,7 +49,8 @@ try {
             } else { [string]$response.Content })
             $body | Set-Content -LiteralPath (Join-Path $directory ($label + '-response.json')) -Encoding UTF8
             $log = @(Get-Content -LiteralPath $owned.Metadata.StdoutPath -Encoding UTF8 | Select-Object -Skip $lineCount)
-            $log | Set-Content -LiteralPath (Join-Path $directory ($label + '-sql.log')) -Encoding UTF8
+            [IO.File]::WriteAllLines((Join-Path $directory ($label + '-sql.log')), [string[]]$log,
+                [Text.UTF8Encoding]::new($false))
             $sqlCount = @($log | Where-Object { $_ -match 'org\.hibernate\.SQL.*\bselect\b' }).Count
             $actual = $body | ConvertFrom-Json
             $equal = (ConvertTo-R02CanonicalJson $actual) -ceq (ConvertTo-R02CanonicalJson $expected)

@@ -28,6 +28,7 @@
 - [run-benchmark.ps1](jmeter/run-benchmark.ps1): Preflight·Smoke·Measure 진입점.
 - [benchmark-common.ps1](jmeter/benchmark-common.ps1): 읽기 전용 DB 확인·자기 PID 관리·Prometheus 수집.
 - [results.properties](jmeter/results.properties): CSV JTL·productId·오류 메시지를 저장하고 전체 응답 본문 저장은 끈다.
+- [summarize-results.ps1](jmeter/summarize-results.ps1): 완료된 원본의 JTL·HTML 통계·Prometheus·해시를 대조해 공개 요약을 만든다.
 
 상세는 `productId/name/price/brand/likeCount/description/stock` 7개 필드와 브랜드의 `brandId/name`을 포함한다.
 설명은 SQL seed와 같은 `benchmark`다. users 1/2와 잔액 0의 wallets 1/2도 확인해 local fixture의 자동 INSERT를 방지한다.
@@ -126,6 +127,18 @@ SQL 수집 API를 종료한 다음 Measure는 SQL 로그 OFF의 새 API를 시�
 ## 결과와 해석
 
 세션마다 새 디렉터리를 만들고 기존 파일을 덮어쓰지 않는다.
+
+Measure가 `Finished`로 끝난 뒤 해당 `manifest.json`을 지정해 요약한다. 이 단계는 저장된 파일만 읽는다.
+DB나 API에 요청하지 않으며 이미 생성한 요약을 덮어쓰지 않는다.
+
+```powershell
+$manifest = '.\build\benchmark\r02\measure-<이번 실행 디렉터리>\manifest.json'
+& '.\docs\week4\r02-product-detail-local-cache\jmeter\summarize-results.ps1' -ManifestPath $manifest
+```
+
+기본 출력은 [공개 측정 요약](baseline/jmeter/summary.json)과 통계 JSON 8개다. 재실행은
+`-OutputDirectory 'build/benchmark/r02-summary-<새 이름>'`처럼 새 경로를 지정한다.
+전체 JTL을 검산하므로 표본 수가 많으면 후처리 시간이 추가된다.
 
 ```text
 build/benchmark/r02/<mode>-<시각>-<임의ID>/
