@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$JavaHome = 'C:\Program Files\Java\jdk-21.0.10',
     [string]$JarPath,

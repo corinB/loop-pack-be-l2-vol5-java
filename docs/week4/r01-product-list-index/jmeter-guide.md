@@ -8,11 +8,12 @@
 ## 1. 준비된 API로 측정 시작
 
 PowerShell에 아래 명령을 붙여 넣는다. 실행하면 워밍업과 모든 본 측정이 자동으로 이어진다.
+Windows PowerShell 5.1에서도 한글 경로를 읽을 수 있도록 `-Encoding UTF8`을 포함한다.
 
 ```powershell
 Set-Location -LiteralPath 'C:\Users\qorwh\OneDrive\바탕 화면\Loop\loop-pack-be-l2-vol5-java'
 $bench = '.\docs\week4\r01-product-list-index\jmeter'
-$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw).Trim()
+$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw -Encoding UTF8).Trim()
 $result = & "$bench\run-jmeter.ps1" -Mode Measure -Phase before -ApiMetadataPath $meta
 $result.OutputDirectory
 $result.ManifestPath
@@ -94,8 +95,8 @@ $api | Select-Object ProcessId, Status, TcpListening
 새 PowerShell 창에서는 1단계의 저장소 이동과 `$bench` 선언 뒤 현재 실행 정보를 다시 읽는다.
 
 ```powershell
-$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw).Trim()
-Get-Content -LiteralPath $meta -Raw | ConvertFrom-Json | Select-Object ProcessId, Status
+$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw -Encoding UTF8).Trim()
+Get-Content -LiteralPath $meta -Raw -Encoding UTF8 | ConvertFrom-Json | Select-Object ProcessId, Status
 ```
 
 이미 켜진 API는 다시 시작하지 않는다. 스크립트가 실제 프로세스를 확인하며, 18080 포트가 사용 중이면 임의 종료하지 않는다.

@@ -1,6 +1,7 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string]$ApiMetadataPath,
     [ValidateSet('Smoke', 'Measure')]
     [string]$Mode = 'Smoke',
@@ -59,8 +60,11 @@ foreach ($requiredFile in @($jmeterBatch, $javaExecutable, $planPath, $expectedP
 }
 $dockerExecutable = (Get-Command docker -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $gitExecutable = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+if (-not (Test-Path -LiteralPath $ApiMetadataPath -PathType Leaf)) {
+    throw 'API 실행 정보 파일을 찾을 수 없습니다. 현재 경로 파일을 Get-Content -Raw -Encoding UTF8로 다시 읽으세요.'
+}
 $resolvedApiMetadata = (Resolve-Path -LiteralPath $ApiMetadataPath -ErrorAction Stop).Path
-$apiMetadata = Get-Content -LiteralPath $resolvedApiMetadata -Raw | ConvertFrom-Json
+$apiMetadata = Get-Content -LiteralPath $resolvedApiMetadata -Raw -Encoding UTF8 | ConvertFrom-Json
 
 function Get-UtcTicks {
     param($Value)

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$MetadataPath
@@ -19,7 +19,7 @@ if (-not $resolvedMetadata.StartsWith($expectedOutputRoot, [System.StringCompari
     throw "이 시작 스크립트의 build\benchmark\api-*\metadata.json만 사용할 수 있습니다: $resolvedMetadata"
 }
 
-$metadata = Get-Content -LiteralPath $resolvedMetadata -Raw | ConvertFrom-Json
+$metadata = Get-Content -LiteralPath $resolvedMetadata -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.FormatVersion -ne 1 -or $metadata.Purpose -ne 'week4-r01-product-list-benchmark-api' -or
     $metadata.Port -ne 18080 -or $metadata.DatabaseSchema -ne 'week4_r01_index_benchmark' -or
     -not [string]::Equals($metadata.RepositoryRoot, $repositoryRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
