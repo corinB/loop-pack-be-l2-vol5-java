@@ -13,7 +13,8 @@
 | 실행 계획 | Codex가 목록·COUNT SQL의 EXPLAIN·EXPLAIN ANALYZE 수집·분석 | HTTP 수치만 비교 |
 
 위 선택은 2026-10-16 대화로 확인했다. 사용자는 JMeter를 처음 사용하므로 설치 확인·파일 열기·1건 시험부터 안내한다.
-warm-up·ramp-up·측정 시간/횟수·반복 수는 아직 합의하지 않았으며 후속 실험 준비 때 확정한다.
+이후 사용자 선택으로 각 실행의 warm-up 20초·본 측정 60초를 확정했고, 시간 단축 요청에 따라 반복은 3회에서 2회로 줄였다.
+ramp-up 5초와 요청 timeout 등 세부 재현 조건은 [실행 조건](04-jmeter-run-settings.md)에 기록한다.
 
 ## 비교 경계
 
@@ -35,5 +36,6 @@ JMeter GUI에서 준비한 파일을 열고 소량 요청을 확인한 뒤, 실�
 [Apache JMeter 실행 안내](https://jmeter.apache.org/usermanual/get-started.html)와
 [테스트 계획 구성](https://jmeter.apache.org/usermanual/test_plan.html)을 기준으로 후속 파일·명령을 준비한다.
 
-현재 로컬 Docker MySQL 연결과 버전만 확인했다. 기존 `loopers` 테이블은 이전 모델이 포함돼 있어 실험 데이터로 사용하지 않는다.
+현재 전용 스키마 `week4_r01_index_benchmark`에 실제 100만 상품 적재·검증을 완료했다.
+기존 `loopers` 테이블은 이전 모델이 포함돼 있어 실험 데이터로 사용하지 않는다.
 기존 R04 자료의 스키마·수기 SELECT·1회 수치를 이번 앱/JMeter 전후 결과로 옮겨 적지 않는다.

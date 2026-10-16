@@ -1,56 +1,116 @@
-# JMeter를 처음 사용할 때의 실행 순서
+# JMeter 변경 전 측정: 실행하고 보고서 읽기
 
-[요구사항](requirement.md) · [계획](plan.md) · [측정 결정](trade_off/02-before-after-benchmark.md)
+[측정 설정](trade_off/04-jmeter-run-settings.md) · [JMX](jmeter/product-list.jmx) · [요구사항](requirement.md)
 
-이 문서는 처음 사용하는 사람을 위한 진행 안내다.
-**현재는 PR 문서 준비 단계이며 `.jmx` 테스트 파일·실제 실행 명령·측정 결과는 아직 준비하지 않았다.**
-후속 단계에서 Codex가 파일·값·명령을 채우고 소량 요청을 확인한 뒤 사용자가 전후 측정을 실행한다.
+**API와 JMeter 준비는 끝났다. 본 측정은 아래 명령으로 직접 실행하면 된다.**
+세 시나리오의 1명·1회 full smoke는 이미 통과했다. 추가 smoke는 실행하지 않으며 본 측정 결과는 아직 없다.
 
-## 1. 도구의 역할
+## 1. 준비된 API로 측정 시작
 
-JMeter는 정한 HTTP 요청을 반복해 보내고 응답 시간·처리량·오류를 기록하는 도구다.
-이번에는 전체 최신순·전체 가격순·브랜드별 가격순을 각각 동시 1명·10명으로 비교한다.
+PowerShell에 아래 명령을 붙여 넣는다. 실행하면 워밍업과 모든 본 측정이 자동으로 이어진다.
 
-| 파일·결과 | 의미 |
+```powershell
+Set-Location -LiteralPath 'C:\Users\qorwh\OneDrive\바탕 화면\Loop\loop-pack-be-l2-vol5-java'
+$bench = '.\docs\week4\r01-product-list-index\jmeter'
+$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw).Trim()
+$result = & "$bench\run-jmeter.ps1" -Mode Measure -Phase before -ApiMetadataPath $meta
+$result.OutputDirectory
+$result.ManifestPath
+```
+
+Docker와 준비된 API는 켜 둔다. JMeter GUI와 다른 부하 테스트·빌드는 닫거나 중단한 상태에서 실행한다.
+스크립트가 실제 API 프로세스, 전용 DB, 기존 인덱스 4개, MySQL 버퍼 풀 128MiB를 확인한다.
+
+| 기본 설정 | 값 |
 |---|---|
-| `.jmx` | 보낼 요청과 동시 사용자 등 설정을 담은 테스트 파일 |
-| `.jtl` | 각 요청의 시간·성공 여부 등을 저장한 원본 결과 |
-| HTML 보고서 | 결과 파일을 그래프·표로 보여 주는 보고서 |
-| EXPLAIN 자료 | MySQL이 SQL을 실행하는 방식. Codex가 별도로 수집·분석 |
+| 시나리오 | 전체 최신순 / 전체 가격순 / 브랜드 7 가격순 |
+| 요청 | 모두 `page=0&size=20` |
+| 동시 사용자 | 1명, 10명을 각각 실행 |
+| 각 run | 워밍업 20초 + 본 측정 60초 |
+| 반복 | 각 조합 2회, 본 측정 총 12개 |
+| 전체 예상 시간 | 설정 시간 16분 + 실행·보고서 생성, 약 17~20분 |
 
-## 2. 실제로 따라갈 순서
+ramp-up 5초는 각 실행 시간 안에 포함된다. 목표 동시 수가 유지되는 구간을 60초 확보하는 설정은 아니다.
+실제 소요 시간은 응답 종료·프로세스 시작·보고서 생성 등에 따라 더 길어질 수 있다.
 
-1. **설치·실행 확인**: Java와 JMeter 설치 경로·버전을 확인한다. 현재 PATH에서 `jmeter.bat`은 확인되지 않았으므로 후속 준비 때 실제 경로부터 확인한다.
-2. **테스트 파일 열기**: Codex가 준비한 `.jmx` 파일을 JMeter GUI에서 연다. 실행할 앱 주소·브랜드 ID·시나리오·동시 사용자를 안내와 맞춘다.
-3. **1건만 확인**: 1명·1회 요청으로 HTTP 200과 정상 JSON·상품 결과를 확인한다. 오류이면 여기서 원인을 해결한다.
-4. **warm-up 실행**: JVM·DB가 반복 조회에 준비되도록 정해진 사전 요청을 실행한다. 이 결과는 본 측정과 구분한다.
-5. **변경 전 실측**: 준비된 CLI 명령을 복사해 실행한다. 3종 요청 × 동시 1명/10명을 각각 별도로 실행·저장한다.
-6. **인덱스 추가 후 반복**: Codex가 새 인덱스 2개를 적용·확인한 뒤 같은 데이터·설정·warm-up 절차로 같은 측정을 반복한다.
-7. **보고서 확인**: HTML 보고서와 `.jtl`을 보존하고, Codex와 결과·실행 계획·응답 일치를 함께 비교한다.
+## 2. 완료 후 HTML 열기
 
-GUI는 파일 확인·소량 요청 시험에 사용하고, 실제 부하 측정은 준비된 CLI 명령으로 실행한다.
-측정 시 무거운 GUI Listener·전체 응답 저장을 켜지 않도록 테스트 파일과 실행 안내에서 설정을 맞춘다.
-[Apache JMeter 공식 실행 안내](https://jmeter.apache.org/usermanual/get-started.html)
+같은 PowerShell 창에서 첫 번째 본 측정 보고서를 연다.
 
-## 3. 보고서에서 먼저 볼 값
+```powershell
+$report = Join-Path $result.OutputDirectory 'r01-latest-u1\measurement\html\index.html'
+Invoke-Item -LiteralPath $report
+```
 
-| 값 | 읽는 방법 |
+출력 폴더는 `build/benchmark/jmeter/before-measure-실행시각-…/`다.
+`r01-latest-u1`은 **1회차·최신순·동시 1명**이고, `price`, `brand7`, `u10`, `r02`도 같은 방식으로 읽는다.
+
+```text
+manifest.json
+r01-latest-u1/
+  warmup/       samples.jtl, jmeter.log, console.log, arguments.json
+  measurement/  samples.jtl, jmeter.log, console.log, arguments.json, html/index.html
+```
+
+HTML은 `measurement` 폴더에만 있다. 워밍업 JTL은 본 측정에 합치지 않는다.
+
+## 3. 보고서에서 읽을 값
+
+| 항목 | 의미 |
 |---|---|
-| Samples | 실제 요청 표본 수. 전후 시간·반복 조건과 함께 확인 |
-| Error % | 실패한 요청 비율. 요청이 성공한 상태의 지연인지 먼저 확인 |
-| Average | 평균 응답 시간 |
-| p50·p95·p99 | 빠른 요청부터 각각 50%·95%·99% 지점의 응답 시간. 표본이 적은 꼬리 분위수는 한계를 함께 기록 |
-| Throughput | 단위 시간에 처리한 요청 수. 표에 표시된 시간 단위 확인 |
+| Samples | 실제 HTTP 요청 수. 상품 개수와 다름 |
+| Error % | 실패한 요청 비율. 먼저 0인지 확인 |
+| Average | 평균 응답 시간(ms) |
+| Median | p50, 요청 절반이 이 시간 안에 끝남 |
+| 95th pct / 99th pct | p95 / p99 응답 시간(ms) |
+| Throughput | 단위 시간당 처리량. 보고서의 시간 단위 확인 |
 
-동시 1명 결과와 10명 결과, 서로 다른 시나리오는 나눠 비교한다.
-응답 시간이 줄었더라도 상품·정렬·가격·좋아요 수·페이지 결과가 같아야 이번 개선으로 인정한다.
+기본 HTML의 `90th pct`는 p90이며 p50은 `Median`이다.
+같은 시나리오·동시 수의 두 반복을 나란히 보고 편차를 확인한다. 다른 조합을 하나의 평균으로 합치지 않는다.
+표본이 적은 p99나 실패가 있는 실행은 그대로 한계를 기록한다.
 
-## 4. 실행 전에 채울 내용
+이 부하는 응답이 끝난 뒤 다음 요청을 보내며 think time·TPS 제한은 없다.
+동시 1명·10명에서 관찰한 지연·처리량으로 해석한다. 자세한 설계와 한계는 [측정 설정](trade_off/04-jmeter-run-settings.md)을 따른다.
 
-- JMeter/Java 실제 실행 경로·버전과 테스트 파일 경로.
-- 앱 주소·격리 DB·seed의 고정 브랜드 ID와 변경 전/후 인덱스 확인 결과.
-- warm-up·ramp-up·측정 횟수/시간·반복 수·요청 timeout.
-- 1건 시험·warm-up·본 측정·HTML 보고서 생성의 복사 가능한 명령.
-- 오류 발생 시 저장할 로그·결과와 단계별 파일 경로.
+## 결과 보관과 오류 확인
 
-위 내용이 준비되면 사용자 작업은 안내된 값 확인·명령 실행·보고서 확인 순서로 진행할 수 있다.
+`$result.OutputDirectory`의 **폴더 전체**를 보관한다. JTL은 요청별 원본, manifest는 전체 설정·결과, HTML은 보고서다.
+결과는 Git에서 제외된 `build/` 아래에 있으므로 `clean` 전에 별도 보관한다.
+
+- 실행 실패: 콘솔에 나온 결과 폴더의 `manifest.json`, 해당 단계의 `console.log`, `jmeter.log`, `samples.jtl`, `arguments.json`을 확인한다.
+- API 오류: metadata와 같은 폴더의 `stdout.log`, `stderr.log`를 확인한다.
+- 기존 결과를 지우거나 seed·DDL·DB 설정을 바꾸지 말고 오류 원본을 남긴다.
+
+## API가 꺼졌거나 새 창을 열었을 때
+
+API가 꺼졌거나 현재 실행 정보 파일이 없을 때만 새로 시작한다. 정상 상태는 `TcpListening=True`다.
+
+```powershell
+$api = & "$bench\start-benchmark-api.ps1"
+$meta = $api.MetadataPath
+$api | Select-Object ProcessId, Status, TcpListening
+```
+
+새 PowerShell 창에서는 1단계의 저장소 이동과 `$bench` 선언 뒤 현재 실행 정보를 다시 읽는다.
+
+```powershell
+$meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw).Trim()
+Get-Content -LiteralPath $meta -Raw | ConvertFrom-Json | Select-Object ProcessId, Status
+```
+
+이미 켜진 API는 다시 시작하지 않는다. 스크립트가 실제 프로세스를 확인하며, 18080 포트가 사용 중이면 임의 종료하지 않는다.
+앱은 전용 DB·`ddl-auto=none`·집계 OFF·COUNT TTL `0s`·SQL 로그 OFF로 실행된다. seed·스키마 생성은 다시 하지 않는다.
+
+측정용 API를 종료할 때는 다음 명령을 사용한다. metadata의 프로세스가 맞는지 확인한 뒤 종료한다.
+
+```powershell
+& "$bench\stop-benchmark-api.ps1" -MetadataPath $meta
+```
+
+결과 변수가 사라졌다면 파일 탐색기에서 해당 실행의 `measurement/html/index.html`을 연다.
+
+## GUI는 선택 사항
+
+공식 ZIP의 SHA-512를 확인한 JMeter 5.6.3은 저장소의 `apache-jmeter-5.6.3/`에 있고 실행 스크립트는 기존 JDK 21을 사용한다.
+GUI는 JMX 구성 확인용으로만 열어도 충분하다. 본 측정은 위 CLI 명령으로 진행하고 실행 전 GUI를 닫는다.
+[Apache JMeter 실행 안내](https://jmeter.apache.org/usermanual/get-started.html) · [공식 권장 사항](https://jmeter.apache.org/usermanual/best-practices.html#lean_mean)

@@ -1,10 +1,11 @@
-# R01 진행 결과: 100만 상품 seed 적재·검증
+# R01 진행 결과: 100만 seed와 JMeter 측정 준비
 
 [요구사항](requirement.md) · [계획](plan.md) · [재현 절차](baseline/README.md) · [seed 실행 계획 해석](baseline/seed-explain-review.md)
 
 2026-10-16 사용자 승인 조건으로 **상품 100만 개와 실제 좋아요 관계 적재·검증을 완료**했다.
 현재까지 확인한 실행 계획은 seed INSERT의 사전 `EXPLAIN`·`FORMAT=TREE`다.
-상품 목록 HTTP의 실제 SQL·응답·`EXPLAIN`·`EXPLAIN ANALYZE`, 신규 인덱스 적용과 JMeter 측정은 아직 완료하지 않았다.
+세 상품 목록 HTTP의 실제 SQL·바인딩·응답을 수집하고 JMeter 각 1건의 사전 확인을 통과했다.
+상품 목록의 EXPLAIN·EXPLAIN ANALYZE, 신규 인덱스 적용과 사용자의 JMeter 본 측정은 아직 완료하지 않았다.
 
 ## 1. 승인된 적재 실행
 
@@ -87,7 +88,37 @@
 INSERT 계획을 설명하고 새로 명시적인 승인을 받아 이번 적재를 실행했다.
 실패·중단 시도는 이번 성공 실행과 분리하며, 실행 시간의 개선 배수나 버퍼 풀 변경의 성능 효과를 주장하지 않는다.
 
-다음 단계는 같은 데이터·기존 인덱스 상태에서 조회 앱을 띄워 전체 최신순·전체 가격순·브랜드 7 가격순을 수집하는 것이다.
-목록·COUNT의 실제 SQL과 바인딩, 요청당 SQL 수, 응답 기준값을 확보한 뒤 통계 갱신과 준비 실행을 거쳐
-`EXPLAIN`·`EXPLAIN ANALYZE`를 기록한다.
-JMeter 파일·실행 조건과 사용자 측정, 새 인덱스 2개 적용 및 전후 결과 비교는 후속 작업으로 남아 있다.
+현재 같은 데이터·기존 인덱스 상태에서 조회 앱과 SQL·응답 기준값을 준비했다.
+목록 SQL의 통계 갱신·EXPLAIN·EXPLAIN ANALYZE, 사용자 본 측정, 새 인덱스 2개 적용과 전후 비교는 남아 있다.
+
+## 5. JMeter 직접 실행 준비와 확인 범위
+
+사용자는 [직접 실행 가이드](jmeter-guide.md)의 명령으로 본 측정을 실행한다.
+최종 선택은 **3종 조회 × 동시 1명/10명 × 2회 반복**, 각 run의 워밍업 20초와 본 측정 60초다.
+기존 3회 반복에서 시간을 줄여 본 측정은 12개, 설정 시간 16분·실제 예상 약 17~20분으로 준비했다.
+각 실행의 ramp-up 5초는 실행 시간 안에 포함한다.
+
+| 파일 | 역할 |
+|---|---|
+| [JMX](jmeter/product-list.jmx) | 시나리오별 단일 HTTP 요청, 안전한 기본 1명·1회, full/light 검증 |
+| [기대 응답](jmeter/expected-responses.json) | seed 공식을 독립 계산한 3개 시나리오의 전체 응답 |
+| [시작](jmeter/start-benchmark-api.ps1)·[종료](jmeter/stop-benchmark-api.ps1) | 전용 DB·ddl-auto=none·집계 false·COUNT TTL 0s, 기록한 API 프로세스만 관리 |
+| [실행 래퍼](jmeter/run-jmeter.ps1) | 사용자 실행, 실행 조건 검사·워밍업/측정 분리·JTL/HTML·manifest 보존 |
+| [결과 저장 속성](jmeter/results.properties) | CSV JTL과 오류 메시지 저장, 전체 응답 저장 비활성화 |
+| [배포판 정보](jmeter/distribution.json) | 루트의 JMeter 5.6.3과 공식 ZIP·SHA-512 기록 |
+
+실제로 실행한 확인은 다음과 같다.
+
+- SQL 로그를 켠 앱에 세 GET을 각 한 번 호출했다. [HTTP 원문](baseline/http-before/README.md)에서 모두 HTTP 200,
+  목록 1개·COUNT 1개로 요청당 2 SQL을 확인했다. COUNT TTL은 0s다.
+- 응답 60개 항목의 모든 필드·정렬과 페이지를 독립 기대값과 대조해 일치했다.
+- 이 SQL 수집 앱만 종료하고 SQL·바인딩 로그 OFF인 앱으로 다시 기동했다.
+- 같은 실행 래퍼의 Smoke 모드로 세 시나리오를 1명·1회, 총 3요청 실행했다.
+  모두 full 검증·JTL 실패 0건·HTML 생성을 통과했다. [요약·원본](baseline/jmeter-smoke/README.md)을 보존했다.
+- 사전 확인 전후 데이터·기존 인덱스 4개·버퍼 풀 128MiB와 주요 설정 11개가 같았다.
+- PowerShell 스크립트·XML·JSON은 정적으로 검사했다. 프로세스 생성 시각은 JSON 날짜 변환을 고려해 UTC ticks로 대조한다.
+
+**본 측정은 0회이며 mock 테스트도 실행하지 않았다.** 시간 기반 루프와 전체 조합은 코드 검토만 수행했다.
+단일 사전 표본으로 지연 분포·처리량·개선 배수를 보고하지 않는다.
+사용자가 실행 여부를 확인한 이후에는 추가 JMeter 실행 없이 파일과 안내만 마무리했다.
+자동화 스크립트는 실패 표본·0표본·도구 오류에서 원본을 남기고 중단한다.
