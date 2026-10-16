@@ -60,6 +60,17 @@ JDBC 의존은 Jdbc 클래스로 제한하며 일반 업무 쓰기와 JPA 트랜
 3,600초로 늘리고, 상품·좋아요 INSERT SELECT에 PK 순서를 명시한다. 데이터 공식·건수·기존 인덱스와
 적재·검증의 단일 트랜잭션 경계는 유지한다. 최초 실행 결과와 재실행 결과는 별도로 기록한다.
 ApplicationRunner 전환과 이 보완 뒤 모듈 check는 284건, 실패·오류·skip 0으로 통과했다.
+첫 실행은 검증 단계의 TransactionTimedOutException으로 실패했고 전체 롤백 뒤 대상 5개 테이블의 0건을 확인했다.
+이후 승인 계획에 없던 버퍼 풀 1GiB 변경과 재실행을 진행했으나 사용자 지적으로 재실행을 중단했다.
+버퍼 풀은 원래 128MiB로 원복했고 확장·축소 완료 상태를 확인했다. 이 실행을 기준선으로 사용하지 않는다.
+재실행 프로세스 종료 뒤 MySQL 백그라운드 롤백이 남았으나, 후속 확인에서 남은 트랜잭션 0개와 대상 5개 테이블 0건을 확인했다.
+버퍼 풀 크기를 실제 지연의 주원인으로 확정하지 않으며, 추가 DB 전역 설정 변경은 현재 범위에 포함하지 않는다.
+
+2026-10-16 추가 지시에 따라 다음 적재 전에 INSERT 6개의 EXPLAIN과 FORMAT=TREE를 수집했다.
+사전 상태와 계획 원문은 [사전 확인](baseline/seed-preflight.txt), [EXPLAIN SQL](baseline/seed-explain-before.sql),
+[실행 계획](baseline/seed-explain-before.txt), [해석](baseline/seed-explain-review.md)에 보존한다.
+버퍼 풀은 128MiB, 실제 테이블은 비어 있지만 이전 통계는 남아 있어 추정 rows를 실제 건수로 해석하지 않는다.
+**계획을 사용자에게 설명하고 명시적인 적재 승인을 받기 전에는 seed를 실행하지 않는다.**
 
 ```powershell
 .\gradlew.bat :apps:commerce-api:test --tests '*ProductSeed*Test' --tests '*ProductQuery*Test' --tests '*ProductApiE2ETest'
