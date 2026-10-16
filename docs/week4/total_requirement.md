@@ -23,9 +23,13 @@
 | 이번 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 요구사항·현재 구현·미정 사항 정리, 지침 연결 |
 | 기능·측정 상태 | R01 seed·부분 기준선·전후 SQL 실행 계획·신규 2개 적용·응답 검증·변경 후 CLI 12개 완료. 캐시는 미완료 |
 | 사용자 지정 도구 | HTTP 성능 테스트는 **JMeter** 사용 |
-| 현재 작업 | 사용자 위임으로 after CLI 12개·본 측정 65,261건·오류 0건 완료. 대응 가능한 before 최신순만 비교·기록 |
+| 현재 작업 | R01(PR #22) 병합 완료. R02 고객 상세 전체의 Caffeine 로컬 캐시·commit 후 무효화·CLI 전후 측정 구현 중 |
 
 문서 작성은 구현·측정·테스트 통과를 의미하지 않는다. 과거 문서의 수치는 해당 작업 당시 결과로만 인용한다.
+
+사용자가 승인한 중간 단계 [R02 상품 상세 로컬 캐시](r02-product-detail-local-cache/requirement.md)는
+Caffeine W-TinyLFU를 사용한다. [설계](r02-product-detail-local-cache/trade_off/total_trade_off.md)와
+[계획](r02-product-detail-local-cache/plan.md)에 범위를 기록한다. 로컬 캐시 구현은 원문의 Redis 장애·복구 완료를 대신하지 않는다.
 
 ## 2. 진행 순서와 완료 조건
 
