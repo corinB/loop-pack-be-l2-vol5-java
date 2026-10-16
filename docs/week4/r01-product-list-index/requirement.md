@@ -7,7 +7,8 @@
 상태: 2026-10-16 SQL seed 실행기·상품 100만 개 적재와 검증을 완료했다. [실제 결과](result.md)를 참고한다.
 세 조회의 실제 HTTP SQL·응답을 수집하고 JMeter 각 1건 확인을 통과했다.
 첫 CLI 본 측정은 최신순 10명에서 timeout 10건으로 중단됐다. 부분 결과를 보존하고 [GUI 안내](jmeter-ui-guide.md)를 추가한다.
-SQL 실행 계획과 전체 12개 본 측정은 미완료다. [직접 실행 안내](jmeter-guide.md)를 따른다.
+기존 4개를 유지하고 새 2개를 전용 DB에 적용했다. 전후 실행 계획과 세 API 전체 응답 동일성을 확인했다.
+변경 후 JMeter는 사용자가 실행할 단계다. [직접 실행 안내](jmeter-guide.md)를 따른다.
 기준 커밋은 `72ae005d40bc5689618898340c488a19aee70993`이다. 현재 브랜치는 `volume-4/main`에서 분기했다.
 
 ## 1. 목적과 이번 단계
@@ -15,21 +16,21 @@ SQL 실행 계획과 전체 12개 본 측정은 미완료다. [직접 실행 안
 상품 목록의 전체 최신순·전체 가격순에 맞는 인덱스를 추가하고 같은 데이터에서 전후 비용과 결과를 비교한다.
 브랜드별 가격순은 과제 필수 측정 경로이므로 함께 비교한다.
 
-현재 요청은 **전용 프로필의 SQL seed 실행기, 100만 데이터 적재·검증, 인덱스 추가 전 실제 SQL·실행 계획 확인**까지다.
-기존 4개 상품 인덱스를 유지한다. 추가 예정인 2개 적용과 JMeter 부하 측정은 기준선 확보 뒤 단계로 남긴다.
+현재 요청은 **실패 기록 보완, 전후 실행 계획 수집, 기존 4개 유지와 새 2개 적용 및 회귀 검증**이다.
+변경 전 JMeter는 부분 기준선으로 유지한다. 변경 후 부하 측정은 사용자가 직접 수행한다.
 
 ## 2. 확정한 인덱스
 
 | 조회 | 인덱스 이름 | 열 순서 | 결정 |
 |---|---|---|---|
-| 전체 최신순 | `idx_products_deleted_created` | `deleted, created_at DESC, id DESC` | 추가 예정 |
+| 전체 최신순 | `idx_products_deleted_created` | `deleted, created_at DESC, id DESC` | 적용 완료 |
 | 브랜드별 최신순 | `idx_products_deleted_brand_created` | `deleted, brand_id, created_at DESC, id DESC` | 기존 유지 |
-| 전체 가격순 | `idx_products_deleted_price` | `deleted, price ASC, id DESC` | 추가 예정 |
+| 전체 가격순 | `idx_products_deleted_price` | `deleted, price ASC, id DESC` | 적용 완료 |
 | 브랜드별 가격순 | `idx_products_deleted_brand_price` | `deleted, brand_id, price ASC, id DESC` | 기존 유지 |
 | 전체 좋아요순 | `idx_products_deleted_like` | `deleted, like_count DESC, id DESC` | 기존 유지 |
 | 브랜드별 좋아요순 | `idx_products_deleted_brand_like` | `deleted, brand_id, like_count DESC, id DESC` | 기존 유지 |
 
-이 표의 기존 인덱스는 JPA 엔티티 선언 기준이다. 실제 실험 스키마의 존재 여부·정의는 `SHOW INDEX`로 확인한다.
+이 표는 엔티티 선언과 전용 DB의 실제 열·정렬 방향 대조 결과다. 근거는 [전후 계획 분석](baseline/index-review.md)에 보존한다.
 API·Product 모델·QueryDSL 조회 조건·Projection·응답 필드·페이지 계약은 변경하지 않는다.
 상품·브랜드 삭제 조건과 세 정렬의 동점 `id DESC`를 유지한다. COUNT 쿼리·캐시와 좋아요 집계의 운영 정책도 변경하지 않는다.
 
@@ -71,14 +72,14 @@ API·Product 모델·QueryDSL 조회 조건·Projection·응답 필드·페이�
 - `jmeter.bat`은 현재 PATH에서 확인되지 않았다. 설치 여부·실행 경로·버전은 후속 준비 단계에서 확인한다.
 - 위 항목은 최초 준비 단계의 환경 조사 기록이다. 이후 전용 스키마·전체 엔티티 스키마·100만 seed를 준비하고
   INSERT 실행 전 EXPLAIN과 실제 적재·검증 결과를 보존했다. 이후 실제 HTTP SQL/응답과 JMeter 사전 확인 3건도 수집했다.
-  첫 JMeter 본 측정은 최신순 1명 완료·10명 실패까지 수집했으며 전체 조합과 상품 목록 쿼리 계획은 미완료다.
+  첫 JMeter 본 측정은 최신순 1명 완료·10명 실패까지 수집했다. 이후 새 2개 적용·전후 쿼리 계획 수집은 완료했고 변경 후 부하는 미측정이다.
 
 ## 6. 후속 완료 조건
 
-- [ ] 기존 4개 정의를 유지하고 엔티티와 적용 SQL에 새 2개를 추가했다.
+- [x] 기존 4개 정의를 유지하고 엔티티와 적용 SQL에 새 2개를 추가했다.
 - [x] 격리 DB에 현재 모델의 상품 100만 개와 재현 seed를 준비했다. 인덱스 추가 후에도 이 데이터를 유지한다.
 - [x] 3종 요청 × 동시 1명/10명의 JMeter 파일·초보자 실행 안내·결과 저장 규칙을 준비했다.
-- [ ] 실제 SQL·SQL 수·EXPLAIN·EXPLAIN ANALYZE를 전후 수집·분석했다.
+- [x] 실제 SQL·SQL 수·EXPLAIN·EXPLAIN ANALYZE를 전후 수집·분석했다. 요청당 SQL 수는 캡처한 동일 쿼리 경로를 유지한다.
 - [ ] 사용자가 실행한 JMeter 결과와 표본·환경·한계를 기록하고 응답 동일성을 확인했다.
 - [x] 상품 목록 관련 회귀와 Checkstyle·ArchUnit·모듈 검사를 실행했다.
 - [ ] 실제 근거·결정과 차이·한계를 `result.md`에 작성하고 전체 요구사항의 상태를 갱신했다.

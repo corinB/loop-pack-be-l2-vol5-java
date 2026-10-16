@@ -4,8 +4,8 @@
 
 작업 브랜치: `volume-4/r01-product-list-index` · PR 대상: `volume-4/main`
 
-상태: **첫 CLI timeout 부분 기준선을 보존했고, 승인한 계획에 따라 실행 계획 수집과 인덱스 2개 적용을 진행한다.**
-상품 목록 SQL의 EXPLAIN·EXPLAIN ANALYZE는 후속 작업이다.
+상태: **부분 기준선과 전후 실행 계획을 보존하고 인덱스 2개 적용·API 응답 동일성 확인을 완료했다.**
+모듈 check는 285건·실패/오류/skip 0으로 통과했다. 변경 후 JMeter는 사용자가 직접 실행한다.
 2026-10-16 사용자 승인 계획을 반영했다. 실제 결과는 [구현 결과](result.md)에 기록한다.
 이 문서의 미완료 항목은 실행 결과가 아니며, 구현·검증 후 실제 상태를 갱신한다.
 
@@ -14,7 +14,7 @@
 - `benchmark-seed` 전용 프로필 → ApplicationRunner → `.sql` 실행 → 검증·정상 종료.
 - 상품 100만 개, 브랜드·사용자 각 1,000개와 실제 좋아요 관계 준비.
 - 기존 상품 인덱스 4개 상태의 실제 HTTP SQL·응답·EXPLAIN·EXPLAIN ANALYZE 수집·분석.
-- 추가 인덱스 2개와 JMeter 부하 측정은 다음 단계. 기존 API·모델·Projection·쿼리·정렬·페이지 계약 유지.
+- 추가 인덱스 2개는 7절 승인에 따라 적용한다. JMeter 부하는 사용자가 실행하며 기존 API·쿼리·응답 계약은 유지한다.
 
 ## 2. 커밋과 실행 순서
 
@@ -41,11 +41,11 @@
 - [x] 기존 상품 인덱스 4개와 새 2개 미적용 상태를 SHOW INDEX로 남긴다.
 - [x] seed 프로필 없이 조회 앱을 띄운다. 집계 비활성화·COUNT TTL 0s·명시적 실험 DB URL을 사용한다.
 - [x] 전체 최신순·전체 가격순·브랜드 7 가격순을 page=0,size=20으로 호출한다. 실제 SQL·바인딩·SQL 수·응답을 저장한다.
-- [ ] 별도 통계 갱신 없이 각 목록·COUNT SQL의 준비 실행 1회, EXPLAIN·EXPLAIN ANALYZE 1회를 수집한다.
-- [ ] key·rows·loops·정렬·시간을 분석하고 baseline/에 실제 자료와 재현 명령을 보존한다.
+- [x] 별도 통계 갱신 없이 각 목록·COUNT SQL의 준비 실행 1회, EXPLAIN·EXPLAIN ANALYZE 1회를 수집한다.
+- [x] key·rows·loops·정렬·시간을 분석하고 baseline/에 실제 자료와 재현 명령을 보존한다.
 - [x] 관련 테스트·Checkstyle·ArchUnit·모듈 check의 건수·실패·skip·종료 결과를 확인한다.
 - [x] 승인한 seed의 성공·설정 유지·기존 데이터 재실행 차단을 먼저 기록하고 `docs: 상품 100만 개 적재와 검증 결과 기록`으로 커밋한다.
-- [ ] 결과·한계·후속 작업을 result.md와 상위 문서에 기록하고 `docs: 상품 100만 개의 인덱스 추가 전 실행 계획 기록`으로 커밋한다.
+- [x] 결과·한계·후속 작업을 result.md와 상위 문서에 기록한다. 이번 승인 범위의 전후 계획·인덱스 적용 결과를 최종 문서 커밋으로 함께 남긴다.
 
 ## 3. 후속 JMeter·인덱스 추가
 
@@ -118,11 +118,11 @@ DB 버퍼 풀 128MiB·기존 상품 인덱스 4개·데이터를 유지한다. �
 
 2026-10-16 사용자가 부분 기준선을 유지한 채 인덱스를 적용하는 아래 순서를 승인했다.
 
-- [ ] 확정된 30초 응답 timeout과 목록 정렬·COUNT·동시 경합이라는 병목 후보를 구분해 기록한다.
-- [ ] JMeter 종료·전용 DB·기존 인덱스 4개·128MiB와 설정을 확인하고 실제 6개 SQL의 준비 실행·EXPLAIN·EXPLAIN ANALYZE를 순차 보존한다.
-- [ ] 엔티티 선언과 저장한 단일 ALTER에 전체 최신순·가격순 인덱스 2개를 추가한다. INPLACE·LOCK=NONE 실패 시 다른 방법으로 재시도하지 않는다.
-- [ ] 엄격한 before seed 보호를 유지한다. Testcontainers 전용 fixture에서만 새 2개를 제거·복구하고 6개 상태의 seed 거절 회귀를 추가한다.
-- [ ] 기존 100만 데이터·실행 API·DB 설정·COUNT TTL·timeout·사용자 GUI JMX를 유지한다. seed·스키마 재생성·ANALYZE TABLE은 실행하지 않는다.
-- [ ] 적용 후 기존 4개와 새 2개 정의·데이터·설정을 대조하고 동일 SQL 실행 계획 및 API 3종 전체 응답을 확인한다.
-- [ ] 관련 회귀·Checkstyle·ArchUnit·모듈 check 후 구현과 실제 결과를 각각 한국어 컨벤션으로 커밋한다.
+- [x] 확정된 30초 응답 timeout과 목록 정렬·COUNT·동시 경합이라는 병목 후보를 구분해 기록한다.
+- [x] JMeter 종료·전용 DB·기존 인덱스 4개·128MiB와 설정을 확인하고 실제 6개 SQL의 준비 실행·EXPLAIN·EXPLAIN ANALYZE를 순차 보존한다.
+- [x] 엔티티 선언과 저장한 단일 ALTER에 전체 최신순·가격순 인덱스 2개를 추가한다. INPLACE·LOCK=NONE 실패 시 다른 방법으로 재시도하지 않는다.
+- [x] 엄격한 before seed 보호를 유지한다. Testcontainers 전용 fixture에서만 새 2개를 제거·복구하고 6개 상태의 seed 거절 회귀를 추가한다.
+- [x] 기존 100만 데이터·실행 API·DB 설정·COUNT TTL·timeout·사용자 GUI JMX를 유지한다. seed·스키마 재생성·ANALYZE TABLE은 실행하지 않는다.
+- [x] 적용 후 기존 4개와 새 2개 정의·데이터·설정을 대조하고 동일 SQL 실행 계획 및 API 3종 전체 응답을 확인한다.
+- [x] 관련 회귀·Checkstyle·ArchUnit·모듈 check 후 구현과 실제 결과를 각각 한국어 컨벤션으로 커밋한다.
 - [ ] 후속 JMeter는 사용자가 직접 실행한다. 미실행 조합의 개선율과 단일 SQL 시간의 부하 개선율을 쓰지 않는다.

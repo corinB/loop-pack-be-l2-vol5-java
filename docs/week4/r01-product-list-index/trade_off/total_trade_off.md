@@ -14,6 +14,6 @@
 ## 남은 측정 설계
 
 - 사용자 JMeter 본 측정 결과 수집과 오류·표본 수·2회 편차 검토.
-- 상품 목록 SQL의 EXPLAIN·EXPLAIN ANALYZE 수집·해석. seed·실제 SQL·직접 측정 절차는 현재 문서를 따른다.
+- 상품 목록 SQL의 전후 EXPLAIN·EXPLAIN ANALYZE와 새 2개 적용은 완료했다. [실제 분석](../baseline/index-review.md)을 따른다.
 
-seed·실제 SQL/응답과 JMeter 실행 도구·설정은 준비했다. 상품 목록 SQL 실행 계획과 사용자 본 측정은 아직 남아 있다.
+seed·전후 SQL 실행 계획·새 2개 적용·API 결과 동일성 확인은 완료했다. 변경 후 JMeter는 사용자가 직접 실행한다.

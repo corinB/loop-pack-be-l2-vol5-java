@@ -41,7 +41,8 @@ function Invoke-ReadSql {
     if ($LASTEXITCODE -ne 0) {
         throw "SQL 수집 실패: $Name (exit=$LASTEXITCODE). 다른 방식으로 재시도하지 않습니다."
     }
-    $lines | Set-Content -LiteralPath (Join-Path $OutputDirectory "$Name.txt") -Encoding UTF8
+    $text = ($lines -join [Environment]::NewLine).TrimEnd([char[]]"`r`n") + [Environment]::NewLine
+    [IO.File]::WriteAllText((Join-Path $OutputDirectory "$Name.txt"), $text, [Text.UTF8Encoding]::new($false))
     if ((Get-Item -LiteralPath $stderrPath).Length -eq 0) { Remove-Item -LiteralPath $stderrPath }
     return $lines -join [Environment]::NewLine
 }

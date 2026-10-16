@@ -1,12 +1,12 @@
-# R01 진행 결과: 100만 seed와 첫 JMeter 측정
+# R01 진행 결과: 실패 기준선과 인덱스 2개 적용
 
 [요구사항](requirement.md) · [계획](plan.md) · [재현 절차](baseline/README.md) · [seed 실행 계획 해석](baseline/seed-explain-review.md)
 
 2026-10-16 사용자 승인 조건으로 **상품 100만 개와 실제 좋아요 관계 적재·검증을 완료**했다.
 현재까지 확인한 실행 계획은 seed INSERT의 사전 `EXPLAIN`·`FORMAT=TREE`다.
 세 상품 목록 HTTP의 실제 SQL·바인딩·응답을 수집하고 JMeter 각 1건의 사전 확인을 통과했다.
-상품 목록의 EXPLAIN·EXPLAIN ANALYZE, 신규 인덱스 적용과 사용자의 JMeter 본 측정은 아직 완료하지 않았다.
-사용자의 첫 CLI 본 측정은 최신순 10명에서 응답 timeout 10건으로 중단됐다. 아래 실제 기록을 따른다.
+세 조회의 목록·COUNT 실행 계획을 전후 수집하고, 기존 4개 유지와 새 인덱스 2개 적용을 완료했다.
+첫 CLI 본 측정은 최신순 10명에서 timeout 10건으로 중단된 부분 기준선이다. 변경 후 JMeter는 사용자가 실행할 단계다.
 
 ## 1. 승인된 적재 실행
 
@@ -89,8 +89,8 @@
 INSERT 계획을 설명하고 새로 명시적인 승인을 받아 이번 적재를 실행했다.
 실패·중단 시도는 이번 성공 실행과 분리하며, 실행 시간의 개선 배수나 버퍼 풀 변경의 성능 효과를 주장하지 않는다.
 
-현재 같은 데이터·기존 인덱스 상태에서 조회 앱과 SQL·응답 기준값을 준비했다.
-목록 SQL의 통계 갱신·EXPLAIN·EXPLAIN ANALYZE, 사용자 본 측정, 새 인덱스 2개 적용과 전후 비교는 남아 있다.
+이 seed 완료 시점에는 조회 앱·실행 계획·인덱스 적용이 남아 있었다. 이후 실제 진행 결과는 5~7절에 구분해 기록했다.
+별도 통계 갱신은 하지 않고 7절 승인 절차에 따라 전후 실행 계획을 수집했다.
 
 ## 5. JMeter 직접 실행 준비와 확인 범위
 
@@ -159,3 +159,36 @@ GUI 계획의 XML 구조와 실행기의 구문을 정적으로 확인했다. Wi
 실패한 CLI 실행은 예외로 종료하므로 호출한 PowerShell의 `$result`에 manifest를 반환하지 않는다.
 사용자가 `$result.OutputDirectory`로 보고서를 열다가 null 오류를 겪어, 가이드를 실제 HTML이 있는 실행 폴더 검색 방식으로 바꿨다.
 기존 최신순 1명·10명 HTML 파일이 존재함을 확인하고 1명 보고서를 기본 브라우저로 열었다. 새 측정은 실행하지 않았다.
+
+## 7. 인덱스 적용과 전후 실행 계획
+
+2026-10-16 14:26:53~14:27:02 KST 전용 DB에 [저장한 단일 ALTER](baseline/add-product-list-indexes.sql)를 실행했다.
+`ALGORITHM=INPLACE, LOCK=NONE`으로 성공했고 MySQL은 8.26초·Warnings 0, 호출 벽시계는 8.62초였다.
+기존 4개 정의를 유지하고 `idx_products_deleted_created`, `idx_products_deleted_price`를 추가했다.
+
+| 같은 목록 SQL의 단일 관측 | 변경 전 | 변경 후 |
+|---|---:|---:|
+| 전체 최신순 상품 입력 | 950,400행 + 정렬 | 새 최신순 인덱스의 20행, 별도 정렬 없음 |
+| 최신순 루트 실제 시간 | 13,275ms | 0.0976ms |
+| 전체 가격순 상품 입력 | 950,400행 + 정렬 | 새 가격순 인덱스의 20행, 별도 정렬 없음 |
+| 가격순 루트 실제 시간 | 11,241ms | 0.232ms |
+
+위 시간은 준비 실행 뒤 한 번 수집한 `EXPLAIN ANALYZE`이며 HTTP 지연·JMeter 결과나 개선 배수로 해석하지 않는다.
+전체 COUNT는 여전히 기존 인덱스에서 950,400행을 읽었다. 상세 key·예상/실제 rows·loops·시간과 원문은
+[전후 분석](baseline/index-review.md), [변경 전](baseline/explain-before/capture.json), [변경 후](baseline/explain-after/capture.json)에 있다.
+수집기는 [캡처한 SQL 6개](baseline/http-before/captured-queries.sql)를 쿼리별 준비 실행 1회 → EXPLAIN 1회 → ANALYZE 1회 순서로 실행했다.
+ANALYZE TABLE·강제 인덱스 힌트·쿼리 축소는 사용하지 않았다.
+
+[적용 후 검증](baseline/verification-after.json)에서 상품 1,000,000개·활성 950,400개·좋아요 2,597,980개·가격 합계 50,950,000,000을 유지했다.
+버퍼 풀 128MiB 포함 주요 설정 11개, API PID 34084와 기존 `commerce-api-98da9d2.jar`, 사용자 GUI JMX 해시를 유지했다.
+같은 앱에 세 GET을 각 한 번 호출해 HTTP 200과 응답의 전체 필드·정렬·페이지 일치를 확인했다.
+[변경 후 HTTP 원문](baseline/http-after/README.md)은 성능 부하 표본으로 사용하지 않는다.
+
+엔티티에도 새 2개를 선언했다. seed 실행기의 before 4개 엄격 검사는 유지하고, Testcontainers 전용 테스트에서만
+새 2개를 제거·복구해 기준선 fixture를 준비한다. 기존 데이터·rollback·알 수 없는 인덱스 거절 기대를 유지하며 6개 상태의 seed 거절을 추가했다.
+현재 100만 DB의 seed·스키마 생성과 API 재시작은 실행하지 않았다. 변경 후 JMeter도 실행하지 않았다.
+
+같은 변경으로 `:apps:commerce-api:check`는 4분 49초에 성공했다. JUnit XML 합계는 **285건, 실패·오류·skip 모두 0**이다.
+seed 로더 11건·Runner 3건·상품 QueryDao 3건·상품 API 실제 nested suite 3건과 ArchUnit 8건을 포함한다.
+Checkstyle main/test 오류는 0건이다. 이름만 있는 tests=0 부모 suite를 실제 검사 건수로 세지 않았다.
+집계와 원문 결과 파일명은 [검사 기록](baseline/validation-check.json)에 보존했다. 문서 링크·동일 SQL 6쌍과 공백 검사도 확인했다.

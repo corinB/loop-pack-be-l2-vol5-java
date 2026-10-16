@@ -21,9 +21,9 @@
 | 기준 브랜치 | `volume-4/main` |
 | 브랜치 선택 근거 | 준비 당시 `corinB`와 `origin/volume-3/main`의 파일 내용이 같음. 로컬 `volume-3/main`은 이전 상태 |
 | 이번 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 요구사항·현재 구현·미정 사항 정리, 지침 연결 |
-| 기능·측정 상태 | R01 seed·HTTP SQL/응답 확인·JMeter 실행 준비 완료. SQL 실행 계획·신규 인덱스·사용자 본 측정·캐시는 미완료 |
+| 기능·측정 상태 | R01 seed·실패 부분 기준선·전후 SQL 실행 계획·신규 2개 적용·응답 동일성 확인 완료. 변경 후 JMeter·캐시는 미완료 |
 | 사용자 지정 도구 | HTTP 성능 테스트는 **JMeter** 사용 |
-| 현재 작업 | 첫 CLI 측정은 최신순 10명에서 timeout으로 중단. 부분 원본 보존, 사용자 요청에 따라 실시간 GUI 실행 준비 |
+| 현재 작업 | 기존 4개+새 2개 적용·회귀 285건·스타일/구조 검사 통과. 사용자가 변경 후 JMeter 실행 |
 
 문서 작성은 구현·측정·테스트 통과를 의미하지 않는다. 과거 문서의 수치는 해당 작업 당시 결과로만 인용한다.
 
@@ -31,8 +31,8 @@
 
 | 순서 | 작업 | 남길 결과·완료 조건 | 현재 상태 |
 |---|---|---|---|
-| 1 | 기준선·조회 계약·설계 | 실제 요청·SQL·SQL 수·실행 계획·JMeter 표본과 응답 결과, 캐시 범위·쓰기 책임·장애 계약 | seed·HTTP 확인과 첫 CLI 부분 측정 보존. SQL 실행 계획·전체 측정·캐시 설계 미완료 |
-| 2 | SQL·인덱스 개선 | 같은 seed와 입력의 결과 일치, 접근 경로·rows·loops·정렬·SQL 수·지연 비교 | R01 seed 구현·검증 완료, 인덱스 추가·전후 측정 전 |
+| 1 | 기준선·조회 계약·설계 | 실제 요청·SQL·SQL 수·실행 계획·JMeter 표본과 응답 결과, 캐시 범위·쓰기 책임·장애 계약 | seed·실패 부분 기준선·SQL 계획 보존. 전체 부하 측정·캐시 설계 미완료 |
+| 2 | SQL·인덱스 개선 | 같은 seed와 입력의 결과 일치, 접근 경로·rows·loops·정렬·SQL 수·지연 비교 | 기존 4개 유지·신규 2개 적용, SQL 계획과 응답 비교 완료. 변경 후 JMeter 대기 |
 | 3 | 한 공통 경로 cache-aside | DB-only·miss·hit 결과 일치, hit에서 비싼 원본 조회 감소, 기존 쓰기 경로 연결 | 미구현 |
 | 4 | 변경·실패·복구·회귀 | 실제 MySQL·Redis 연결 테스트, 결정적 경쟁 재현, 회귀·Checkstyle·ArchUnit 결과 | 미실행 |
 | 5 | 설계 갱신·기술 글·제출 | 실제 근거로 선택·이득·새 비용·한계를 설명하는 글과 PR 요약 | 미작성 |
@@ -48,11 +48,11 @@
 |---|---|
 | 작업 브랜치 / PR 대상 | `volume-4/r01-product-list-index` / `volume-4/main` |
 | 문서 | [요구사항](r01-product-list-index/requirement.md), [트레이드오프](r01-product-list-index/trade_off/total_trade_off.md), [구현·측정 계획](r01-product-list-index/plan.md), [실제 결과](r01-product-list-index/result.md), [JMeter 첫 실행 안내](r01-product-list-index/jmeter-guide.md) |
-| 인덱스 | 기존 4개 유지 + 전체 최신순 `(deleted, created_at DESC, id DESC)`·전체 가격순 `(deleted, price ASC, id DESC)` 2개 추가 예정 |
+| 인덱스 | 기존 4개 유지 + 전체 최신순 `(deleted, created_at DESC, id DESC)`·전체 가격순 `(deleted, price ASC, id DESC)` 2개 적용 완료 |
 | 측정 규모·대상 | 상품 100만 개. 전체 최신순·전체 가격순·브랜드별 가격순, 각 `page=0&size=20` |
 | 동시 부하 | JMeter 동시 1명·10명을 구분해 전후 비교 |
 | 역할 | 도구·실행 절차 준비와 실행 계획 분석은 Codex, 실제 JMeter 전후 측정은 사용자. 처음 사용하는 사람 기준으로 안내 |
-| 현재 진행 | 최신순 1명 6건·실패 0건, 10명 30건·timeout 10건으로 중단. 전체 12개 미완료, 새 인덱스 2개 미적용 |
+| 현재 진행 | 변경 전 10명 timeout 부분 기준선 유지. 새 2개로 전체 목록의 실제 상품 입력 950,400→20행·별도 정렬 제거 확인. 변경 후 JMeter 미실행 |
 
 ### 유지할 범위
 
@@ -107,7 +107,7 @@ DB 오류를 빈 목록·가격 0으로 바꾸지 않고 기존 오류 응답을
 | Projection | 공용 Row에서 목록에도 description·stock·createdAt을 읽고 응답 변환 시 제외 | 실제 측정 뒤 목록 전용 Projection 축소 등을 비교할 수 있음. 아직 채택안 없음 |
 | 좋아요 수 | `products.like_count`를 읽음. 상품별 좋아요 COUNT 반복 경로 없음 | N+1이 이미 제거된 상태를 기준으로 SQL 수·집계 비용 실측 |
 | 좋아요 반영 | 관계 commit 후 메모리 delta, 5초 주기 JDBC 반영, 시작 시 전체 재집계 | 지연 반영의 기존 의미와 캐시 추가 지연·반영 책임을 구분. 실패 상황까지 무조건 5초 상한이라고 주장하지 않음 |
-| 인덱스 | 엔티티에 브랜드별 최신·가격순 및 좋아요순 인덱스 선언 | 실제 실습 DB의 인덱스·통계·선택 계획 확인. 새 인덱스가 필요하다고 미리 결론 내리지 않음 |
+| 인덱스 | 기존 4개에 전체 최신·가격순 2개 추가, 엔티티·실험 DB 정의 일치 | 전후 계획·응답은 R01에 보존. 지연·처리량·오류율은 사용자 JMeter로 확인 |
 
 인덱스 선언은 [ProductJpaEntity](../../apps/commerce-api/src/main/java/com/loopers/infrastructure/persistence/mall/entity/ProductJpaEntity.java) 기준이다.
 가격순에는 이미 `idx_products_deleted_brand_price (deleted, brand_id, price ASC, id DESC)`가 있다.

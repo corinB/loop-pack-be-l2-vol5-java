@@ -35,17 +35,34 @@ flowchart TB
 | 비용 | 추가 유지 비용 없음 | 인덱스 공간·생성/수정 유지 비용 증가 | 실제 영향 재설계 필요 |
 | 결정 | 미채택 | **채택** | 미채택 |
 
-## 적용 예정 SQL과 판단 한계
+## 적용 예정 SQL과 기준선 재현
 
-아래는 후속 적용할 DDL이며 현재 실행한 SQL이 아니다.
+적용 파일은 [baseline/add-product-list-indexes.sql](../baseline/add-product-list-indexes.sql)이다.
+기존 상품 보조 인덱스 4개를 유지하고 단일 `ALTER TABLE`에서 아래 2개를 함께 추가한다.
+아래는 승인한 실행 방식이며 적용 완료나 성능 측정 결과가 아니다.
 
 ```sql
-CREATE INDEX idx_products_deleted_created
-    ON products (deleted, created_at DESC, id DESC);
-
-CREATE INDEX idx_products_deleted_price
-    ON products (deleted, price ASC, id DESC);
+ALTER TABLE products
+    ADD INDEX idx_products_deleted_created (deleted, created_at DESC, id DESC),
+    ADD INDEX idx_products_deleted_price (deleted, price ASC, id DESC),
+    ALGORITHM=INPLACE,
+    LOCK=NONE;
 ```
+
+`INPLACE`·`LOCK=NONE`으로 실행할 수 없으면 오류를 보존하고 중단한다. 임의로 COPY나 다른 잠금 방식으로 우회하지 않는다.
+`LOCK=NONE`은 메타데이터 잠금이나 시작·종료 시점의 대기까지 없다는 보장이 아니다.
+
+새 엔티티 선언은 스키마 생성 시 보조 인덱스 6개를 만든다. seed 로더는 정확한 변경 전 4개 검사를 유지하므로,
+**새 빈 전용 스키마를 처음 만들 때만** 새 2개를 제거해 4개 기준선을 준비하고 seed를 적재한다.
+현재 100만 상품이 있는 DB에서는 스키마 재초기화·seed 재실행·기준선 복원을 위한 인덱스 제거를 하지 않는다.
+기존 API도 유지하며 데이터·쿼리·응답·COUNT·집계 정책을 바꾸지 않는다.
+
+실제 SQL별 준비 실행 1회 → `EXPLAIN` → `EXPLAIN ANALYZE`로 before를 먼저 수집하고,
+인덱스 추가 뒤 같은 SQL·순서·준비 실행으로 after를 수집한다. 별도 `ANALYZE TABLE`은 실행하지 않는다.
+인덱스 생성 자체의 캐시·통계 영향은 전후 비교의 한계에 기록한다.
+JMeter 본 측정은 사용자가 계속 직접 실행하며 SQL 계획 수집과 동시에 실행하지 않는다.
+
+## 판단 한계
 
 실제 옵티마이저 선택은 JOIN 순서·통계·조회 열·데이터 분포의 영향을 받는다.
 정렬 인덱스가 있어도 브랜드 노출 조건에 의해 후보가 제외될 수 있고, COUNT 비용도 별도로 남는다.

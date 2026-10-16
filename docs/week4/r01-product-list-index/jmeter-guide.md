@@ -4,6 +4,7 @@
 
 **실시간 화면으로 보려면 [GUI 실행 안내](jmeter-ui-guide.md)를 따른다.** 아래는 기존 CLI 전체 실행 절차다.
 사용자의 첫 CLI 본 측정은 최신순 10명에서 응답 timeout 10건으로 중단됐다. 원본은 보존하며 나머지 조합은 미실행이다.
+현재 DB에는 기존 4개와 새 2개가 있으므로 **변경 후는 `-Phase after`로 실행**한다. 변경 전 결과는 다시 덮어쓰지 않는다.
 
 ## 1. 준비된 API로 측정 시작
 
@@ -14,13 +15,13 @@ Windows PowerShell 5.1에서도 한글 경로를 읽을 수 있도록 `-Encoding
 Set-Location -LiteralPath 'C:\Users\qorwh\OneDrive\바탕 화면\Loop\loop-pack-be-l2-vol5-java'
 $bench = '.\docs\week4\r01-product-list-index\jmeter'
 $meta = (Get-Content '.\build\benchmark\current-measure-api-path.txt' -Raw -Encoding UTF8).Trim()
-$result = & "$bench\run-jmeter.ps1" -Mode Measure -Phase before -ApiMetadataPath $meta
+$result = & "$bench\run-jmeter.ps1" -Mode Measure -Phase after -ApiMetadataPath $meta
 $result.OutputDirectory
 $result.ManifestPath
 ```
 
 Docker와 준비된 API는 켜 둔다. JMeter GUI와 다른 부하 테스트·빌드는 닫거나 중단한 상태에서 실행한다.
-스크립트가 실제 API 프로세스, 전용 DB, 기존 인덱스 4개, MySQL 버퍼 풀 128MiB를 확인한다.
+스크립트가 실제 API 프로세스, 전용 DB, 해당 단계의 인덱스(before 4개/after 6개), MySQL 버퍼 풀 128MiB를 확인한다.
 
 | 기본 설정 | 값 |
 |---|---|
@@ -41,7 +42,7 @@ ramp-up 5초는 각 실행 시간 안에 포함된다. 목표 동시 수가 유�
 
 ```powershell
 $relativeReport = 'r01-latest-u1\measurement\html\index.html'
-$reportRun = Get-ChildItem '.\build\benchmark\jmeter' -Directory -Filter 'before-measure-*' |
+$reportRun = Get-ChildItem '.\build\benchmark\jmeter' -Directory -Filter 'after-measure-*' |
     Sort-Object Name -Descending |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName $relativeReport) -PathType Leaf } |
     Select-Object -First 1
@@ -50,7 +51,7 @@ $report = Join-Path $reportRun.FullName $relativeReport
 Invoke-Item -LiteralPath $report
 ```
 
-출력 폴더는 `build/benchmark/jmeter/before-measure-실행시각-…/`다.
+변경 후 출력 폴더는 `build/benchmark/jmeter/after-measure-실행시각-…/`다. 기존 보고서는 필터를 `before-measure-*`로 바꿔 찾는다.
 `r01-latest-u1`은 **1회차·최신순·동시 1명**이고, `price`, `brand7`, `u10`, `r02`도 같은 방식으로 읽는다.
 
 ```text
