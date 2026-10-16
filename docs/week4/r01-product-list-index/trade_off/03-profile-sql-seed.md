@@ -5,7 +5,8 @@
 ## 결정
 
 사용자가 2026-10-16 제안·선택한 방식이다. 데이터를 Java 객체로 반복 저장하거나 CSV로 내보내지 않고,
-전용 `benchmark-seed` 프로필의 CommandLineRunner에서 `.sql` 리소스를 실행한다.
+전용 `benchmark-seed` 프로필의 ApplicationRunner에서 `.sql` 리소스를 실행한다.
+실행기 인터페이스는 최초 CommandLineRunner 구현 뒤 사용자의 추가 선택에 따라 ApplicationRunner로 변경했다.
 
 | 책임 | 구성 |
 |---|---|

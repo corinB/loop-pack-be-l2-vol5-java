@@ -9,7 +9,7 @@
 
 ## 1. 이번 실행 범위
 
-- `benchmark-seed` 전용 프로필 → CommandLineRunner → `.sql` 실행 → 검증·정상 종료.
+- `benchmark-seed` 전용 프로필 → ApplicationRunner → `.sql` 실행 → 검증·정상 종료.
 - 상품 100만 개, 브랜드·사용자 각 1,000개와 실제 좋아요 관계 준비.
 - 기존 상품 인덱스 4개 상태의 실제 HTTP SQL·응답·EXPLAIN·EXPLAIN ANALYZE 수집·분석.
 - 추가 인덱스 2개와 JMeter 부하 측정은 다음 단계. 기존 API·모델·Projection·쿼리·정렬·페이지 계약 유지.

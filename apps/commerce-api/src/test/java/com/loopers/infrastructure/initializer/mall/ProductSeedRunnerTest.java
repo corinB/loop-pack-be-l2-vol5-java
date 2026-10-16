@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class ProductSeedRunnerTest {
@@ -40,7 +41,7 @@ class ProductSeedRunnerTest {
                 assertThat(context).hasSingleBean(ProductSeedRunner.class);
 
                 // act
-                context.getBean(ProductSeedRunner.class).run();
+                context.getBean(ProductSeedRunner.class).run(new DefaultApplicationArguments());
 
                 // assert
                 verify(loader).load();
