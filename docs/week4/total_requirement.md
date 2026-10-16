@@ -2,8 +2,13 @@
 
 ## 1. 목표·기준·현재 상태
 
-기존 상품 조회의 업무 결과를 유지하면서 SQL·인덱스 비용을 줄이고, 한 공통 조회 경로에 Redis cache-aside를 적용한다.
-정상 변경·rollback·무효화 실패·늦은 채움·Redis 중단과 복구를 구분해 검증한다.
+기존 상품 조회의 업무 결과를 유지하면서 SQL·인덱스 비용을 줄이고, 고객 상품 상세에 Caffeine 로컬 캐시를 적용한다.
+정상 변경·rollback·만료·늦은 채움을 구분해 검증한다.
+
+2026-10-16 제출 시 사용자는 **Caffeine 로컬 캐시를 이번 구현의 최종 선택**으로 확정했다.
+검증한 단일 서버의 반복 상세 조회에서는 별도 캐시 서버 없이 DB 호출을 줄였으므로 Redis를 도입하지 않는다.
+Redis는 이번 구현의 남은 필수 작업이 아니다. 여러 서버의 캐시 공유와 DB 직접 수정의 전파는 지원 범위 밖이며,
+Redis와 성능을 직접 비교하거나 장애·복구를 검증한 결과는 없다.
 
 기준 자료:
 
@@ -12,7 +17,8 @@
 - [현재 작업 지침](../../AGENTS.md), [현재 구조·명령 안내](../../CLAUDE.md)
 - [3주차 후속 요구사항](../week3-2/total_requirement.md), [R04 구현 결과](../week3-2/r04-like-sort-index/result.md)
 
-두 원문은 사용자 첨부를 내용 변경 없이 보존했다. 이 문서는 원문의 요구사항을 현재 코드에 대응시킨 준비 문서다.
+두 원문은 사용자 첨부를 내용 변경 없이 보존했다. 원문에는 Redis 적용·장애·복구 요구가 있으나,
+이번 사용자 선택은 로컬 캐시다. 이 문서는 실제 구현 범위와 원문 대비 차이를 구분한다.
 
 | 구분 | 상태 |
 |---|---|
@@ -21,25 +27,25 @@
 | 기준 브랜치 | `volume-4/main` |
 | 브랜치 선택 근거 | 준비 당시 `corinB`와 `origin/volume-3/main`의 파일 내용이 같음. 로컬 `volume-3/main`은 이전 상태 |
 | 이번 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 요구사항·현재 구현·미정 사항 정리, 지침 연결 |
-| 기능·측정 상태 | R01 인덱스·변경 후 CLI 완료. R02 로컬 상세 캐시·변경 무효화·실제 HTTP SQL·전체 check·OFF/ON CLI 8개 완료. Redis는 미완료 |
+| 기능·측정 상태 | R01 인덱스·변경 후 CLI 완료. R02 로컬 상세 캐시·변경 무효화·실제 HTTP SQL·전체 check·OFF/ON CLI 8개 완료. Redis는 선택 범위 밖 |
 | 사용자 지정 도구 | HTTP 성능 테스트는 **JMeter** 사용 |
-| 현재 작업 | R01(PR #22) 병합 완료. R02 고객 상세 Caffeine 로컬 캐시·commit 후 무효화·CLI 전후 측정 결과 보존 |
+| 현재 작업 | R01(PR #22)·R02(PR #23) 병합 완료. 로컬 캐시 선택과 검증 근거를 정리해 원본 저장소에 제출 |
 
 문서 작성은 구현·측정·테스트 통과를 의미하지 않는다. 과거 문서의 수치는 해당 작업 당시 결과로만 인용한다.
 
-사용자가 승인한 중간 단계 [R02 상품 상세 로컬 캐시](r02-product-detail-local-cache/requirement.md)는
+사용자가 최종 선택한 [R02 상품 상세 로컬 캐시](r02-product-detail-local-cache/requirement.md)는
 Caffeine W-TinyLFU를 사용한다. [설계](r02-product-detail-local-cache/trade_off/total_trade_off.md)와
-[계획](r02-product-detail-local-cache/plan.md)에 범위를 기록한다. 로컬 캐시 구현은 원문의 Redis 장애·복구 완료를 대신하지 않는다.
+[계획](r02-product-detail-local-cache/plan.md)에 범위를 기록한다. 로컬 캐시의 완료와 원문 Redis 요구의 미적용을 구분한다.
 
 ## 2. 진행 순서와 완료 조건
 
 | 순서 | 작업 | 남길 결과·완료 조건 | 현재 상태 |
 |---|---|---|---|
-| 1 | 기준선·조회 계약·설계 | 실제 요청·SQL·SQL 수·실행 계획·JMeter 표본과 응답 결과, 캐시 범위·쓰기 책임·장애 계약 | R01 부분 before·전체 after 보존. R02 상세 로컬 캐시 설계와 OFF/ON 전체 비교 완료. Redis 설계는 후속 |
+| 1 | 기준선·조회 계약·설계 | 실제 요청·SQL·SQL 수·실행 계획·JMeter 표본과 응답 결과, 캐시 범위·쓰기 책임 | R01 부분 before·전체 after 보존. R02 상세 로컬 캐시 설계와 OFF/ON 전체 비교 완료 |
 | 2 | SQL·인덱스 개선 | 같은 seed와 입력의 결과 일치, 접근 경로·rows·loops·정렬·SQL 수·지연 비교 | 기존 4개 유지·신규 2개 적용, SQL 계획·응답 검증·after CLI 12개 완료. before는 부분 기준선 |
-| 3 | 한 공통 경로 cache-aside | DB-only·miss·hit 결과 일치, hit에서 비싼 원본 조회 감소, 기존 쓰기 경로 연결 | R02 Caffeine 상세 완료. Redis 적용은 후속 |
-| 4 | 변경·실패·복구·회귀 | 실제 MySQL·Redis 연결 테스트, 결정적 경쟁 재현, 회귀·Checkstyle·ArchUnit 결과 | R02 실제 MySQL commit/rollback·로컬 경쟁·전체 check 완료. Redis 장애·복구는 미실행 |
-| 5 | 설계 갱신·기술 글·제출 | 실제 근거로 선택·이득·새 비용·한계를 설명하는 글과 PR 요약 | 미작성 |
+| 3 | 한 공통 경로 cache-aside | DB-only·miss·hit 결과 일치, hit에서 비싼 원본 조회 감소, 기존 쓰기 경로 연결 | R02 Caffeine 상세 완료. Redis 미도입 선택 |
+| 4 | 변경·rollback·경쟁·회귀 | 실제 MySQL 연결 테스트, 결정적 경쟁 재현, 회귀·Checkstyle·ArchUnit 결과 | R02 실제 MySQL commit/rollback·로컬 경쟁·전체 check 완료. Redis 장애·복구는 선택 범위 밖 |
+| 5 | 설계 갱신·기술 글·제출 | 실제 근거로 선택·이득·새 비용·한계를 설명하는 글과 PR 요약 | 설계·결과서 작성, 제출 PR 준비. 별도 기술 글은 미작성 |
 
 후속 작업은 주제별 `requirement.md` → `trade_off/` 문답·결정 → `plan.md` → 구현·검증 → `result.md` 순서로 진행한다.
 첫 주제 R01의 폴더·작업 브랜치는 아래와 같이 확정했다. 나머지 주제·PR 분할은 후속 설계에서 확정한다.
@@ -68,10 +74,10 @@ Caffeine W-TinyLFU를 사용한다. [설계](r02-product-detail-local-cache/trad
 | 변경 | 상품·브랜드·재고·주문·좋아요 관계/집계/전체 재집계의 동기 AFTER_COMMIT 무효화와 세대 기반 늦은 채움 방지 |
 | 검증 | 실제 MySQL 쓰기 commit/rollback, 래치 경쟁·가짜 시간원 TTL, HTTP SQL OFF/miss 1회·hit 0회, 최종 전체 333개 테스트·Checkstyle·ArchUnit 통과 |
 | 측정 | 기존 100만 DB·보조 인덱스 6개 유지. 같은 새 JAR의 OFF/ON × 1명/10명 × 2회 CLI 본 측정 8개, 오류 0건 |
-| 남은 범위 | Redis cache-aside·연결/timeout·장애·복구, 다중 인스턴스·외부 SQL 변경 전파, 기술 글·제출 |
+| 선택 범위 밖 | Redis 적용·장애·복구, 다중 인스턴스 캐시 공유·외부 SQL 변경 전파. 도입을 예약한 후속 작업으로 취급하지 않음 |
 
-아래 최종 체크리스트는 원문의 Redis 포함 전체 과제 기준이다. R02의 로컬 캐시 완료 범위는 위 표와
-별도 결과서에서 확인하며, 이를 Redis 통합·장애·복구의 완료로 표시하지 않는다.
+아래 6·7절은 원문의 Redis 포함 요구와 비교하기 위한 기록이다. 미실행 항목에 완료 표시를 하지 않는다.
+이번 제출의 로컬 캐시 완료 범위는 위 표와 별도 결과서에서 확인하며 Redis 미적용을 남은 필수 작업으로 해석하지 않는다.
 
 ### 유지할 범위
 
@@ -163,12 +169,13 @@ DB 오류를 빈 목록·가격 0으로 바꾸지 않고 기존 오류 응답을
 
 JMeter는 HTTP 성능 관측 도구로 사용한다. 무효화 실패·늦은 채움의 순서 제어와 업무 정확성은 별도의 통합 테스트로 검증한다.
 
-## 6. 캐시 설계에서 정할 것과 변경 책임
+## 6. 원문 대비 검토 기록과 변경 책임
 
-### Redis 후속 설계 항목 — 아직 채택하지 않음
+### Redis 관련 검토 기록 — 이번 선택 범위 밖
 
 R02의 상품 ID 키·상세 View·30초 TTL·동기 무효화는 로컬 캐시에 확정했다.
-아래 표는 Redis 도입 시 연결·직렬화·실패와 복구 경계를 포함해 다시 결정할 항목이다.
+아래 표는 원문을 검토하며 남긴 Redis 설계 항목이다. 현재 구현 계획이 아니며,
+여러 서버의 캐시 공유가 필요해지는 등 요구가 바뀌면 별도 대안을 검토한다.
 
 | 항목 | 결정할 내용 |
 |---|---|
@@ -214,11 +221,12 @@ TTL만으로 변경 후 모든 요청에 적용되는 전역 최신성 시간 �
 - [인프라 Compose](../../docker/infra-compose.yml): master·readonly replica가 따로 존재한다. 실제 실험에서 읽은 endpoint를 기록하고 replica lag를 최신성 보장으로 해석하지 않는다.
 - 현재 factory에 명시적 command/connect timeout이 없다. 설정 파일의 값만 추가하면 적용된다고 가정하지 말고 실제 factory 적용·장애 지연을 확인한다.
 - commerce-api는 Redis 모듈을 의존하지만 상품 Redis 캐시는 없다. 테스트에는 Redis testFixtures 연결이 없고 test 프로필 Redis health만 비활성화돼 있다.
-- 모듈의 [Redis Testcontainer 설정](../../modules/redis/src/testFixtures/java/com/loopers/testcontainers/RedisTestContainersConfig.java)은 master·replica endpoint를 동일 컨테이너로 연결한다. 장애 대상 접근·재시작 방식을 포함한 실검증 구성은 후속 설계가 필요하다.
+- 모듈의 [Redis Testcontainer 설정](../../modules/redis/src/testFixtures/java/com/loopers/testcontainers/RedisTestContainersConfig.java)은 master·replica endpoint를 동일 컨테이너로 연결한다. 이번 로컬 캐시 검증에는 사용하지 않았다.
 
-## 7. 실제 통합 검증·회귀·제출 체크리스트
+## 7. 원문 대비 통합 검증·회귀·제출 체크리스트
 
-실제 애플리케이션·MySQL·Redis를 연결한다. 캐시 동작을 전부 Mock으로 대체한 검증만으로 완료하지 않는다.
+아래는 원문의 애플리케이션·MySQL·Redis 연결 검증 요구를 대조하기 위한 기록이며 현재 작업 목록이 아니다.
+R02는 실제 MySQL·HTTP와 로컬 캐시를 검증했다. 원문의 Redis 요구는 미적용으로 남기고 실제 수행한 범위는 R01·R02 결과서에 기록했다.
 
 ### 조회·비교
 
@@ -262,5 +270,5 @@ TTL만으로 변경 후 모든 요청에 적용되는 전역 최신성 시간 �
 - [ ] 의미 있었던 주제 하나를 상황·실제 근거, 핵심 개념, 선택 이유·줄인 비용·추가 비용·미확인 한계로 설명하는 기술 글로 작성했다.
 - [ ] PR에 병목·선택 방법·정확성·장애 결과·측정 환경과 표본의 한계를 요약했다.
 
-주제별 실제 결과는 R01·R02 결과서에 보존했다. 로컬 캐시 단계와 별개로 위 Redis 포함 최종 통합 체크리스트,
-장애·복구 및 기술 글·제출은 후속 작업에서 완료 여부를 판단한다.
+주제별 실제 결과는 R01·R02 결과서에 보존했다. 위 원문 대조표를 이번 로컬 캐시 구현의 미완료 작업 목록으로 사용하지 않는다.
+Redis 적용·장애·복구는 선택 범위 밖이며, 별도 기술 글을 작성하거나 Redis를 검증했다고 주장하지 않는다.

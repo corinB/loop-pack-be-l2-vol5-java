@@ -5,10 +5,22 @@
 처음에는 LinkedHashMap 기반 LRU를 선택했지만 [참고 글](https://agongstory.tistory.com/116)을 검토한 뒤 Caffeine으로 변경했다.
 사용자는 전체 상세 응답 캐시, 모든 영향 쓰기의 commit 후 무효화·늦은 채움 방지, JMeter CLI 실제 측정까지 승인했다.
 
+제출 시 사용자는 Caffeine 로컬 캐시를 이번 구현의 최종 선택으로 확정했다. Redis는 이번에 도입하지 않는다.
+단일 JVM에서 반복하는 상품 상세 조회의 DB 호출을 줄이는 범위로 선택했다.
+
 Caffeine은 순수 LRU가 아니라 [W-TinyLFU](https://github.com/ben-manes/caffeine/wiki/Efficiency)를 사용한다.
 용량 기반 교체와 [expireAfterWrite](https://github.com/ben-manes/caffeine/wiki/Eviction)를 사용하며,
 만료된 항목의 논리적 사용 중단과 실제 메모리 정리 시점은 구분한다. 용량 테스트는 유지보수 후 확인한다.
 기존 Spring Boot BOM이 관리하는 Caffeine 의존성을 사용한다.
+
+## 선택 근거와 비용
+
+[실제 결과](../result.md)에서 같은 JAR의 Caffeine OFF/ON을 비교해 DB 호출 감소를 확인했다.
+애플리케이션 메모리에 상세 응답을 보관하므로 별도 캐시 서버를 설치·운영할 필요가 없고,
+별도 캐시 인프라 운영 비용을 추가하지 않는다. 애플리케이션 메모리와 무효화 처리 비용은 남는다.
+
+이 선택은 여러 JVM 사이의 캐시 공유나 외부 SQL 변경 전파를 지원하지 않는다.
+Redis 성능과 직접 비교한 실험도 없다. 이번 측정으로 확인한 범위는 단일 JVM의 반복 상세 조회다.
 
 ## 경계 선택
 
@@ -33,7 +45,7 @@ application 이벤트는 기존 쓰기 TX에서 발행한다. infrastructure의 
 
 ## 측정과 한계
 
-단일 JVM의 애플리케이션 쓰기만 즉시 전파한다. 외부 SQL·다중 JVM·Redis 장애 복구를 해결했다고 기록하지 않는다.
+단일 JVM의 애플리케이션 쓰기만 즉시 전파한다. 외부 SQL 변경과 여러 JVM 사이의 캐시 전파는 지원하지 않는다.
 주문 판단은 기존 DB 규칙을 사용한다. TTL만으로 모든 변경·장애의 전역 최신성 상한을 주장하지 않는다.
 
 기존 API를 중단하지 않고 전용 API 18081/관리 포트 18082에서 100개 고정 활성 상품을 순환 조회한다.
