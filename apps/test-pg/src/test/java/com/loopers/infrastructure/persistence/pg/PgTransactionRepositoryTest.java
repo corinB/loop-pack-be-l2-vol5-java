@@ -6,32 +6,17 @@ import com.loopers.domain.pg.model.PgScenario;
 import com.loopers.domain.pg.model.PgStatus;
 import com.loopers.domain.pg.model.PgTransaction;
 import com.loopers.domain.pg.repository.PgTransactionRepository;
+import com.loopers.support.PgDatabaseTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
-@Testcontainers
-class PgTransactionRepositoryTest {
-    @Container
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("loopers_test_pg");
-
-    @DynamicPropertySource
-    static void database(DynamicPropertyRegistry registry) {
-        registry.add("datasource.mysql-jpa.main.jdbc-url", MYSQL::getJdbcUrl);
-        registry.add("datasource.mysql-jpa.main.username", MYSQL::getUsername);
-        registry.add("datasource.mysql-jpa.main.password", MYSQL::getPassword);
-    }
+class PgTransactionRepositoryTest extends PgDatabaseTest {
 
     @Autowired
     PgTransactionRepository repository;
