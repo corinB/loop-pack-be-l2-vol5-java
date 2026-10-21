@@ -1,4 +1,11 @@
 # local과 함께 사용하지 않는다. 보존 실험에서는 이 프로필만 명시한다.
+management:
+  server:
+    port: 8082 # PG의 8081과 분리한다.
+
+logging:
+  config: classpath:logback-payment-lab.xml
+
 spring:
   jpa:
     hibernate:
