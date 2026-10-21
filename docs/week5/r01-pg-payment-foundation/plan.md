@@ -1,27 +1,102 @@
-# R01 구현 계획 틀
+# R01 구현·상태 전이·리뷰 및 커밋 계획
 
-상태: **요구사항 분석·구현 전·상세 계획 미작성**. 이 문서는 실행 승인을 받은 상세 구현 계획이 아니다.
+상태: **계획 수립·세 관점 계획 리뷰와 보완 재검토 완료·기능 구현 전**.
+2026-10-21 최신 사용자 요청에 따라 기능 구현만 리뷰하고 테스트는 필요한 핵심 사례로 제한한다.
 
-## 착수 전 확인
+[요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [최소 보완](trade_off/10-learning-scope-completion.md) · [상태 전이](state-transitions.md)
 
-- 준비 커밋 `d443cdc`에서 `volume-5/r01-pg-payment-foundation`을 생성해 요구사항 분석을 시작했다.
-- [설계 질문](trade_off/total_trade_off.md)의 결정 내용을 번호별 문서에 남긴다.
-- 확정 설계를 바탕으로 아래 표를 작은 커밋·TDD 순서로 채운 뒤 구현을 시작한다.
+## 목표와 경계
 
-## 커밋·검증 계획 작성 틀
+- 작업 브랜치는 `volume-5/r01-pg-payment-foundation`, PR 대상은 `volume-5/main`이다. 준비 시작 커밋은 `d443cdc`다.
+- R01은 독립 테스트 PG·HTTP adapter·결제 시도/복구 작업/mall 재고 기록의 저장 기반·기존 POINT 호환을 구현한다.
+- 기존 commerce confirm은 POINT 동작을 유지한다. PG 주문 전환·실제 재고 차감/복구·callback 수신·수동 대사 API는 R02, 재조회 실행·서킷브레이커는 R03에서 연결한다.
+- 로컬 구현·검증·커밋까지 다룬다. 원격 게시·PR 생성·병합은 포함하지 않는다. 기존 JMeter 변경과 첨부 원문은 보존한다.
 
-| 순서 | 변경할 책임·범위 | 먼저 검증할 실패·경계 | Red/Green·회귀 확인 | 완료 증거 |
-|---|---|---|---|---|
-| 설계 후 작성 | 미정 | 미정 | 미실행 | 없음 |
+## 구현 계약과 기본값
 
-다룰 작업 묶음은 DB 저장형 테스트 PG의 독립 실행·재시작, 결제/차감 기록 모델·저장 호환, PG adapter·설정·실제 HTTP 계약과 보조 fixture 검증이다.
-이 목록은 커밋 순서나 파일·라이브러리 선택을 확정하지 않는다.
+### 실행과 DB
+
+- `:apps:test-pg`를 독립 Boot 모듈로 추가한다. 주소는 `127.0.0.1:8081`, 기존 MySQL의 `loopers_test_pg` 스키마·`test_pg` 계정을 사용한다. commerce는 `loopers/application`을 유지한다.
+- PG 앱은 commerce 앱에 의존하지 않고 기존 JPA 모듈과 계층·순수 도메인·Checkstyle 규칙을 따른다.
+- 보존 실험 프로필은 `payment-lab`, DDL 정책은 validate다. PG 기본 실행과 commerce의 명시적 보존 실험에서 사용한다. 초기·증분 SQL과 reset은 명시 실행이며 자동 테이블/볼륨 삭제는 하지 않는다. 자동화 테스트의 격리용 create 설정은 유지한다.
+
+### PG와 실효 조건
+
+- 원문의 세 경로·raw JSON·고정 제공자 헤더를 유지한다. 같은 주문 ID의 생성 POST 두 번은 거래 두 건을 만든다.
+- 생성 요청에 선택적 `testOptions: { preset, overrides }`를 추가한다. 향후 confirm의 요청별 옵션 연결은 R02다. 생략값은 항상 NORMAL_SUCCESS이므로 최초 사용자 지정 조건과 달라지면 같은 키도 충돌한다.
+- 실효 고정 필드는 `rejectBeforeCreate`, `finalStatus`, `processingDelayMs`, `createResponseMode`, `createResponseDelayMs`, `lookupResponseMode`, `lookupResponseDelayMs`, `callbackMode`, `callbackDelayMs`다.
+- 응답 모드는 NORMAL/DELAY/DROP, callback 모드는 SEND/DROP이다. 응답/callback 지연은 최대 30초, 처리 지연은 최대 60초다. 의미 없는 지연값이나 종결하지 않는 거래의 callback 등 모순된 조합은 400으로 거절한다.
+- 양쪽 앱은 자체 타입으로 실효값을 저장·비교한다. 공유 계약 프레임워크나 런타임 프리셋 편집 기능은 추가하지 않는다.
+
+| 프리셋 | 거래 처리 | 생성 응답 |
+|---|---|---|
+| NORMAL_SUCCESS · 기본 | 지연 0, SUCCESS 예정 | 정상 |
+| NORMAL_FAILURE | 지연 0, FAILED 예정 | 정상 |
+| PENDING | 자동 종결 없음 | 정상 |
+| DELAYED_SUCCESS | 3초 뒤 SUCCESS 예정 | 4초 지연 |
+| LOST_SUCCESS / LOST_FAILURE | 1초 뒤 SUCCESS / FAILED 예정 | DROP |
+| REJECT_BEFORE_CREATE | 거래 생성/예약 없음 | 원문의 정확한 422 거절 |
+
+- 거래 commit 뒤 수락 시점의 202 PENDING 스냅샷을 반환한다. PG는 예정 시각/결과를 저장하고 100ms 주기로 최대 100건의 기한 지난 PENDING을 조건부 종결하며 재시작 뒤에도 처리한다.
+- 응답 지연은 거래 처리와 독립적이다. DROP은 클라이언트 제한 안에 응답하지 않는 실험이며 최대 30초 뒤 자원을 정리한다. 실제 연결 종료는 작은 HTTP 테스트 서버로 검증한다.
+- callback은 종결 commit 뒤 별도 실행기로 best-effort 1회 발송한다. 지연/HTTP가 polling을 막지 않으며 재시도·재시작 발행 보장은 추가하지 않는다.
+
+### commerce 기반
+
+- 시도 키는 표준 8-4-4-4-12 UUID다. 공백 거절·대문자 허용 후 소문자 36자로 저장한다. 주문당 한 시도·전역 키 유일성을 각각 DB로 보호한다. PG용 주문 ID는 LP-ORD-와 최소 10자리 내부 주문 ID를 조합한다.
+- 결제 시도는 발송 READY/STARTED, 결과 UNKNOWN/PENDING/SUCCESS/FAILED와 금액·식별 관계·거절 사유·실효 조건을 보존한다.
+- 복구 작업은 시도당 하나이며 READY/RUNNING/MANUAL_REQUIRED/APPLIED·실행 UUID·논리 조회 사용 회차 0~4·최근 시각·오류를 보존한다. 실행자 진행 갱신/수동 인계는 기대 실행 ID·상태·회차 CAS로 보호하고 일반 save로 우회하지 않는다. 지터/다음 예약 정보는 저장하지 않는다.
+- mall 기록은 주문당 하나와 고정 품목별 수량을 가지며 DEDUCTED/CONSUMED/RESTORED를 구분한다. 실제 상품 수량 변경은 R02다.
+- OrderRecord의 수단 POINT/PG를 구분한다. 기존 행·paid 경로는 POINT이며 기존 HTTP 응답은 바꾸지 않는다.
+- adapter는 VERIFIED/REJECTED_NO_EFFECT/NOT_FOUND/UNAVAILABLE/CONFLICT를 결과값으로 구분한다. RestClient + Boot 관리 Apache HttpClient와 연결/풀/응답 1초/1초/2초·자동 retry/redirect 차단을 사용한다. callback HTTP도 같은 제한을 사용한다.
+- 검증 관찰은 기존 시도에 별도 짧은 TX로 먼저 commit한다. 같은 거절은 멱등 처리하고 존재/부재 상충은 기존 사실을 보존한다. 업무 TX는 R02에서 연결하며 관찰 저장 전 종료는 미확인으로 남긴다.
+
+## 상태 전이 문서
+
+`state-transitions.md` 한 문서에 주문·재고·결제의 Mermaid와 설명을 둔다. 현재 코드와 R02 목표 상태, 각 전이의 조건/주체/TX/실패 후 상태를 구분한다.
+결제는 발송 사실·검증 결과·복구 진행으로 나누고 timeout·빈 조회·중복·늦은 응답·종결/존재 충돌·저장된 거절 재적용·수동 인계·PENDING 응답 시점을 설명한다.
+
+## 커밋 순서
+
+기능 커밋에는 관련 최소 테스트와 필요한 증분 SQL을 함께 포함한다. 리뷰는 파일 확장자가 아니라 실제 기능 동작 변경 여부로 판단한다.
+
+| 순서 | 커밋 메시지 | 주된 확인 | 기능 리뷰 |
+|---|---|---|---|
+| 1 | docs: PR01 구현 계획과 상태 전이 및 리뷰 절차 정리 | 링크·계약·기존 변경 보존 | 제외 |
+| 2 | build: 독립 테스트 PG와 데이터 보존 실행 환경 구성 | 모듈/설정·SQL·기동 가능성 | 기능 동작 없는 구성만이면 제외 |
+| 3 | feat: 테스트 PG 거래와 실효 조건 저장 구현 | DB 저장·복원·조건 | 세 관점 |
+| 4 | feat: 테스트 PG 생성과 조회 HTTP 계약 구현 | 세 API·응답 제어 | 세 관점 |
+| 5 | feat: 테스트 PG 예정 거래 자동 완료 구현 | 조건부 종결·PENDING 유지 | 세 관점 |
+| 6 | feat: 테스트 PG 결과 callback 발송 구현 | commit 후 발송·실행 분리 | 세 관점 |
+| 7 | feat: 결제 시도 저장과 기존 POINT 호환 구현 | 키/주문 유일성·전이·호환 | 세 관점 |
+| 8 | feat: 결제 복구 작업의 조건부 진행 갱신 구현 | CAS·회차·인계 | 세 관점 |
+| 9 | feat: 주문별 재고 차감과 복구 기록 모델 구현 | 수량·전이·중복 방지 | 세 관점 |
+| 10 | feat: PG HTTP adapter와 검증 관찰 저장 구현 | 오류·재호출 차단·관찰 commit | 세 관점 |
+| 11 | test: PG 실연결과 재시작 및 기존 기능 회귀 검증 | 통합 증거·최종 검사·result | 테스트/문서만이면 제외 |
+
+## 최소 검증과 리뷰 절차
+
+1. 핵심 업무 규칙·실패 후 불변식을 먼저 검증하고 최소 구현으로 Green을 만든다. getter/DTO·구현 세부를 반복하는 테스트와 조건의 전체 조합 테스트는 만들지 않는다.
+2. 기능 구현만 비즈니스·사용자 경험·기술 서브에이전트가 독립 리뷰한다. 테스트는 기능 검증 근거로 참고하되 별도 테스트 코드 리뷰 작업은 만들지 않는다.
+3. 기능 동작 없는 문서·빌드 구성·테스트 전용 변경은 별도 리뷰를 받지 않는다. diff·문서 링크·해당 작업의 필요한 검사만 확인한다.
+4. 기능 리뷰 수정은 지적·영향·수정 범위·재검증 항목을 설명하고 사용자 확인을 기다린다. 승인 후 수정·관련 검사·영향받은 기능의 세 관점 재리뷰를 수행한다.
+5. 매 변경에는 관련 검사만 실행한다. 필수 Checkstyle·ArchUnit·관련 모듈 전체 검사는 PR01 마무리에 한 번 수행하고 이후 변경/실패로 필요해진 경우만 다시 실행한다.
+6. 관련 검사 통과·미해결 리뷰 수정 없음·명시적 staging 확인 후 `type: 한글 요약`으로 로컬 커밋한다. 문서는 정적 확인으로 검증한다. 기존 JMeter 변경은 staging하지 않는다.
+
+| 최소 검증 묶음 | 필요한 사례 |
+|---|---|
+| 핵심 상태/멱등성 | 허용 전이·종결 회귀 차단·관찰 재적용·거래 존재/NO_EFFECT 상충·중복 복구 기록 방지 |
+| 저장/경합 | 주문/키 유일성·대표 동시 CAS·옛 실행 save 차단·관찰/업무 rollback 분리·POINT 증분 호환 |
+| HTTP | 정상 세 API·확정 거절·거래 유실·timeout/연결 종료·깨진/불일치 응답·빈/복수 거래·추가 재호출 없음 |
+| 시나리오/작업 | 대표 실효값 생략/명시/override·유실 실패·거절의 교차 확인·callback 지연 중 다른 거래 종결 |
+| 보존 실험 | 초기 SQL/validate·PG PENDING 후 강제 종료/동일 DB 재기동·완료 거래·commerce 관찰 보존 |
+
+같은 사실을 계층마다 반복 검증하지 않는다. 두 앱은 JVM·스키마·접속 정보를 분리하고 기존 fixture의 전역 datasource 프로퍼티가 섞이지 않게 한다.
+실제 주문/상품 복구 전체 흐름을 R01에 당기지 않는다. 실패·skip·환경 문제를 통과로 기록하거나 검사 기준을 완화하지 않는다.
 
 ## 실제 진행 기록
 
-- 기능 구현: 미시작.
-- 테스트·Checkstyle·ArchUnit: 미실행.
-- 실제 시작 커밋·PR URL·검증 결과: 작업 시작·실행 후 기록.
-- `result.md`: 실제 구현·검증 후 작성.
-
-[요구사항](requirement.md) · [전체 요구사항](../total_requirement.md)
+- 계획: 세 관점 리뷰 → 사용자 전체 보완 선택 → 재검토에서 새 중대 문제 없음. 후속 기능 리뷰/최소 검증 요청 반영.
+- 상태 전이 문서: 준비 문서이며 신규 상태의 코드 구현 완료를 뜻하지 않는다.
+- 기능 구현·테스트·Checkstyle·ArchUnit: 아직 미실행.
+- 실제 커밋·검증·승인된 수정은 실행 후 기록한다. `result.md`는 실제 구현·검증 후 작성한다.
