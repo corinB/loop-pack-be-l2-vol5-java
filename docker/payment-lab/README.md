@@ -14,6 +14,13 @@ Get-Content -Raw -Encoding utf8 docker/payment-lab/001-pg-schema.sql |
 
 거래·결제 모델을 추가하는 커밋에서 필요한 테이블 SQL을 순서대로 추가한다. 앱은 SQL을 자동 실행하지 않으며, 필요한 SQL을 직접 적용한 뒤 실행한다.
 
+PG 거래 테이블은 스키마 준비 다음에 적용한다.
+
+```powershell
+Get-Content -Raw -Encoding utf8 docker/payment-lab/002-pg-transactions.sql |
+    docker compose -f docker/infra-compose.yml exec -T mysql mysql -uroot -proot --default-character-set=utf8mb4
+```
+
 ## 실행
 
 각각 다른 터미널에서 실행한다.
