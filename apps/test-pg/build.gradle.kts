@@ -4,6 +4,7 @@ dependencies {
     implementation(project(":modules:jpa"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
 
     annotationProcessor("io.github.openfeign.querydsl:querydsl-apt:${project.properties["queryDslVersion"]}:jpa")
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
