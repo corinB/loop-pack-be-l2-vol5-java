@@ -21,6 +21,8 @@ Get-Content -Raw -Encoding utf8 docker/payment-lab/002-pg-transactions.sql |
     docker compose -f docker/infra-compose.yml exec -T mysql mysql -uroot -proot --default-character-set=utf8mb4
 ```
 
+commerce의 신규 결제 시도 테이블은 `003-payment-attempts.sql`이다. 기존 코드의 `order_records` 테이블에 결제수단을 추가할 때는 `004-order-payment-method.sql`을 한 번 적용한다. 기존 행의 금액·결과·시각은 유지하고 결제수단만 POINT로 채운다. 초기 스키마에 이미 해당 컬럼이 있다면 이 ALTER를 다시 실행하지 않는다.
+
 ## 실행
 
 각각 다른 터미널에서 실행한다.
