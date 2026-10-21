@@ -35,4 +35,11 @@ public record PgTransaction(String transactionKey, String orderId, long amount, 
         return new PgTransaction("TEST-TX-" + UUID.randomUUID(), orderId, amount, callbackUrl,
                 PgStatus.PENDING, scenario, createdAt, dueAt);
     }
+
+    public PgTransaction completeAt(Instant now) {
+        if (status != PgStatus.PENDING || dueAt == null || dueAt.isAfter(now)) {
+            throw new IllegalStateException("완료 기한이 된 처리 중 거래만 종결할 수 있습니다.");
+        }
+        return new PgTransaction(transactionKey, orderId, amount, callbackUrl, scenario.finalStatus(), scenario, createdAt, dueAt);
+    }
 }
