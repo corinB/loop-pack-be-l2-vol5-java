@@ -13,7 +13,7 @@
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
 | 구현 상태 | 세 PR 모두 **구현 전**. 기능 코드·테스트·의존성·DB 변경은 시작하지 않음 |
-| 작업 브랜치 | 이름만 확정. 각 PR 작업 시작 시 최신 기준 브랜치에서 생성 |
+| 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 요구사항 분석 중. R02/R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
 
 기준 자료:
 
@@ -101,7 +101,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 
 | 순서 | PR·작업 브랜치 | 책임 | 상태 |
 |---|---|---|---|
-| 1 | R01 · `volume-5/r01-pg-payment-foundation` | PG fixture·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 구현 전 |
+| 1 | R01 · `volume-5/r01-pg-payment-foundation` | PG fixture·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 요구사항 분석·설계 전·구현 전 |
 | 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 구현 전 |
 | 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 구현 전 |
 
