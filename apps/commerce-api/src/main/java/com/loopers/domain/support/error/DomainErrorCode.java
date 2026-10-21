@@ -17,7 +17,8 @@ public enum DomainErrorCode {
     ORDER_ALREADY_CONFIRMED("이미 확정된 주문입니다."),
     INSUFFICIENT_POINT("포인트가 부족합니다."),
     PAYMENT_DISPATCH_NOT_ALLOWED("결제 요청을 새로 발송할 수 없는 상태입니다."),
-    PAYMENT_RECOVERY_NOT_ALLOWED("복구 작업의 실행 권한 또는 조회 예산이 유효하지 않습니다.");
+    PAYMENT_RECOVERY_NOT_ALLOWED("복구 작업의 실행 권한 또는 조회 예산이 유효하지 않습니다."),
+    STOCK_ADJUSTMENT_ALREADY_FINISHED("이미 종결한 재고 처리 결과를 바꿀 수 없습니다.");
 
     private final String message;
 
