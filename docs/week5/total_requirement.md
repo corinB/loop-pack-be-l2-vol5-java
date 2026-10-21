@@ -17,6 +17,7 @@
 
 기준 자료:
 
+- [상태 문서: 전체 흐름·주문·재고·결제](states/total.md)
 - [학습 자료 원문](reference/learning.md)
 - [Implementation Quest·체크리스트·Technical Writing Quest 원문](reference/implementation-quest.md)
 - [저장소 작업 규칙](../../AGENTS.md), [구조·명령 안내](../../CLAUDE.md)

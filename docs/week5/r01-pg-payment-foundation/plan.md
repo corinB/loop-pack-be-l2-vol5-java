@@ -3,7 +3,7 @@
 상태: **계획 수립·세 관점 계획 리뷰와 보완 재검토 완료·기능 구현 전**.
 2026-10-21 최신 사용자 요청에 따라 기능 구현만 리뷰하고 테스트는 필요한 핵심 사례로 제한한다.
 
-[요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [최소 보완](trade_off/10-learning-scope-completion.md) · [상태 전이](state-transitions.md)
+[요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [최소 보완](trade_off/10-learning-scope-completion.md) · [상태 문서](../states/total.md)
 
 ## 목표와 경계
 
@@ -53,7 +53,7 @@
 
 ## 상태 전이 문서
 
-`state-transitions.md` 한 문서에 주문·재고·결제의 Mermaid와 설명을 둔다. 현재 코드와 R02 목표 상태, 각 전이의 조건/주체/TX/실패 후 상태를 구분한다.
+`docs/week5/states/`에 [전체 흐름](../states/total.md)·[주문](../states/order.md)·[재고](../states/stock.md)·[결제](../states/payment.md) 문서를 나눈다. 처음 읽는 개발자도 이해하도록 용어·상태의 의미·전이 조건·실패 시 동작과 예시를 설명한다. 현재 코드와 R02 목표 상태, 각 전이의 저장 경계를 구분한다.
 결제는 발송 사실·검증 결과·복구 진행으로 나누고 timeout·빈 조회·중복·늦은 응답·종결/존재 충돌·저장된 거절 재적용·수동 인계·PENDING 응답 시점을 설명한다.
 
 ## 커밋 순서
