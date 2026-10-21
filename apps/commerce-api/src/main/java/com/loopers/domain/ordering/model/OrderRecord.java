@@ -16,7 +16,8 @@ public final class OrderRecord {
         this(id, userId, amount, status, createdAt, PaymentMethod.POINT);
     }
 
-    private OrderRecord(Long id, long userId, long amount, OrderRecordStatus status, Instant createdAt, PaymentMethod paymentMethod) {
+    private OrderRecord(Long id, long userId, long amount, OrderRecordStatus status, Instant createdAt,
+                        PaymentMethod paymentMethod) {
         if (userId <= 0) {
             throw new IllegalArgumentException("사용자 ID는 양수여야 합니다.");
         }

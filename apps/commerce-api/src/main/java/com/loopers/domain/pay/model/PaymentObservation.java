@@ -36,7 +36,8 @@ public record PaymentObservation(Kind kind, String transactionKey, String provid
     }
 
     public static PaymentObservation rejected(String orderId, long amount) {
-        return new PaymentObservation(Kind.REJECTED_NO_EFFECT, null, orderId, amount, ProviderPaymentStatus.FAILED, Reason.NONE, null);
+        return new PaymentObservation(Kind.REJECTED_NO_EFFECT, null, orderId, amount,
+                ProviderPaymentStatus.FAILED, Reason.NONE, null);
     }
 
     public static PaymentObservation unavailable(Reason reason) {

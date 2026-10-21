@@ -68,14 +68,16 @@ public class PaymentRecoveryTaskRepositoryImpl implements PaymentRecoveryTaskRep
     }
 
     @Override
-    public boolean recordFailure(String key, String executionId, int expectedUsed, PaymentRecoveryTask.Reason reason, Instant now) {
+    public boolean recordFailure(String key, String executionId, int expectedUsed,
+                                 PaymentRecoveryTask.Reason reason, Instant now) {
         ensureReason(reason);
         return update(ownedUpdate("t.lastReason = :reason, t.updatedAt = :now", key, executionId, expectedUsed)
                 .setParameter("reason", reason.name()).setParameter("now", now));
     }
 
     @Override
-    public boolean requireManual(String key, String executionId, int expectedUsed, PaymentRecoveryTask.Reason reason, Instant now) {
+    public boolean requireManual(String key, String executionId, int expectedUsed,
+                                 PaymentRecoveryTask.Reason reason, Instant now) {
         ensureReason(reason);
         return update(ownedUpdate("t.state = 'MANUAL_REQUIRED', t.lastReason = :reason, t.updatedAt = :now",
                 key, executionId, expectedUsed).setParameter("reason", reason.name()).setParameter("now", now));
@@ -91,7 +93,8 @@ public class PaymentRecoveryTaskRepositoryImpl implements PaymentRecoveryTaskRep
 
     private Query ownedUpdate(String assignments, String key, String executionId, int expectedUsed) {
         return entityManager.createQuery("update PaymentRecoveryTaskJpaEntity t set " + assignments
-                        + " where t.attemptKey = :key and t.state = 'RUNNING' and t.executionId = :execution and t.usedRounds = :used")
+                        + " where t.attemptKey = :key and t.state = 'RUNNING'"
+                        + " and t.executionId = :execution and t.usedRounds = :used")
                 .setParameter("key", PaymentAttempt.normalizeKey(key))
                 .setParameter("execution", PaymentAttempt.normalizeKey(executionId)).setParameter("used", expectedUsed);
     }

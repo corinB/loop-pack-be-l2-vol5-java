@@ -39,6 +39,7 @@ public class StockAdjustmentRepositoryImpl implements StockAdjustmentRepository 
     public Optional<StockAdjustment> findByOrderId(long orderId) {
         return entityManager.createQuery("""
                 select distinct a from StockAdjustmentJpaEntity a left join fetch a.items where a.orderId = :orderId
-                """, StockAdjustmentJpaEntity.class).setParameter("orderId", orderId).getResultStream().findFirst().map(mapper::toDomain);
+                """, StockAdjustmentJpaEntity.class).setParameter("orderId", orderId)
+                .getResultStream().findFirst().map(mapper::toDomain);
     }
 }

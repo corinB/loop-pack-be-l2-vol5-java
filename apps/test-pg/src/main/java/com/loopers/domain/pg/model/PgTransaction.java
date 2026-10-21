@@ -40,6 +40,7 @@ public record PgTransaction(String transactionKey, String orderId, long amount, 
         if (status != PgStatus.PENDING || dueAt == null || dueAt.isAfter(now)) {
             throw new IllegalStateException("완료 기한이 된 처리 중 거래만 종결할 수 있습니다.");
         }
-        return new PgTransaction(transactionKey, orderId, amount, callbackUrl, scenario.finalStatus(), scenario, createdAt, dueAt);
+        return new PgTransaction(transactionKey, orderId, amount, callbackUrl,
+                scenario.finalStatus(), scenario, createdAt, dueAt);
     }
 }

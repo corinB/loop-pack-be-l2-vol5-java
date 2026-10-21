@@ -59,7 +59,8 @@ public class HttpPaymentProviderGateway implements PaymentProviderGateway {
                 .exchange((request, response) -> read(response, expected, Operation.LOOKUP_ORDER)));
     }
 
-    private PaymentObservation read(ClientHttpResponse response, ExpectedPayment expected, Operation operation) throws IOException {
+    private PaymentObservation read(ClientHttpResponse response, ExpectedPayment expected, Operation operation)
+            throws IOException {
         int status = response.getStatusCode().value();
         if (operation == Operation.LOOKUP_ONE && status == 404) {
             return PaymentObservation.missing();

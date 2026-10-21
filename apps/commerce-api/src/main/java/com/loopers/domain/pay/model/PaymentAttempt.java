@@ -35,7 +35,8 @@ public final class PaymentAttempt {
                            DispatchState dispatchState, Outcome outcome, String transactionKey,
                            Rejection rejection, Conflict conflict, long version, Instant createdAt) {
         this.attemptKey = normalizeKey(attemptKey);
-        if (orderId <= 0 || version < 0 || providerOrderId == null || providerOrderId.length() < 6 || providerOrderId.length() > 100) {
+        if (orderId <= 0 || version < 0 || providerOrderId == null
+                || providerOrderId.length() < 6 || providerOrderId.length() > 100) {
             throw new IllegalArgumentException("결제 시도 식별 정보가 올바르지 않습니다.");
         }
         this.orderId = orderId;

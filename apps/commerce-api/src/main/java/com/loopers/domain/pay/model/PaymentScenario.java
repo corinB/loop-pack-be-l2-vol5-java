@@ -65,7 +65,8 @@ public record PaymentScenario(
                 value(overrides.callbackDelayMs(), base.callbackDelayMs()));
     }
 
-    private static PaymentScenario base(ProviderPaymentStatus status, long processing, ResponseMode mode, long delay, CallbackMode callback) {
+    private static PaymentScenario base(ProviderPaymentStatus status, long processing, ResponseMode mode,
+                                        long delay, CallbackMode callback) {
         return new PaymentScenario(false, status, processing, mode, delay, ResponseMode.NORMAL, 0, callback, 0);
     }
 

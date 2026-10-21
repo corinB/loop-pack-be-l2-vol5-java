@@ -51,6 +51,7 @@ public class PaymentAttemptRepositoryImpl implements PaymentAttemptRepository {
     @Override
     public Optional<PaymentAttempt> findByOrderId(long orderId) {
         return entityManager.createQuery("select a from PaymentAttemptJpaEntity a where a.orderId = :orderId",
-                PaymentAttemptJpaEntity.class).setParameter("orderId", orderId).getResultStream().findFirst().map(mapper::toDomain);
+                PaymentAttemptJpaEntity.class).setParameter("orderId", orderId)
+                .getResultStream().findFirst().map(mapper::toDomain);
     }
 }
