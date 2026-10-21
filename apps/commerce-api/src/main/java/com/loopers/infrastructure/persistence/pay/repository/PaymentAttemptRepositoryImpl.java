@@ -5,6 +5,7 @@ import com.loopers.domain.pay.repository.PaymentAttemptRepository;
 import com.loopers.infrastructure.persistence.pay.entity.PaymentAttemptEntityMapper;
 import com.loopers.infrastructure.persistence.pay.entity.PaymentAttemptJpaEntity;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.OptimisticLockException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,12 @@ public class PaymentAttemptRepositoryImpl implements PaymentAttemptRepository {
     public Optional<PaymentAttempt> findByKey(String attemptKey) {
         return Optional.ofNullable(entityManager.find(PaymentAttemptJpaEntity.class, PaymentAttempt.normalizeKey(attemptKey)))
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public Optional<PaymentAttempt> findByKeyForUpdate(String attemptKey) {
+        return Optional.ofNullable(entityManager.find(PaymentAttemptJpaEntity.class,
+                PaymentAttempt.normalizeKey(attemptKey), LockModeType.PESSIMISTIC_WRITE)).map(mapper::toDomain);
     }
 
     @Override
