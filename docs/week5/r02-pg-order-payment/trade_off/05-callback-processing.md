@@ -31,9 +31,9 @@ PG의 callback 송신은 이미 best-effort 1회다. 이번 선택으로 callbac
 저장 키가 없으면 알림 키를 그대로 조회 키로 삼지 않고 저장된 providerOrderId로 조회한다. 검증한 PG 거래 키와 알림 키가 일치한 뒤 관찰을 저장한다. 고객/관리자 사용자 헤더 없이 고정 PG adapter의 계정·주문·금액 검증을 재사용한다.
 callback은 claim·인계·회차 소비를 하지 않는다. 조회 전의 작업 snapshot을 공통 반영에 전달해 조회 중 수동 인계 뒤의 늦은 실패 표식을 차단한다. 최신 업무 완료 여부로 200/202를 반환하며 응답은 completed/attentionRequired 두 값뿐이다.
 
-## 관련 검증 완료·남은 통합 검증
+## 관련 검증 완료
 
 - 완료: 실제 callback controller에서 본문 대신 권위 조회 결과로 관찰 저장·공통 반영한다.
 - 완료: 중복 callback/수동 대사가 실제 확정·반환을 추가하지 않는다. 조회 실패는 결제 실패로 만들지 않고 PG 성공 근거도 업무 rollback에서 보존한다.
 - 완료: callback HTTP/MySQL 8건·ArchUnit 8건·Checkstyle·세 관점 기능 리뷰. 중요 지적은 없다.
-- 후속: 별도 PG/commerce 프로세스에서 PG 송신 timeout과 실제 commerce 저장 결과·재시작을 엮어 확인하고 필수 전체 check를 수행한다.
+- 완료: 별도 PG/commerce 프로세스에서 callback 먼저 도착·늦은 생성 응답의 종결 보호, PG 송신 timeout 뒤 실제 commerce 저장 완료를 확인했다. 전체 검사 432건과 프로세스 재시작 실험도 통과했다. [실제 결과](../result.md)를 따른다.

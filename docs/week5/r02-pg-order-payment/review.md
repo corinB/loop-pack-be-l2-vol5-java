@@ -233,3 +233,13 @@ callback은 실행을 claim/인계하거나 자동 회차를 소비하지 않는
 구현 전 새 HTTP 검사 8건 모두 실패하는 것을 확인했다. 첫 구현 검사 16건 중 14건이 통과했고, MANDATORY repository spy의 실패 주입을 TX 밖에서 설정한 검사와 그 미완료 stubbing의 후속 검사가 실패했다. 주입 설정을 TX 안으로 옮긴 뒤 callback 8건 중 7건이 통과했다. 남은 동시성 검사는 실제 처리 후 차감 기록을 TX 밖에서 스트림으로 재조회해 실패했으며, 재조회만 TX 안으로 옮겨 해당 1건도 통과했다. 기능·검사 기준은 변경하지 않았다.
 중복 제외 callback HTTP/MySQL 8개 시나리오와 ArchUnit 8건이 최종 실패·오류·건너뛰기 0건이며 Checkstyle main/test도 통과했다. 본문과 다른 권위 결과, 키 미결합/불일치, 입력·미등록 거절, 조회 불가, 중복/동시 반환 1회, 종결 충돌, 새 실행과 성공 근거 보존만 확인했다.
 로그는 무시 대상 `build/r02-callback-{red,green,recheck,concurrency-recheck}.log`에 남긴다. 별도 PG/commerce 프로세스의 실연결·장애·재시작 통합 실험과 필수 전체 check는 커밋 9에서 수행한다.
+
+## 커밋 9 · 실제 PG 통합·장애/재시작·필수 전체 검사
+
+기능 코드 `73bc6cf`의 두 JAR를 빌드하고 PG/commerce 전체 check를 수행했다. PG 25건·commerce 407건, 총 432건이 실패·오류·건너뛰기 0건으로 통과했다. Checkstyle·ArchUnit·기존 slow/example 검사와 포인트/캐시 회귀를 포함한다. 이후 변경은 검증 기록과 문서뿐이다.
+
+독립 PG/commerce JVM과 실험 전용 MySQL에서 대표 실험 10개를 추가 확인했다. 같은 키 동시 confirm, callback 먼저/늦은 생성 응답, 생성 응답 유실 뒤 실패, 관리자 가용 수량 변경, 삭제 상품 반환, PG 성공 뒤 내부 반영 rollback, commerce/PG 강제 종료·재시작과 수동 인계, 거래 생성 전 거절, callback 송신 timeout 뒤 실제 완료, 반환 overflow 후 수동 복구를 통과했다.
+정확한 옵션·주문 ID·최종 상태/재고/거래/주문 기록 수는 [결과](result.md), 재현 절차는 [verification](verification.md)에 남긴다. 새 실험 주문의 포인트 USE는 0건이고 과거 POINT 기록·JMeter 사용자 변경·원문을 보존했다.
+
+중요한 기능 수정이 필요한 문제는 발견되지 않았다. 기능 변경 없는 문서·검증은 별도 서브에이전트 리뷰 대상에서 제외하는 기존 사용자 규칙을 따랐다. 기존 기능 커밋의 세 관점 리뷰·중요 수정 승인 기록은 그대로 유지한다. 자동 4회 실행이나 회로 검증을 완료했다고 기록하지 않는다.
+실험용 trigger는 제거했고 직접 기동한 JVM/전용 DB는 정지했다. 로컬 로그는 `build/r02-full-check.log`, `build/r02-full-check-summary.json`, `build/r02-final-lab-state.json`, `build/r02-final-{api,pg}-*.log`에 보존한다. R02는 로컬 완료이며 원격 게시/PR 생성은 별도 요청 범위다.
