@@ -1,13 +1,13 @@
 # 5주차 다음 작업 인계
 
-2026-10-22 기준 R02 로컬 구현·검증을 완료했다. 다음 작업 때 현재 위치와 남은 범위를 먼저 확인한다.
+2026-10-22 R02 PR #25 병합 후 기준 최신화·R03 브랜치 생성과 요구사항/설계 문답을 진행했다. R03 기능 구현·검증은 아직 시작하지 않았다. 다음 작업 때 현재 위치와 남은 범위를 먼저 확인한다.
 
 ## 현재 위치
 
-- 현재 브랜치: `volume-5/r02-pg-order-payment`. R01 병합 커밋 `4b81541`에서 시작했다.
-- R01은 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)로 사용자 병합 완료. 로컬 기준 브랜치도 `4b81541`이다.
+- 현재 브랜치: `volume-5/r03-payment-resilience`. R02 병합 커밋 `42c22c2`에서 시작했다. 로컬 `volume-5/main`도 이 커밋으로 fast-forward했다.
+- R01은 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)로 사용자 병합 완료. 당시 병합 기준은 `4b81541`이며 현재 기준은 R02 병합 `42c22c2`다.
 - R02 기능 코드 검증 기준은 동기 callback 커밋 `73bc6cf`다. 이후 최종 변경은 검증 기록·문서다.
-- R02는 원격 게시·PR 생성 전이다. 요청 시 `volume-5/main`을 대상으로 게시한다.
+- R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 게시·사용자 병합 완료. R03은 로컬 문서 작업 중이며 원격 게시/PR은 아직 없다.
 - [R02 결과](r02-pg-order-payment/result.md) → [재현 방법](r02-pg-order-payment/verification.md) → [계획](r02-pg-order-payment/plan.md) → [리뷰 기록](r02-pg-order-payment/review.md) 순서로 확인한다.
 - 기존 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
 
@@ -30,7 +30,7 @@
 
 ## 다음 작업 범위
 
-R02 원격 게시·PR 생성은 사용자 요청 시 진행한다. R03은 R02 병합 후 최신 `volume-5/main`에서 `volume-5/r03-payment-resilience`를 생성하고 상세 계획부터 검토한다.
+R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 먼저 읽는다. 첫 조회 즉시·명확한 실행기 접수 거절 100ms 뒤 전달 1회 재시도·공유 조회 회로·차단 시 즉시 수동/확보 회차 유지·4xx/정상/실패/제외 분류를 확정했다. 다음은 회로 집계 창·최소 표본·차단/느림 수치이며 전체 예산·내부 반영 재시도·실행기/선점·라이브러리도 남아 있다. [상세 계획 틀](r03-payment-resilience/plan.md)은 아직 미작성이고 기능 구현·새 검증 결과는 없다.
 자동 조회·Spring Retry/@Retryable·Resilience4j 서킷브레이커·fallback은 아직 구현하지 않았다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
 
 확정한 선차감 정책·주문 CAS·관찰 선저장·파사드/TX 분리·복구 작업 CAS·고객/관리자 접근·수동 조회 최대 1회·동기 callback은 다시 미정으로 돌리지 않는다.

@@ -2,8 +2,8 @@
 
 ## 상태·목표
 
-- 상태: **구현 전**. [R02](../r02-pg-order-payment/requirement.md) 병합 후 시작한다.
-- 최신 `volume-5/main`에서 `volume-5/r03-payment-resilience`를 생성한다. PR 대상은 `volume-5/main`이다.
+- 상태: **R02 병합 후 요구사항·설계 문답 중, 구현 전**. R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 병합됐다.
+- 2026-10-22 최신 `volume-5/main`의 `42c22c2`에서 `volume-5/r03-payment-resilience`를 생성했다. PR 대상은 `volume-5/main`이다.
 - 기존 거래 조회의 호출·대기 한도를 정하고 회로 차단·fallback·복구를 검증한다. 통합 장애 실험과 제출 자료를 정리한다.
 
 상위 기준은 [전체 요구사항](../total_requirement.md), 회복 요구는 [Implementation Quest](../reference/implementation-quest.md)다.
@@ -12,13 +12,17 @@
 
 - 실제 HTTP timeout과 create 재시도 차단은 R01부터 적용한다. 이 PR에서 새로 시작하는 항목으로 미루지 않는다.
 - 기존 거래는 최초 조회 후 추가 재조회 최대 3회 수행하고, 각 확인 종료 후 1초·3초·10초 대기에 지터 ±20%를 적용한다.
+- 첫 자동 조회는 백그라운드 작업 시작 후 바로 실행한다. 실행기가 명확히 접수를 거절하면 100ms 뒤 전달만 1회 재시도하며 재거절은 수동 전환이다. 접수 여부가 불명확하면 재전달하지 않는다. 전달 자체는 조회 회차·PG 호출·회로 표본이 아니다.
 - [확정한 재확인 정책](trade_off/01-reconciliation-retry-policy.md)의 실패/수동 전환 기준을 따른다. R01의 [HTTP 설정](../r01-pg-payment-foundation/trade_off/03-http-client-settings.md)은 연결 1초·연결 풀 대기 1초·응답 대기 2초와 client 자동 retry/redirect 차단이다. 전체 예산·구체적인 재조회 예외 매핑은 미정이다.
 - R01 [adapter 결과값 반환 결정](../r01-pg-payment-foundation/trade_off/04-adapter-fixture.md)에 따라 복구 실행기가 재조회할 결과만 @Retryable 제어에 연결한다. 회로 실패 집계도 반환 결과를 분류하며 통신 장애를 정상 반환이라는 이유로 성공 집계하지 않는다. 구체적인 연결 방식은 이 PR에서 정한다.
 - PG HTTP retry 대상은 기존 거래 조회뿐이다. 확인된 결과의 내부 반영 실패는 같은 결과 적용 경계에서 별도로 다루고 create를 다시 보내지 않는다.
-- PG 조회 한 경로에 circuit breaker를 적용하고 최소 표본·실패/지연 조건·OPEN 대기·HALF_OPEN 탐색 호출 수를 정한다.
-- 업무 거절과 네트워크/조회 장애를 회로의 실패 표본에서 어떻게 구분할지 정한다.
+- 자동·고객/관리자 수동 대사·callback PG 조회는 하나의 circuit breaker를 공유한다. 생성 POST는 회로 범위 밖이며 저장 종결 근거의 내부 재적용은 OPEN에도 가능하다.
+- [집계 기준](trade_off/02-lookup-circuit-breaker.md)에 따라 timeout·통신·5xx·408·429·잘못된 정상 응답은 실패 집계, 검증한 SUCCESS/FAILED/PENDING·계약상 거래 없음은 정상 집계다. 나머지 4xx·식별 충돌·우리 DB/실행기 오류·회로 차단은 정상/실패 표본 모두에서 제외한다. 거래 키 조회 404와 목록 경로 자체의 404는 구분한다.
+- 회로 실패와 재조회 여부는 별도다. 잘못된 정상 응답은 회로 실패지만 즉시 수동 전환한다. 검증한 FAILED는 회로상 정상이며 공통 업무 TX에서 주문 실패·재고 반환을 처리한다.
+- 집계 창·최소 표본·실패율/느림 기준·OPEN 대기·HALF_OPEN 탐색 수는 아직 미정이다.
 - 조회 실패·회로 차단의 fallback은 저장된 상태와 확인 불가를 반환한다. 가짜 성공·확정 실패·포인트 대체·임의 재고 복구를 만들지 않는다.
 - 회로 OPEN이 이미 발송한 시도를 미발송으로 되돌리지 않으며, 회복 뒤 기존 거래 조회를 재개한다.
+- 자동 작업이 회로에 차단되면 확보한 회차는 유지하고 즉시 수동 전환한다. 실제 HTTP는 0회이고 회로 실패 표본을 추가하지 않는다. 수동/callback도 PG를 우회 조회하지 않으며 자동 회차를 소비하지 않는다. 회복 뒤 다음 명시적 대사/후속 callback에서 조회할 수 있지만 중단 자동 작업을 자동 부활시키지 않는다.
 - client·retry·자동 재확인·circuit breaker 중첩에서 실제 호출 수와 실패 표본 단위를 확인한다. bulkhead는 필수로 추가하지 않는다.
 - 정상 자동 재확인은 @Retryable 방식으로 실행하고 DB에 진행을 기록한다. @Recover 등 소진 후 처리에서 수동 전환을 저장한다. 장애/재시작 뒤 자동 재개는 하지 않고 담당자 수동 대사로 처리한다.
 - 사용 횟수·현재 실행/진행·최근 시각·오류는 별도 pay 복구 작업 모델에 저장한다. commerce의 지터·다음 예약 시각·재시작 대기 재개 정보는 영속화하지 않는다. 검증 관찰은 별도 TX로 먼저 commit하고 업무 반영 rollback과 분리하며 저장된 종결 결과는 재적용할 수 있다.

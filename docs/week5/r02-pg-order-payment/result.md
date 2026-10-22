@@ -1,6 +1,6 @@
 # R02 구현·검증 결과
 
-2026-10-22 기준 **로컬 구현과 검증을 완료했다.** `volume-5/r02-pg-order-payment`에서 작업했으며 PR 대상은 `volume-5/main`이다. 원격 게시와 PR 생성은 아직 하지 않았다.
+2026-10-22 기준 **로컬 구현과 검증을 완료했다.** `volume-5/r02-pg-order-payment`에서 작업했으며 PR 대상은 `volume-5/main`이다. 이후 사용자 요청으로 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)를 게시했고 사용자가 병합했다. 병합 커밋은 `42c22c2`다.
 
 [요구사항](requirement.md) · [계획·커밋 순서](plan.md) · [기능 리뷰](review.md) · [실험 재현 방법](verification.md) · [상태 흐름](../states/total.md)
 
