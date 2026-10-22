@@ -46,8 +46,8 @@ class QueryDslOrderQueryDaoIntegrationTest {
     @DisplayName("내 주문 목록")
     @Test
     void returnsOrders_orderedByCreatedAtDescending() {
-        Order older = orderRepository.save(order(1L));
-        Order newer = orderRepository.save(order(1L));
+        Order older = orderRepository.insert(order(1L));
+        Order newer = orderRepository.insert(order(1L));
         setCreatedAt(older.getId(), "2026-01-01T00:00:00Z");
         setCreatedAt(newer.getId(), "2026-01-02T00:00:00Z");
 
@@ -65,8 +65,8 @@ class QueryDslOrderQueryDaoIntegrationTest {
     @DisplayName("다른 사용자의 주문은 목록에서 제외한다")
     @Test
     void excludesOtherUsersOrders() {
-        orderRepository.save(order(1L));
-        orderRepository.save(order(2L));
+        orderRepository.insert(order(1L));
+        orderRepository.insert(order(2L));
 
         PageResult<OrderView> result = orderQueryDao.findOrders(1L, new PageCriteria(0, 20));
 
@@ -76,9 +76,9 @@ class QueryDslOrderQueryDaoIntegrationTest {
     @DisplayName("결제 완료된 주문은 결제 금액·상태를 함께 반환한다")
     @Test
     void includesPaymentFields_whenOrderRecordExists() {
-        Order saved = orderRepository.save(order(1L));
-        saved.confirm();
-        orderRepository.save(saved);
+        Order legacy = order(1L);
+        legacy.confirm();
+        Order saved = orderRepository.insert(legacy);
 
         OrderView view = orderQueryDao.findOrder(saved.getId()).orElseThrow();
 
@@ -97,8 +97,8 @@ class QueryDslOrderQueryDaoIntegrationTest {
     @DisplayName("관리자 주문 목록은 모든 구매자의 주문에 구매자 ID를 포함한다")
     @Test
     void returnsAllUsersOrders_withUserId_forAdmin() {
-        orderRepository.save(order(1L));
-        orderRepository.save(order(2L));
+        orderRepository.insert(order(1L));
+        orderRepository.insert(order(2L));
 
         PageResult<AdminOrderView> result = orderQueryDao.findAdminOrders(new PageCriteria(0, 20));
 

@@ -96,7 +96,8 @@ public class QueryDslOrderQueryDao implements OrderQueryDao {
 
     private JPAQuery<OrderHeaderRow> selectHeaders() {
         ConstructorExpression<OrderHeaderRow> projection = Projections.constructor(OrderHeaderRow.class,
-            ORDER.id, ORDER.userId, ORDER.status, ORDER.totalAmount, RECORD.amount, RECORD.status, ORDER.createdAt);
+            ORDER.id, ORDER.userId, ORDER.status, ORDER.totalAmount, RECORD.amount, RECORD.status, ORDER.createdAt,
+            RECORD.paymentMethod);
         return queryFactory.select(projection)
             .from(ORDER)
             .leftJoin(ORDER.record, RECORD);

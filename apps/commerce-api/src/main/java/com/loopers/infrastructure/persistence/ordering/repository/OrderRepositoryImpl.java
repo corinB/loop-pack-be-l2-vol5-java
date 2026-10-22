@@ -52,20 +52,6 @@ public class OrderRepositoryImpl implements OrderRepository {
         return true;
     }
 
-    // 신규 저장 또는 기존 엔티티 갱신
-    @Override
-    public Order save(Order order) {
-        OrderJpaEntity entity;
-        if (order.getId() == null) {
-            entity = mapper.toNewEntity(order);
-        } else {
-            entity = orderJpaRepository.findById(order.getId()).orElseThrow();
-            mapper.apply(order, entity);
-        }
-        // IDENTITY 채번인 주문 기록의 id·생성시각(@PrePersist)을 즉시 반영해 도메인 복원에 쓰기 위해 flush한다
-        return mapper.toDomain(orderJpaRepository.saveAndFlush(entity));
-    }
-
     // ID로 주문 조회
     @Override
     public Optional<Order> findById(long orderId) {

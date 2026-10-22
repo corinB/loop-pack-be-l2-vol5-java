@@ -12,8 +12,8 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 로컬 구현·검증 완료([결과](r01-pg-payment-foundation/result.md)). 전체 검사 384건·실연결·재시작·POINT 호환·기본 웹 동시 기동 통과. R02는 4b81541에서 브랜치를 생성해 설계 문답 중이며 기능 구현 전. R03 구현 전. PR #24 병합 완료 |
-| 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현 중. R02는 R01 병합 기준 4b81541에서 생성. R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
+| 구현 상태 | R01 로컬 구현·검증 완료([결과](r01-pg-payment-foundation/result.md)). 전체 검사 384건·실연결·재시작·POINT 호환·기본 웹 동시 기동 통과. R02는 4b81541에서 시작해 기반·준비/공통 TX·고객 confirm PG 전환·범용 save 제거와 관련 검증을 완료했다. 상세 결제 조회·GET 소유권·callback·대사는 후속 단계다. R03 구현 전. PR #24 병합 완료 |
+| 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
 
 기준 자료:
 
@@ -128,12 +128,12 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 
 원문은 본인 주문의 확정·상세·대사와 관리자/고객 접근 구분을 요구한다.
 기존 저장소는 인증·인가를 제외한 fixture 정책이며 `X-USER-ID`는 사용자 입력이지 인증이 아니다.
-현재 주문 목록은 사용자 조건이 있지만 상세·확정은 orderId로 대상을 선택하며 본인 여부를 비교하지 않는다.
+착수 전 주문 목록에는 사용자 조건이 있었지만 상세·확정에는 본인 검사가 없었다. 현재 confirm에는 소유권 검사를 연결했고 상세 GET 검사는 다음 단계다.
 관리자 URL 분리도 관리자 권한 검증을 뜻하지 않는다.
 
 2026-10-22 사용자 결정으로 고객 confirm/상세/reconcile에 기존 X-USER-ID와 저장된 userId를 비교하는 소유권 검사를 추가한다.
 과거 POINT 고객 상세도 같은 규칙이며 타인 주문은 없는 주문과 같은 404·오류 코드·메시지로 응답한다.
-이는 R02 설계 결정이고 아직 기능 구현 전이다. [고객 API 결정](r02-pg-order-payment/trade_off/04-customer-ownership-and-api.md)을 따른다.
+confirm의 소유권·타인 404는 구현했다. 고객 상세 GET·대사 소유권과 주문 관리자 fixture 검사는 후속 단계다. [고객 API 결정](r02-pg-order-payment/trade_off/04-customer-ownership-and-api.md)을 따른다.
 같은 날 주문 관리자 조회·미완료 목록·운영자 대사는 기존 X-USER-ID=1 관리자 fixture를 확인하기로 정했다. 고객 경로는 1번도 본인 주문만 처리한다. 상품 등 다른 관리자 API 변경·실제 로그인·역할 테이블은 포함하지 않는다.
 
 ## PR 구성·진행 규칙
@@ -141,7 +141,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 | 순서 | PR·작업 브랜치 | 책임 | 상태 |
 |---|---|---|---|
 | 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
-| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 설계 문답 중·기능 구현 전 |
+| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 기반·준비/공통 TX·고객 confirm PG 전환 완료, 조회·callback·대사 후속 |
 | 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 구현 전 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)

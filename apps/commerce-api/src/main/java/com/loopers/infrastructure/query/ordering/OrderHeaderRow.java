@@ -5,15 +5,17 @@ import com.loopers.application.ordering.query.OrderItemView;
 import com.loopers.application.ordering.query.OrderView;
 import com.loopers.domain.ordering.model.OrderRecordStatus;
 import com.loopers.domain.ordering.model.OrderStatus;
+import com.loopers.domain.ordering.model.PaymentMethod;
 import java.time.Instant;
 import java.util.List;
 
 // 주문 헤더 조회 결과 로우
 public record OrderHeaderRow(long orderId, long userId, OrderStatus status, long totalAmount, Long paymentAmount,
-                      OrderRecordStatus paymentStatus, Instant createdAt) {
+                      OrderRecordStatus paymentStatus, Instant createdAt, PaymentMethod paymentMethod) {
     // 일반 사용자 응답 뷰로 변환
     OrderView toView(List<OrderItemView> items) {
-        return new OrderView(orderId, status, totalAmount, paymentAmount, paymentStatus, createdAt, items);
+        return new OrderView(orderId, status, totalAmount, paymentAmount, paymentStatus, createdAt, items,
+            paymentMethod, null, null, false);
     }
 
     // 관리자 응답 뷰로 변환

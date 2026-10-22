@@ -2,12 +2,18 @@ package com.loopers.interfaces.api.ordering.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.loopers.application.common.PageResult;
 import com.loopers.application.mall.command.BrandCommand;
 import com.loopers.application.mall.usecase.DeleteBrandUseCase;
 import com.loopers.application.ordering.query.AdminOrderView;
 import com.loopers.application.ordering.query.OrderView;
+import com.loopers.application.pay.gateway.PaymentProviderGateway;
+import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
 import com.loopers.domain.mall.repository.BrandRepository;
@@ -23,6 +29,8 @@ import com.loopers.infrastructure.persistence.ordering.entity.QOrderJpaEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.interfaces.api.ordering.dto.OrderApiDto;
 import com.loopers.support.test.E2ETest;
+import com.loopers.support.test.PgPaymentTestSupport;
+import org.junit.jupiter.api.BeforeEach;
 import com.loopers.utils.DatabaseCleanUp;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
@@ -41,6 +49,71 @@ import org.springframework.http.ResponseEntity;
 
 @E2ETest
 class OrderApiE2ETest {
+    @Autowired private PaymentProviderGateway gateway;
+    @Autowired private ObjectMapper json;
+
+    @Test
+    @DisplayName("정상 PG 생성은 202·주문/결제 상태·조회 경로를 반환하고 포인트를 사용하지 않는다")
+    void returnsAcceptedWithPaymentStateAndLookup() {
+        userRepository.save(User.create(1L));
+        long productId = createProduct("상품", 1_000L, 5);
+        long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2))).getBody().data().orderId();
+        ResponseEntity<ApiResponse<OrderView>> response = sendConfirm(orderId);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        OrderView view = response.getBody().data();
+        assertThat(view.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+        assertThat(view.paymentMethod().name()).isEqualTo("PG");
+        assertThat(view.paymentAttempt().outcome().name()).isEqualTo("PENDING");
+        assertThat(view.paymentLookupUrl()).isEqualTo("/api/v1/orders/" + orderId);
+        assertThat(view.paymentStatus()).isNull();
+        assertThat(currentStock(productId)).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("타인 주문은 없는 주문과 같은 오류로 거절하고 헤더 누락은 400이며 PG·재고를 바꾸지 않는다")
+    void protectsConfirmOwnershipAndHeader() {
+        userRepository.save(User.create(1L));
+        userRepository.save(User.create(2L));
+        long productId = createProduct("상품", 1_000L, 5);
+        long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2))).getBody().data().orderId();
+        ResponseEntity<ApiResponse<Object>> other = restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(confirmBody(orderId), headers("2")), new ParameterizedTypeReference<>() {});
+        ResponseEntity<ApiResponse<Object>> missing = confirmOrderRaw(99999L);
+        assertThat(other.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(other.getBody().meta()).isEqualTo(missing.getBody().meta());
+        assertThat(restTemplate.postForEntity("/api/v1/orders/" + orderId + "/confirm", confirmBody(orderId), String.class)
+            .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(gateway, never()).create(any(), any(), any());
+        assertThat(currentStock(productId)).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("결제 입력의 오타·정수 변환·카드 객체 입력은 원문 노출 없이 400으로 거절한다")
+    void rejectsMalformedPaymentInputWithoutEffects() throws Exception {
+        userRepository.save(User.create(1L));
+        long productId = createProduct("상품", 1_000L, 5);
+        long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2))).getBody().data().orderId();
+        List<Map<String, Object>> options = List.of(Map.of("presett", "NORMAL_SUCCESS"),
+            Map.of("overrides", Map.of("processingDelayMs", 7000.9)), Map.of("overrides", Map.of("processingDelayMs", "7000")));
+        for (Map<String, Object> option : options) {
+            String body = json.writeValueAsString(Map.of("paymentAttemptKey", confirmBody(orderId).paymentAttemptKey(),
+                "cardType", "TEST", "cardNo", "0000-0000-0000-0000", "testOptions", option));
+            ResponseEntity<String> response = restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+                new HttpEntity<>(body, headers("1")), String.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+        String cardObject = json.writeValueAsString(Map.of("paymentAttemptKey", confirmBody(orderId).paymentAttemptKey(),
+            "cardType", "TEST", "cardNo", Map.of("private", "4111-private")));
+        ResponseEntity<String> cardError = restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(cardObject, headers("1")), String.class);
+        assertThat(cardError.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(cardError.getBody()).doesNotContain("4111-private");
+        verify(gateway, never()).create(any(), any(), any());
+        assertThat(currentStock(productId)).isEqualTo(5);
+        assertThat(orderCount()).isEqualTo(1L);
+    }
+    @Autowired private PgPaymentTestSupport pg;
+    @BeforeEach void stubPg() { pg.usePendingProvider(); }
     private static final QOrderJpaEntity ORDER = QOrderJpaEntity.orderJpaEntity;
 
     @Autowired
@@ -122,7 +195,7 @@ class OrderApiE2ETest {
     @DisplayName("주문 확정")
     @Nested
     class Confirm {
-        @DisplayName("재고·포인트가 충분하면 200과 결제 결과를 반환한다")
+        @DisplayName("PG 대기를 거쳐 저장된 성공을 반영하면 200과 PG 결제 결과를 반환한다")
         @Test
         void confirmsOrder_andReturnsPaymentResult() {
             userRepository.save(User.create(1L));
@@ -170,6 +243,7 @@ class OrderApiE2ETest {
         @DisplayName("없는 주문은 404를 반환한다")
         @Test
         void returnsNotFound_whenOrderDoesNotExist() {
+            userRepository.save(User.create(1L));
             ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(999L);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -219,7 +293,7 @@ class OrderApiE2ETest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         }
 
-        @DisplayName("포인트가 부족하면 409를 반환한다")
+        @DisplayName("포인트가 없어도 PG 결제 대기는 202로 반환한다")
         @Test
         void returnsConflict_whenPointIsInsufficient() {
             userRepository.save(User.create(1L));
@@ -230,10 +304,10 @@ class OrderApiE2ETest {
 
             ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(orderId);
 
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
         }
 
-        @DisplayName("이미 확정된 주문을 다시 확정하면 409를 반환한다")
+        @DisplayName("같은 완료 PG 요청은 추가 결제 없이 200을 반환한다")
         @Test
         void returnsConflict_whenAlreadyConfirmed() {
             userRepository.save(User.create(1L));
@@ -245,7 +319,7 @@ class OrderApiE2ETest {
 
             ResponseEntity<ApiResponse<Object>> response = confirmOrderRaw(orderId);
 
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         }
 
         @DisplayName("브랜드 일괄 삭제로 상품이 삭제된 뒤 확정하면 404를 반환한다")
@@ -357,23 +431,26 @@ class OrderApiE2ETest {
     }
 
     private ResponseEntity<ApiResponse<OrderView>> confirmOrder(long orderId) {
-        return restTemplate.exchange(
-            "/api/v1/orders/" + orderId + "/confirm",
-            HttpMethod.POST,
-            HttpEntity.EMPTY,
-            new ParameterizedTypeReference<>() {}
-        );
+        ResponseEntity<ApiResponse<OrderView>> first = sendConfirm(orderId);
+        if (first.getStatusCode() != HttpStatus.ACCEPTED) { return first; }
+        pg.complete(orderId);
+        return sendConfirm(orderId);
+    }
+
+    private ResponseEntity<ApiResponse<OrderView>> sendConfirm(long orderId) {
+        return restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(confirmBody(orderId), headers("1")), new ParameterizedTypeReference<>() {});
     }
 
     private ResponseEntity<ApiResponse<Object>> confirmOrderRaw(long orderId) {
-        return restTemplate.exchange(
-            "/api/v1/orders/" + orderId + "/confirm",
-            HttpMethod.POST,
-            HttpEntity.EMPTY,
-            new ParameterizedTypeReference<>() {}
-        );
+        return restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(confirmBody(orderId), headers("1")), new ParameterizedTypeReference<>() {});
     }
 
+    private OrderApiDto.ConfirmRequest confirmBody(long orderId) {
+        return new OrderApiDto.ConfirmRequest(PgPaymentTestSupport.command(1L, orderId).paymentAttemptKey(),
+            "TEST", "0000-0000-0000-0000", null);
+    }
     private long orderCount() {
         return queryFactory.select(ORDER.count()).from(ORDER).fetchOne();
     }
@@ -416,6 +493,7 @@ class OrderApiE2ETest {
 
     private HttpHeaders headers(String userIdHeader) {
         HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         headers.add("X-USER-ID", userIdHeader);
         return headers;
     }

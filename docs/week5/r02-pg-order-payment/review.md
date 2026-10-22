@@ -132,3 +132,44 @@ Checkstyle main/test도 통과했다. 로그는 무시 대상 `build/r02-prepare
 승인 보완 뒤 공통 통합 7건·facade 3건을 다시 실행해 10건 모두 실패·오류·건너뛰기 0건으로 통과했고 Checkstyle main/test도 통과했다.
 앞서 통과한 준비·상품·복구 저장소 관련 20건을 포함하면 중복 실행 제외 30개 시나리오가 최종 통과 상태다. 전체 검사를 재실행한 결과로 표현하지 않는다.
 로그는 무시 대상 `build/r02-apply-{red,green,recheck,marker-red,approved-green}.log`에 남긴다. 실제 PG HTTP·고객 API·자동 조회·전체 check는 이번 단계 범위 밖이다.
+
+## 커밋 5 · 실제 PG 호출·고객 confirm 전환·범용 save 제거
+
+고객 confirm을 준비 저장 → TX 밖 PG 생성 → 관찰 저장 → 공통 업무 반영 → 새 응답 조회 순서로 연결했다. PG 생성은 최초 준비 commit이 정상 반환한 호출만 수행한다. 같은 요청은 재발송하지 않고 저장 결과를 반영·반환한다.
+기존 X-USER-ID로 소유권을 먼저 확인하며 다른 고객의 주문은 없는 주문과 같은 404다. 입력은 시도 UUID·합성 카드·선택 테스트 조건이며 금액과 callback URL은 서버가 결정한다. 옵션 오타·문자열/소수의 정수 변환은 400으로 거절하고 카드 원문을 오류·toString에 노출하지 않는다.
+응답은 최신 주문의 종결과 복구 작업 APPLIED를 함께 확인해 200/202를 결정한다. 주문 상태와 검증 결과·거절 근거·복구 진행·주의 표시·조회 경로를 구분해 반환한다.
+
+범용 OrderRepository.save와 기존 POINT 결제 조율을 함께 제거했다. 생성은 insert, 기존 PG 주문 변경은 준비/종결 CAS를 사용한다. 과거 POINT는 완료 사실을 가진 신규 fixture로 저장하며 기존 기록·조회·본인 재확정 오류를 유지한다. 새 PG 결제는 포인트를 사용하지 않는다.
+기존 재고·스냅샷·SQL rollback·동시성·캐시 검사를 PG 계약으로 이행했고 운영용 POINT 우회 API나 테스트용 production 진입점은 추가하지 않았다.
+
+| 관점 | 커밋 전 기능 리뷰 결과 |
+|---|---|
+| 비즈니스 | 중요 수정 없음. 최초 발송 권한·선차감·미확인 유지·포인트 사용 0·과거 POINT 보호가 적절하다. |
+| 사용자 경험 | 중요 수정 없음. 완료 기준의 200/202·주의 표시·같은 요청 재사용·타인 404·카드 비노출이 일관된다. |
+| 기술 | 중요 수정 없음. HTTP 밖 TX 경계·관찰 선저장·공통 반영·최신 응답 조회와 범용 save 제거를 확인했다. |
+
+세 리뷰어는 기능 코드만 검토했고 파일 수정·테스트 실행은 하지 않았다. 추가 사용자 승인이 필요한 중요 수정은 없었다.
+고객 상세 GET의 전체 시도 정보·소유권과 관리자 접근은 계획의 커밋 6, 수동 대사는 7, callback은 8의 범위로 구분했다.
+
+### 관련 최소 검증 · 완료
+
+- confirm 조율/서비스/HTTP 관련 36개 시나리오 중 35건이 먼저 통과했다. 남은 SQL rollback 검사는 Spring Data 인터페이스 spy의 실제 메서드 호출 대신 관리 엔티티의 실제 flush로 실패를 주입하도록 고쳐 통과했다. 준비 TX의 실제 SQL 차감과 전체 rollback 검증은 유지했다.
+- 변경한 저장소·기존 조회·브랜드 삭제 보존·캐시 검사를 포함한 관련 12건이 통과했다. 위 SQL 검사 1건은 이 실행에 포함된다. 기존 주문 동시성 6건도 통과해 중복 제외 기능 관련 53개 시나리오가 최종 통과 상태다.
+- 테스트 helper의 JPA 스트림 조회는 TX 안으로 옮겼다. 실제 PG 생성과 같은 PENDING 계약을 사용하고, 완료 근거 저장·업무 반영은 테스트 helper에서 명시적으로 분리한다. 동시 호출은 거래 키 저장을 기다린 뒤 동일 근거를 반영한다.
+- ArchUnit 계층/도메인 검사 8건과 Checkstyle main/test가 통과했다. 기존 검사 설정·기준은 바꾸지 않았다. 전체 check는 PR 마무리에 수행한다.
+
+로그: 무시 대상 `build/r02-confirm-{red,compile,green,recheck,related,concurrency,style,architecture}.log`. 구현 전 계약의 컴파일 실패부터 최종 관련 검사까지 보존한다.
+
+### 독립 서버 실연결 · 완료
+
+기존 로컬 DB와 분리한 `payment-lab-verification` MySQL 포트 13316을 다시 사용했다. 두 상태만 있던 orders.status에 증분 `007`을 한 번 적용하고 PG 8081·commerce 8080/관리 8082를 별도 JVM으로 validate 기동했다. 기존 DB·볼륨은 초기화하지 않았다.
+
+| 실제 입력·상황 | 확인한 결과 |
+|---|---|
+| 정상 성공 조건, callback DROP, 재고 5에서 2 주문 | confirm 202·PAYMENT_PENDING·재고 3. 같은 요청을 반복해도 PG 거래 1건·추가 차감 없음. PG는 이후 SUCCESS지만 commerce 관찰은 PENDING을 유지한다. |
+| REJECT_BEFORE_CREATE, 재고 5에서 2 주문 | confirm 200·PAYMENT_FAILED, outcome=FAILED/rejection=NO_EFFECT, 작업 APPLIED·재고 5·RESTORED. 동일 요청 반복에도 PG 거래 0건·추가 반환 없음. |
+| 기존 POINT 주문 42 및 포인트 사용 | 기존 7000·PAID·POINT·원래 시각 유지. 새 두 주문의 결제 기록 없음, 전체 USE 0건. |
+
+현재 PG 생성 응답은 항상 PENDING이다. 정상 거래의 최종 성공을 commerce로 가져오는 callback·대사까지 검증했다고 표현하지 않는다. 이 연결과 통합 장애 실험은 예정된 후속 단계다.
+실연결 검사 중 NO_EFFECT를 outcome으로 비교한 검증 스크립트 오류는 실제 모델의 FAILED 결과/NO_EFFECT 거절 근거를 나누어 확인하도록 바로잡았다. 기능 수정은 없었다.
+실험의 PG·commerce JVM과 전용 MySQL은 종료했고 데이터는 보존했다. 증거는 무시 대상 `build/r02-confirm-live-{summary.json,effects.log,adjustments.log}`와 기동 로그에 있다. JMeter 사용자 변경·두 원문은 유지했다.

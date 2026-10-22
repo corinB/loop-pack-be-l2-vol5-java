@@ -2,7 +2,7 @@
 
 ## 상태·목표
 
-- 상태: **기반·준비 TX·공통 업무 반영·재고 복구·실패 표시 구현 및 관련 검증 완료**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다. 실제 PG 호출·고객 API·callback/대사 진입 연결은 후속 단계다.
+- 상태: **기반·준비 TX·공통 업무 반영·고객 confirm PG 전환·범용 save 제거 구현 및 관련 검증 완료**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다. 고객/관리자 상세 결제 조회·GET 소유권·callback/대사 진입 연결은 후속 단계다.
 - 2026-10-22 최신 기준 `4b81541`에서 `volume-5/r02-pg-order-payment`를 생성했다.
 - 최신 `volume-5/main`에서 `volume-5/r02-pg-order-payment`를 생성한다. PR 대상은 `volume-5/main`이다.
 - 기존 confirm을 재고 선차감 → PG 결제 → 결과 반영으로 교체한다. 멱등성·발송 제어·callback·수동 대사를 연결한다.

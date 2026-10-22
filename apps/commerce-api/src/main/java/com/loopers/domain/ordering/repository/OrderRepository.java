@@ -9,9 +9,6 @@ import java.util.Optional;
 public interface OrderRepository {
     Order insert(Order order);
 
-    // 기존 POINT confirm 전환 시 제거한다. PG 상태 변경은 아래 CAS만 사용한다.
-    Order save(Order order);
-
     // 호출자의 준비 TX에 참여하며 성공 여부는 TX commit 후 확정된다.
     boolean prepareIfDraft(long orderId, long userId);
 
