@@ -45,9 +45,11 @@
 ## callback·수동 대사
 
 - `POST /api/v1/orders/{orderId}/payment/reconcile`은 미완료 시도의 기존 거래를 조회·반영한다.
+- 2026-10-22 결정: 저장된 검증 종결 결과가 있으면 PG 조회 없이 재적용한다. 그 외에는 수동 요청당 PG 조회 최대 1회이며 PENDING/미확인일 때 202로 응답하고 다음 명시적 대사를 기다린다. 자동 사용 회차를 증가시키거나 예산을 초기화하지 않는다.
 - 장애 중단 작업은 재시작 후 자동 재개하지 않고 [운영 담당자가 미완료 목록을 조회해 수동 대사](trade_off/06-interrupted-payment-reconcile.md)한다. 정상 @Retryable 최초+추가 3회는 유지하고 사용 기록은 보존한다.
 - 목록 GET은 조회 전용이다. 명시적 POST 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록하고 옛 진행 갱신을 차단한다. 저장된 검증 종결 결과의 재적용 또는 권위 조회/새 관찰 저장 후 공통 업무 반영 TX를 사용한다. 정확한 목록 계약·인계 조건식/응답은 상세 설계에서 정한다.
 - `POST /api/v1/payments/callback`은 원문의 providerOrderId·transactionKey·status 알림을 받아 PG 권위 조회로 확인한다.
+- 2026-10-22 결정: callback은 받은 요청 안에서 동기 처리한다. PG 권위 조회는 TX 밖에서 수행하고 관찰 commit 후 공통 업무 TX를 호출한다. 별도 callback 접수 큐·실행기는 추가하지 않는다. PG 송신 timeout 여부와 실제 저장/업무 결과를 구분한다.
 - 제공자 계정 범위·주문·거래 키·저장 금액을 검증한 관찰만 공통 결과 적용 경계에 전달한다.
 - R03의 자동 재확인도 기존 거래 조회·공통 결과 적용 경계를 재사용한다. 자동 재확인·수동 전환 정책은 [별도 논의](../r03-payment-resilience/trade_off/01-reconciliation-retry-policy.md)를 따른다.
 - callback-first·lookup-first·동시 적용은 같은 상태와 효과 수로 수렴해야 한다.
