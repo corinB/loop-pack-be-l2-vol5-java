@@ -1,7 +1,7 @@
 # R02 구현·검증·리뷰 및 커밋 계획
 
-상태: **상세 계획 초안·세 관점 리뷰 완료·중요 보완 확인 대기·기능 구현 전**. 2026-10-22 사용자 문답을 반영했다.
-아래 구체 API·클래스·저장 메서드는 실행 가능한 계획을 위한 제안이다. 사용자 결정과 구분하며 리뷰 후 보완한다.
+상태: **중요 보완 3건 사용자 승인·계획 반영 및 세 관점 재리뷰 완료·기능 구현 전**. 2026-10-22 사용자 문답을 반영했다.
+아래 구체 API·클래스·저장 메서드는 실행 가능한 계획을 위한 제안이다. 사용자 결정과 구분하며 승인된 리뷰 보완을 포함한다.
 
 [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [상태 흐름](../states/total.md)
 
@@ -26,13 +26,16 @@
 | callback | 요청 안에서 권위 조회→관찰 commit→공통 업무 반영을 동기 수행한다. PG HTTP는 TX 밖이며 별도 callback 실행기를 추가하지 않는다. |
 | 수동 대사 | 저장된 검증 종결 결과 재적용은 조회 0회. 그 외 요청당 PG 조회 최대 1회, 미완료 202다. 자동 회차를 소비/초기화하거나 새 자동 대기를 시작하지 않는다. |
 | 복구 실행 | READY는 claim, RUNNING/MANUAL_REQUIRED는 실행 ID·상태·회차 CAS 인계다. 옛 실행의 진행 갱신을 차단하고 자동 lease/재시작 회수는 추가하지 않는다. |
+| 리뷰 보완 | 업무 반영 완료 후 늦은 충돌은 200+기존 완료 상태+주의 표시, 미반영 충돌은 202다. 실패 표시는 실패한 업무 시도 당시의 작업 상태·실행 ID·회차로만 CAS한다. 범용 save 제거는 confirm/POINT 테스트 전환과 같은 커밋에서 수행한다. |
 
 ## 3. 주문·재고 저장 계약
 
 ### 주문 CAS와 일반 저장의 분리
 
 - OrderStatus에 PAYMENT_PENDING/PAYMENT_FAILED를 추가한다. DRAFT/PAYMENT_PENDING/PAYMENT_FAILED는 OrderRecord가 없고 CONFIRMED는 POINT/PG PAID 기록이 있다.
-- 신규 주문 저장은 `OrderRepository.insert(Order)`로 명확히 나눈다. 기존 범용 save 호출은 신규 주문 생성/fixture의 insert로 전환하고 기존 주문 상태를 일반 mapper save로 덮는 경로를 제거한다.
+- 신규 주문 저장은 `OrderRepository.insert(Order)`로 명확히 나눈다. 기반 커밋에서는 insert/CAS를 추가하고 기존 POINT confirm과 save를 유지한다. 새 PG 흐름은 처음부터 CAS를 사용한다.
+- 범용 save 제거는 커밋 5의 confirm PG 전환·관련 테스트/fixture 이행과 묶는다. 신규 생성/완료 사실을 가진 신규 fixture는 insert로 전환하고 기존 주문 상태를 일반 mapper save로 덮는 경로를 제거한다. 기존 주문 갱신을 insert로 대체하지 않는다.
+- 상태를 추가하는 기반 커밋부터 기존 POINT confirm은 DRAFT만 허용한다. PAYMENT_PENDING/PAYMENT_FAILED를 POINT로 확정하는 중간 경로를 만들지 않는다.
 - `prepareIfDraft(orderId, userId)`는 ID·소유자·DRAFT 조건의 JPQL UPDATE 건수로 선점한다. 같은 TX에서 후속 준비 실패 시 이 변경도 rollback한다.
 - `completePgIfPending(orderId, terminalStatus, pgRecord)`는 PAYMENT_PENDING 조건의 CAS와 필요한 PG OrderRecord 저장을 같은 TX에서 수행한다. 실패 종결에는 기록을 만들지 않는다.
 - 완료 CAS 직후 CONFIRMED/기록 없음의 중간 상태를 도메인으로 복원하지 않는다. repository 내부 JPA entity에 기록을 연결·flush한 뒤 유효한 도메인을 복원한다.
@@ -58,7 +61,7 @@
 | ordering.service.PrepareOrderPaymentService | 준비 TX. 소유권→기존 시도 일치→주문 CAS→상품 검사/차감→PaymentAttempt STARTED·StockAdjustment DEDUCTED·RecoveryTask READY 저장 |
 | pay.service.RecordPaymentObservationService | R01의 REQUIRES_NEW 관찰 저장 재사용. 식별/종결/존재 상충을 보존하며 실패 관찰로 기존 사실을 지우지 않음 |
 | ordering.service.ApplyOrderPaymentService | 공통 업무 TX. 저장된 검증 SUCCESS/FAILED/NO_EFFECT 및 충돌을 확인해 주문 CAS와 한 번의 업무 효과를 반영 |
-| ordering.facade.ReconcileOrderPaymentFacade | 고객/관리자 권한 확인 후 작업 CAS claim/인계. 저장 종결 재적용 또는 TX 밖 단일 PG 조회→관찰 commit→공통 반영 |
+| ordering.facade.ReconcileOrderPaymentFacade | 고객/관리자 권한 확인 후 이미 업무 반영 완료면 저장 상태 반환. 미완료만 작업 CAS claim/인계 후 저장 종결 재적용 또는 TX 밖 단일 PG 조회→관찰 commit→공통 반영 |
 | pay.service.PaymentRecoveryProgressService | 짧은 진행 TX. 실행 ID·기대 상태/회차 조건부 갱신, 수동 조회 시각과 미완료 이유, 업무 실패 기록 |
 | ordering.facade.HandlePaymentCallbackFacade | 등록된 주문/시도의 알림 식별→TX 밖 권위 조회→관찰 commit→공통 반영. 본문 status로 직접 처리하지 않음 |
 | ordering.query/dao 및 infrastructure.query.ordering | QueryDSL projection으로 고객 소유 주문·관리자 주문/미완료 목록. 조회 Service/UseCase·HTTP 호출은 추가하지 않음 |
@@ -73,10 +76,11 @@
 - 수동 대사 claim/인계 시 usedRounds는 유지한다. 조회 직전 현재 실행 ID/회차로 lastCheckedAt을 갱신하는 별도 조건부 동작을 추가하고 자동 consumeRound를 호출하지 않는다.
 - lastCheckedAt은 조회 시작 직전 시각으로 설명을 보완한다. 자동 조회는 회차 소비와 함께, 수동 조회는 예산 변화 없이 기록한다. 지터/다음 예약 정보는 저장하지 않는다.
 - 수동 단일 조회가 PENDING/확인 불가면 현재 실행 권한으로 MANUAL_REQUIRED와 이유를 기록한다. 옛 실행의 변경은 실패한다.
-- 업무 TX rollback 후 별도 짧은 TX에서 APPLICATION_FAILED 수동 표시를 시도한다. READY에는 새 표식 실행 ID를 부여하고, RUNNING/MANUAL_REQUIRED는 읽은 ID·상태·회차가 그대로일 때만 갱신한다. APPLIED는 되돌리지 않는다.
+- 업무 반영 직전 또는 해당 업무 TX 안에서 확인한 작업 상태·실행 ID·사용 회차를 변경 불가능한 비교값으로 확보한다. 업무 rollback 후 별도 짧은 TX의 APPLICATION_FAILED 실패 기록기에 이 값을 전달한다. rollback 뒤 최신 실행을 다시 읽어 비교 기준으로 삼지 않는다.
+- 당시 READY였다면 READY/실행 ID 없음/회차 0이 모두 같을 때만 새 표식 실행 ID와 수동 표시를 저장한다. 당시 RUNNING/MANUAL_REQUIRED였다면 당시 상태·실행 ID·회차가 모두 같아야 한다. 인계 등으로 조건이 바뀌면 갱신하지 않으며 APPLIED는 되돌리지 않는다.
 - 실패 기록 자체가 DB 장애로 저장되지 못해도 주문 미완료+저장 종결 결과가 운영 목록에 남는다. 이유 저장 성공을 업무 복구 성공으로 표시하지 않는다.
 - callback은 정상 실행 중 작업을 선점하지 않는다. 현재 실행을 모르는 지연 처리기가 새 실행의 진행을 덮지 않도록 실패 기록 조건을 검사한다.
-- 이미 적용된 뒤 늦은 PG 종결 충돌은 적용을 반전하지 않는다. 저장 Conflict를 운영 목록/응답의 주의 표시로 노출한다. 이번 범위에 강제 충돌 해소·환불 API는 추가하지 않는다.
+- 이미 적용된 뒤 늦은 PG 종결 충돌은 적용을 반전하지 않는다. 저장 Conflict를 운영 목록/응답의 주의 표시로 노출한다. 권한 확인 후 이미 업무 반영 완료라면 claim/인계·PG 조회 없이 저장된 완료 상태와 주의를 반환한다. 이번 범위에 강제 충돌 해소·환불 API는 추가하지 않는다.
 
 ## 5. API·조회 계약 제안
 
@@ -86,17 +90,19 @@
 |---|---|---|
 | POST /api/v1/orders/{id}/confirm | 기존 X-USER-ID, body paymentAttemptKey/cardType/cardNo/testOptions. 금액·callback URL은 고객 입력에서 받지 않음 | 종결 업무 반영 완료 200, 미완료/확인 필요 202 + 현재 주문/시도/조회 경로 |
 | GET /api/v1/orders/{id}, GET /api/v1/orders | 기존 X-USER-ID, 단건/목록 모두 본인만 | 조회 전용 200. PG·재고·진행 변경 0회 |
-| POST /api/v1/orders/{id}/payment/reconcile | 본인. 새 카드/금액/시도 키를 받아 결제를 바꾸지 않음 | 저장 결과 반영 또는 조회 최대 1회. 완료 200, 미완료/충돌 주의 202 |
+| POST /api/v1/orders/{id}/payment/reconcile | 본인. 새 카드/금액/시도 키를 받아 결제를 바꾸지 않음 | 저장 결과 반영 또는 조회 최대 1회. 완료 200, 미완료 202. 충돌 주의는 두 응답 모두 가능 |
 | GET /api-admin/v1/orders, GET /api-admin/v1/orders/{id} | 기존 X-USER-ID=1 | 기존 관리자 조회에 PG 정보 추가 |
 | GET /api-admin/v1/payments/incomplete | 기존 X-USER-ID=1, 기존 page/size 계약 | 미완료·수동 확인·종결 상충 목록. 조회 전용 |
 | POST /api-admin/v1/orders/{id}/payment/reconcile | 기존 X-USER-ID=1, 타인 주문 처리 허용 | 고객과 같은 내부 대사/반영 경계. 최대 1회 조회 |
-| POST /api/v1/payments/callback | providerOrderId/transactionKey/status 알림. 고객/관리자 헤더가 아닌 PG 권위 확인 | 정상 중복/처리 완료 200, 미확인/주의 202. 응답에는 고객 주문 상세를 노출하지 않음 |
+| POST /api/v1/payments/callback | providerOrderId/transactionKey/status 알림. 고객/관리자 헤더가 아닌 PG 권위 확인 | 업무 반영 완료 200, 미완료 202. 충돌 주의는 두 응답 모두 가능. 응답에는 고객 주문 상세를 노출하지 않음 |
 
 - 기존 헤더 누락/형식 오류 400·없는 사용자 404는 유지한다. 유효한 1번 이외 관리자는 403을 제안하며 기존 오류 계약에 additive 매핑한다.
 - 타인 고객 주문과 없는 주문은 같은 404다. 소유권은 상태/멱등 충돌 응답·CAS·PG 호출보다 먼저 확인한다. 기존 POINT 본인 재확정은 409다.
 - confirm 키/합성 카드/조건은 R01 규칙대로 검증한다. null·잘못된 형식 400, 기존 시도와 충돌 409다. 필드 오류에 카드 값을 포함하지 않는다.
 - callback의 잘못된 입력 400, 미등록 주문/시도 404, 식별 상충 409를 제안한다. 본문 status는 알림으로만 사용하며 거래 키가 미결합이어도 권위 조회가 일치한 뒤 결합한다.
 - 내부 업무 반영 실패를 실패 결제로 만들지 않는다. 정상 PG 조회/저장 이후 업무가 rollback되면 미완료/수동 확인을 표현한다. DB 읽기도 불가하면 기존 5xx를 유지한다.
+- 처리 응답의 200/202는 업무 반영 완료 여부로 판단한다. PG 주문이 CONFIRMED/PAYMENT_FAILED이고 작업이 APPLIED라면 늦은 충돌이 있어도 200+기존 완료 상태+주의 표시다. PAYMENT_PENDING의 미반영 충돌은 202+수동 확인 필요다. GET의 조회 성공은 항상 200이다.
+- 예를 들어 202를 받은 고객은 GET으로 저장 상태를 읽고 POST reconcile로 실제 재확인을 요청한다. R02에는 자동 재조회가 없다. 재고 반환 한도 초과는 PG 실패를 보존한 채 관리자가 가용 수량의 원인을 해소한 뒤 POST 관리자 대사로 저장 근거를 재적용한다(PG 조회 0회).
 
 ### 상태를 읽는 모양
 
@@ -113,10 +119,10 @@
 | 순서 | 커밋 제안 | 책임 | 최소 확인 |
 |---|---|---|---|
 | 1 | docs: PR02 상세 구현 계약과 리뷰 계획 정리 | 이 계획·연결 문서·리뷰 보완 | 링크/범위/기존 변경 보존 |
-| 2 | feat: 주문 PG 상태와 조건부 저장 및 재고 반환 구현 | Order 상태/insert/CAS, Stock/Product 반환, 증분007 | 상태 불변식·대표 CAS 경합·정수 초과/삭제 유지 |
+| 2 | feat: 주문 PG 상태와 조건부 저장 및 재고 반환 구현 | Order 상태/insert/CAS 추가, 기존 save/POINT confirm 유지와 DRAFT 제한, Stock/Product 반환, 증분007 | 기존 호출 컴파일·상태 불변식·대표 CAS 경합·정수 초과/삭제 유지 |
 | 3 | feat: 재고 선차감과 결제 준비 선점 구현 | 준비 TX·실효 조건/키 비교·최초 발송 권한 | 중복 동시 준비의 차감 1회·충돌 rollback·부족 PG0 |
-| 4 | feat: PG 결과의 공통 업무 반영 구현 | 결제 행 보호·종결 CAS·PG 기록/반환·실패 표시 | 중복 실패 반환 1회·업무 rollback/근거 보존·관리자 변경 |
-| 5 | feat: 주문 확정을 PG 결제로 전환 | confirm facade/DTO/header/200·202, POINT 회귀 테스트 이행 | PG create1·포인트0·유실 상태 유지·본인/충돌 |
+| 4 | feat: PG 결과의 공통 업무 반영 구현 | 결제 행 보호·종결 CAS·PG 기록/반환·실패 당시 비교값으로 실패 표시 | 중복 실패 반환 1회·업무 rollback/근거 보존·새 인계 보호·관리자 변경 |
+| 5 | feat: 주문 확정을 PG 결제로 전환 | confirm facade/DTO/header/200·202, 관련 POINT 테스트/fixture 전환과 범용 save 제거를 함께 수행 | 기존 호출 컴파일·PG create1·포인트0·유실 상태 유지·본인/충돌 |
 | 6 | feat: 고객 및 관리자 결제 상태 조회 구현 | 소유 단건/목록·관리자1·미완료 projection | POINT/PG 조회·타인404·관리자거절·GET 효과0 |
 | 7 | feat: 단일 조회 수동 대사와 실행 인계 구현 | 고객/관리자 대사·수동 시각/예산 유지·진행 CAS | 저장종결 GET0·미확인 GET1·옛 실행 차단 |
 | 8 | feat: 동기 callback 권위 확인과 공통 반영 연결 | callback 검증→PG 조회→관찰→반영 | 실제 controller·중복/지연·허위 본문 직접 반영0 |
@@ -127,12 +133,13 @@
 ## 7. 테스트 범위와 기존 검사 이행
 
 - 핵심 상태/저장/CAS/업무 효과만 최소 대표 사례로 묶는다. getter/DTO 복제·전체 시나리오 곱집합·성능 벤치마크는 추가하지 않는다.
-- 기존 confirm의 POINT 차감 전제는 의도한 PG 전환에 맞게 바꾼다. 재고/기록/금액/스냅샷·rollback·경합 효과의 검증은 유지하고 새 결제의 포인트/USE 기록은 0을 검증한다.
+- 기존 confirm의 POINT 차감 전제는 커밋 5에서 PG 전환·범용 save 제거와 함께 바꾼다. 기존 저장 실패 주입·repository 갱신·POINT fixture도 같은 커밋에서 맞추어 중간 커밋의 컴파일/관련 검사를 유지한다. 재고/기록/금액/스냅샷·rollback·경합 효과의 검증은 유지하고 새 결제의 포인트/USE 기록은 0을 검증한다.
 - 과거 POINT는 저장된 완료 fixture로 조회·재확정 오류를 확인한다. 포인트 충전/조회 테스트는 그대로 보존한다. 테스트를 비활성화하거나 기준을 낮춰 통과시키지 않는다.
-- 기존 IntegrationTest/E2ETest의 공통 spy 세트에 PaymentProviderGateway를 함께 추가하는 안을 제안한다. 클래스별 새 Mock/Spy 구성으로 컨텍스트를 늘리지 않는다. 관련 주문 테스트만 호출 결과를 제어하고 실제 adapter의 HTTP 계약 테스트는 유지한다.
+- 기존 IntegrationTest/E2ETest의 공통 spy 세트에 PaymentProviderGateway를 함께 추가하는 안을 제안한다. 클래스별 새 Mock/Spy 구성으로 컨텍스트를 늘리지 않는다. doReturn/doAnswer로 설정 중 실제 HTTP 호출을 방지한다. 관련 주문 테스트만 호출 결과를 제어하고 실제 adapter의 HTTP 계약 테스트는 유지한다.
 - 포트 제어 테스트는 실제 PG가 항상 생성 시 PENDING을 응답한다는 계약을 따른다. 완료는 권위 조회/수동 대사/callback으로 별도 검증한다. 실제 PG 대신 mock만 통과한 것으로 최종 완료하지 않는다.
 - application 효과 테스트는 실제 MySQL·기존 캐시 규칙을 사용한다. 주된 검증은 동시 confirm/create1, 같은 실패 반환1, 정상 성공·유실 후 실패, 저장 성공/업무 rollback, 복구 overflow→수동→원인 해소 후 재적용이다.
-- HTTP는 본인/타인/관리자·기본 검증·200/202·callback 경계를 확인한다. 수동/관찰의 동일 불변식을 계층마다 반복하지 않는다.
+- HTTP는 본인/타인/관리자·기본 검증·200/202·callback 경계를 확인한다. 반영 완료+늦은 충돌의 200과 미반영+충돌의 202를 대표 쌍으로 확인한다. 수동/관찰의 동일 불변식을 계층마다 반복하지 않는다.
+- 업무 실행 A의 rollback→수동 실행 B의 인계→A의 실패 표식 순서에서 B의 진행이 바뀌지 않는 대표 경합을 확인한다. READY에서 시작한 실패 표식도 당시 조건만 비교한다.
 - 최종 실제 실험은 별도 새 MySQL 인스턴스의 두 스키마·별도 PG/commerce JVM을 사용한다. 기본 포트·007 validate, 정상 성공/유실 실패/같은 키 동시 요청의 거래 수·차감/반환 수·포인트0을 확인한다.
 - PG 성공 후 내부 반영 실패·차감 후 상품 삭제·관리자 재고 변경·프로세스 종료/수동 대사의 대표 효과를 확인한다. 기존 source 변경이 생기지 않으면 R01 PG 전체 조건을 반복하지 않는다.
 - 기능별 관련 검사만 실행하고 마지막에 `:apps:test-pg:check :apps:commerce-api:check`를 한 번 수행한다. 실패/새 변경 때문에 필요한 경우만 반복한다.
@@ -141,6 +148,6 @@
 ## 8. 리뷰와 실제 진행 기록
 
 - 확정 문답: 주문 준비/종결 CAS, 재고 실패 수동 처리, 고객 소유권/타인404, 관리자1, 동기 callback, 수동 최대 조회1.
-- 이 계획: 세 관점 초안 리뷰 완료. 비즈니스 중요 누락 없음, UX 1건·기술 2건의 중요 보완은 사용자 확인 대기다. [리뷰 기록](review.md)을 따른다.
+- 이 계획: 세 관점 초안 리뷰의 UX 1건·기술 2건을 사용자가 함께 승인했고 위 계획에 반영했다. 세 관점 재리뷰에서도 중요 지적 없이 구현 진행 가능으로 확인했다. [리뷰 기록](review.md)을 따른다.
 - 기능 구현·새 테스트: 미시작. 위 제안은 구현 완료를 뜻하지 않는다.
-- 현재 코드/문서 기준: `caa051c` 이후 상세 계획 초안. JMeter 사용자 변경은 보존한다.
+- 현재 코드/문서 기준: 상세 계획 초안 커밋 `ac0c70b`에 대한 승인 보완이다. JMeter 사용자 변경은 보존한다.
