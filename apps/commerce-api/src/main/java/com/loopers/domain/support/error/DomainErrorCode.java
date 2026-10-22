@@ -15,6 +15,7 @@ public enum DomainErrorCode {
     DELETED_PRODUCT("상품을 찾을 수 없습니다."),
     EMPTY_ORDER_ITEMS("주문은 한 품목 이상 포함해야 합니다."),
     ORDER_ALREADY_CONFIRMED("이미 확정된 주문입니다."),
+    ORDER_PAYMENT_NOT_ALLOWED("현재 주문 상태에서는 결제를 변경할 수 없습니다."),
     INSUFFICIENT_POINT("포인트가 부족합니다."),
     PAYMENT_DISPATCH_NOT_ALLOWED("결제 요청을 새로 발송할 수 없는 상태입니다."),
     PAYMENT_RECOVERY_NOT_ALLOWED("복구 작업의 실행 권한 또는 조회 예산이 유효하지 않습니다."),

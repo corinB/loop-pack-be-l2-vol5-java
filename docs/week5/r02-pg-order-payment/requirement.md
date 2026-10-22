@@ -2,7 +2,7 @@
 
 ## 상태·목표
 
-- 상태: **설계 문답 중·기능 구현 전**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다.
+- 상태: **설계 계획 승인·첫 기반 기능 구현·관련 검증 완료, 연동 구현 전**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다. 주문 상태/CAS 저장과 도메인 재고 반환을 추가했으며 고객 PG 흐름 연결은 후속 단계다.
 - 2026-10-22 최신 기준 `4b81541`에서 `volume-5/r02-pg-order-payment`를 생성했다.
 - 최신 `volume-5/main`에서 `volume-5/r02-pg-order-payment`를 생성한다. PR 대상은 `volume-5/main`이다.
 - 기존 confirm을 재고 선차감 → PG 결제 → 결과 반영으로 교체한다. 멱등성·발송 제어·callback·수동 대사를 연결한다.

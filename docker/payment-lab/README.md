@@ -12,12 +12,13 @@ Get-Content -Raw -Encoding utf8 docker/payment-lab/001-pg-schema.sql |
     docker compose -f docker/infra-compose.yml exec -T mysql mysql -uroot -proot --default-character-set=utf8mb4
 ```
 
-앱은 SQL을 자동 실행하지 않는다. PG에는 `001` → `002`, 기존 commerce에는 `003` → `004` → `005` → `006`을 적용한다.
-`005`는 복구 작업, `006`은 주문별 차감 기록과 품목 테이블이다.
+앱은 SQL을 자동 실행하지 않는다. PG에는 `001` → `002`, 기존 commerce에는 `003` → `004` → `005` → `006` → `007`을 적용한다.
+`005`는 복구 작업, `006`은 주문별 차감 기록과 품목 테이블, `007`은 주문의 PG 결제 대기/실패 상태 추가다.
+R01까지 준비한 DB에는 `007-order-pg-status.sql`만 한 번 적용한다. 기존 주문·POINT 기록은 보존한다.
 
 commerce 테이블이 전혀 없는 **새 학습 DB**라면 먼저 `000-commerce-baseline.sql`을 적용한다.
 이 파일은 4주차의 테이블 구조를 만들며, 기존 DB를 고치거나 예전 버전에서 자동 업그레이드하는 용도가 아니다.
-이어서 `003`~`006`을 적용한다. 기존 데이터가 있는 DB에는 `000`을 실행하지 않는다.
+이어서 `003`~`007`을 적용한다. 기존 데이터가 있는 DB에는 `000`을 실행하지 않는다.
 
 PG 거래 테이블은 스키마 준비 다음에 적용한다.
 
