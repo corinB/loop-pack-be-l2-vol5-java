@@ -12,7 +12,7 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 로컬 구현·검증 완료([결과](r01-pg-payment-foundation/result.md)). 전체 검사 384건·실연결·재시작·POINT 호환·기본 웹 동시 기동 통과. R02는 4b81541에서 시작해 기반·준비/공통 TX·고객 confirm PG 전환·범용 save 제거와 관련 검증을 완료했다. 고객/관리자 결제 조회·GET 소유권·관리자 fixture·미완료 목록도 완료했다. 단일 조회 수동 대사·실행 인계도 완료했다. callback은 후속 단계다. R03 구현 전. PR #24 병합 완료 |
+| 구현 상태 | R01 로컬 구현·검증 완료([결과](r01-pg-payment-foundation/result.md)). 전체 검사 384건·실연결·재시작·POINT 호환·기본 웹 동시 기동 통과. R02는 4b81541에서 시작해 기반·준비/공통 TX·고객 confirm PG 전환·범용 save 제거와 관련 검증을 완료했다. 고객/관리자 결제 조회·GET 소유권·관리자 fixture·미완료 목록도 완료했다. 단일 조회 수동 대사·실행 인계도 완료했다. 동기 callback도 연결했다. PR02 통합·장애/재시작·전체 검사는 후속 단계다. R03 구현 전. PR #24 병합 완료 |
 | 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
 
 기준 자료:
@@ -141,7 +141,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 | 순서 | PR·작업 브랜치 | 책임 | 상태 |
 |---|---|---|---|
 | 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
-| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 기반·PG confirm·결제 조회·미완료 목록·수동 대사/인계 완료, callback 후속 |
+| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 기반·PG confirm·조회·수동 대사·callback 연결 완료, PR 통합 검증 전 |
 | 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 구현 전 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
