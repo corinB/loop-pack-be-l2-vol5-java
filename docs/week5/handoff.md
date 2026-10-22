@@ -30,7 +30,7 @@
 
 ## 다음 작업 범위
 
-R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 먼저 읽는다. 첫 조회 즉시·명확한 실행기 접수 거절 100ms 뒤 전달 1회 재시도·공유 조회 회로·차단 시 즉시 수동/확보 회차 유지·4xx/정상/실패/제외 분류를 확정했다. 다음은 회로 집계 창·최소 표본·차단/느림 수치이며 전체 예산·내부 반영 재시도·실행기/선점·라이브러리도 남아 있다. [상세 계획 틀](r03-payment-resilience/plan.md)은 아직 미작성이고 기능 구현·새 검증 결과는 없다.
+R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 먼저 읽는다. 첫 조회 즉시·명확한 실행기 접수 거절 100ms 뒤 전달 1회 재시도·공유 조회 회로·차단 시 즉시 수동/확보 회차 유지·4xx/정상/실패/제외 분류를 확정했다. 후속 문답에서 최근 10건/최소 5건·실패율 50%·1초 초과 느림 비율 50%·OPEN 10초 후 요청 기반 탐색·HALF_OPEN 표본 2건/최대 10초 미판정 시 재차단을 확정했다. 이 수치와 집계/회차 표는 문서에 반영했고 기능은 아직 미구현이다. 다음은 자동 조회 전체 시간 예산이며 내부 반영 재시도·실행기/선점·라이브러리도 남아 있다. [상세 계획 틀](r03-payment-resilience/plan.md)은 아직 미작성이고 기능 구현·새 검증 결과는 없다.
 자동 조회·Spring Retry/@Retryable·Resilience4j 서킷브레이커·fallback은 아직 구현하지 않았다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
 
 확정한 선차감 정책·주문 CAS·관찰 선저장·파사드/TX 분리·복구 작업 CAS·고객/관리자 접근·수동 조회 최대 1회·동기 callback은 다시 미정으로 돌리지 않는다.
