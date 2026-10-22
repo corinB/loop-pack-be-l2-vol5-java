@@ -13,6 +13,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${project.properties["springDocOpenApiVersion"]}")
 
     // querydsl
