@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.loopers.application.ordering.result.ApplyOrderPaymentResult;
 import com.loopers.application.ordering.service.ApplyOrderPaymentService;
@@ -47,5 +49,18 @@ class ApplyOrderPaymentFacadeTest {
         given(progress.capture(key)).willReturn(expected);
         given(application.apply(key)).willThrow(new IllegalStateException("업무 실패"));
         given(progress.markApplicationFailed(expected)).willThrow(new IllegalStateException("표식 저장 실패"));
+    }
+
+    @Test
+    @DisplayName("수동 업무 실패는 전달받은 당시 실행으로만 표시하고 인계 후 최신 실행을 비교값으로 다시 읽지 않는다")
+    void preservesProvidedManualExecutionSnapshot() {
+        PaymentRecoveryTask.Snapshot old = PaymentRecoveryTask.create(key).claim(UUID.randomUUID().toString(),
+            java.time.Instant.now()).snapshot();
+        given(application.apply(key)).willThrow(new IllegalStateException("업무 실패"));
+        given(application.currentResult(key, true)).willReturn(
+            new ApplyOrderPaymentResult(ApplyOrderPaymentResult.State.APPLICATION_FAILED, true));
+        facade.execute(key, old);
+        verify(progress).markApplicationFailed(old);
+        verify(progress, never()).capture(key);
     }
 }

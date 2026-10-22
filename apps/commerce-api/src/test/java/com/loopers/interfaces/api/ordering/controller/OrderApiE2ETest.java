@@ -49,6 +49,63 @@ import org.springframework.http.ResponseEntity;
 
 @E2ETest
 class OrderApiE2ETest {
+    @Test
+    @DisplayName("수동 대사는 본인/관리자 접근을 검사하고 고객 202·관리자 완료 200과 각 조회 경로를 반환한다")
+    void reconcilesOnlyOwnedOrAdministratorPayment() {
+        // arrange
+        userRepository.save(User.create(1L));
+        userRepository.save(User.create(2L));
+        long productId = createProduct("상품", 1000L, 5);
+        long orderId = createOrder(2L, List.of(new OrderApiDto.ItemRequest(productId, 2))).getBody().data().orderId();
+        restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(confirmBody(orderId), headers("2")), String.class);
+        String customer = "/api/v1/orders/" + orderId + "/payment/reconcile";
+        String administrator = "/api-admin/v1/orders/" + orderId + "/payment/reconcile";
+        String missing = "/api/v1/orders/999999/payment/reconcile";
+        var before = tasks.findByKey(confirmBody(orderId).paymentAttemptKey()).orElseThrow();
+        org.mockito.Mockito.doAnswer(invocation -> {
+            PaymentProviderGateway.ExpectedPayment expected = invocation.getArgument(0);
+            return com.loopers.domain.pay.model.PaymentObservation.verified(expected.transactionKey(),
+                expected.providerOrderId(), expected.amount(), com.loopers.domain.pay.model.ProviderPaymentStatus.PENDING);
+        }).when(gateway).lookup(any());
+        // act / assert
+        ResponseEntity<String> other = postReconcile(customer, "1");
+        assertThat(other.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(other.getBody()).isEqualTo(postReconcile(missing, "1").getBody());
+        assertThat(postReconcile(administrator, "2").getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.postForEntity(customer, HttpEntity.EMPTY, String.class).getStatusCode())
+            .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(tasks.findByKey(confirmBody(orderId).paymentAttemptKey()).orElseThrow().snapshot()).isEqualTo(before.snapshot());
+        verify(gateway, never()).lookup(any());
+        ResponseEntity<ApiResponse<OrderView>> pending = restTemplate.exchange(customer, HttpMethod.POST,
+            new HttpEntity<>(null, headers("2")), new ParameterizedTypeReference<>() {});
+        assertThat(pending.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(pending.getBody().data().paymentAttempt().recoveryState().name()).isEqualTo("MANUAL_REQUIRED");
+        assertThat(pending.getBody().data().paymentLookupUrl()).isEqualTo("/api/v1/orders/" + orderId);
+        org.mockito.Mockito.verify(gateway).lookup(any());
+        org.mockito.Mockito.doAnswer(invocation -> {
+            PaymentProviderGateway.ExpectedPayment expected = invocation.getArgument(0);
+            return com.loopers.domain.pay.model.PaymentObservation.verified(expected.transactionKey(),
+                expected.providerOrderId(), expected.amount(), com.loopers.domain.pay.model.ProviderPaymentStatus.SUCCESS);
+        }).when(gateway).lookup(any());
+        ResponseEntity<ApiResponse<AdminOrderView>> completed = restTemplate.exchange(administrator, HttpMethod.POST,
+            new HttpEntity<>(null, headers("1")), new ParameterizedTypeReference<>() {});
+        assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(completed.getBody().data().userId()).isEqualTo(2L);
+        assertThat(completed.getBody().data().status()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(completed.getBody().data().paymentLookupUrl()).isEqualTo("/api-admin/v1/orders/" + orderId);
+        assertThat(completed.getBody().data().paymentAttempt().usedRounds()).isZero();
+        assertThat(currentStock(productId)).isEqualTo(3);
+        org.mockito.Mockito.verify(gateway, org.mockito.Mockito.times(2)).lookup(any());
+        assertThat(postReconcile(customer, "2").getStatusCode()).isEqualTo(HttpStatus.OK);
+        org.mockito.Mockito.verify(gateway, org.mockito.Mockito.times(2)).lookup(any());
+        org.mockito.Mockito.verify(gateway).create(any(), any(), any());
+    }
+
+    private ResponseEntity<String> postReconcile(String path, String userId) {
+        return restTemplate.exchange(path, HttpMethod.POST, new HttpEntity<>(null, headers(userId)), String.class);
+    }
+
     @Autowired private com.loopers.domain.ordering.repository.OrderRepository orders;
     @Autowired private com.loopers.domain.pay.repository.PaymentRecoveryTaskRepository tasks;
 

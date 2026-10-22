@@ -24,4 +24,14 @@ public class PaymentRecoveryProgressService {
     public boolean markApplicationFailed(PaymentRecoveryTask.Snapshot expected) {
         return tasks.markApplicationFailed(expected, UUID.randomUUID().toString(), Instant.now());
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean startManualLookup(PaymentRecoveryTask.Snapshot execution) {
+        return tasks.startManualLookup(execution.attemptKey(), execution.executionId(), execution.usedRounds(), Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean requireManual(PaymentRecoveryTask.Snapshot execution, PaymentRecoveryTask.Reason reason) {
+        return tasks.requireManual(execution.attemptKey(), execution.executionId(), execution.usedRounds(), reason, Instant.now());
+    }
 }

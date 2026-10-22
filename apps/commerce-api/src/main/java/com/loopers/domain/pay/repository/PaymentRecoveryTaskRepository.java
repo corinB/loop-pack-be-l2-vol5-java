@@ -10,6 +10,7 @@ public interface PaymentRecoveryTaskRepository {
     Optional<PaymentRecoveryTask> findByKey(String attemptKey);
     boolean claim(String key, String executionId, Instant now);
     boolean consumeRound(String key, String executionId, int expectedUsed, Instant now);
+    boolean startManualLookup(String key, String executionId, int expectedUsed, Instant now);
     boolean handover(String key, PaymentRecoveryTask.State expectedState, String expectedExecutionId,
                      int expectedUsed, String nextExecutionId, Instant now);
     boolean recordFailure(String key, String executionId, int expectedUsed, PaymentRecoveryTask.Reason reason, Instant now);

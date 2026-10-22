@@ -22,6 +22,15 @@ public class ApplyOrderPaymentFacade implements ApplyOrderPaymentUseCase {
     public ApplyOrderPaymentResult execute(String attemptKey) {
         String key = PaymentAttempt.normalizeKey(attemptKey);
         PaymentRecoveryTask.Snapshot expected = progress.capture(key);
+        return execute(key, expected);
+    }
+
+    @Override
+    public ApplyOrderPaymentResult execute(String attemptKey, PaymentRecoveryTask.Snapshot expected) {
+        String key = PaymentAttempt.normalizeKey(attemptKey);
+        if (expected == null || !key.equals(expected.attemptKey())) {
+            throw new IllegalArgumentException("업무 시도 당시의 같은 결제 실행 정보가 필요합니다.");
+        }
         Optional<ApplyOrderPaymentResult> applied;
         try {
             applied = application.apply(key);

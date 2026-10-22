@@ -68,6 +68,12 @@ public class PaymentRecoveryTaskRepositoryImpl implements PaymentRecoveryTaskRep
     }
 
     @Override
+    public boolean startManualLookup(String key, String executionId, int expectedUsed, Instant now) {
+        return update(ownedUpdate("t.lastCheckedAt = :now, t.updatedAt = :now", key, executionId, expectedUsed)
+            .setParameter("now", now));
+    }
+
+    @Override
     public boolean recordFailure(String key, String executionId, int expectedUsed,
                                  PaymentRecoveryTask.Reason reason, Instant now) {
         ensureReason(reason);
