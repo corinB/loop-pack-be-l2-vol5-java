@@ -2,6 +2,10 @@
 
 상태: **구현 전·상세 계획 미작성**. 이 문서는 실행 승인을 받은 상세 구현 계획이 아니다.
 
+2026-10-22 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)의 병합을 확인했다.
+최신 `volume-5/main`의 `4b81541e92e3afce2fbbba25342b979bb2328385`에서 `volume-5/r02-pg-order-payment`를 생성했다.
+현재는 사용자와 남은 설계를 논의하는 단계다. 기능 구현·새 테스트는 시작하지 않았다.
+
 ## 착수 전 확인
 
 - R01을 검증·병합한 최신 `volume-5/main`에서 `volume-5/r02-pg-order-payment`를 생성한다.
@@ -23,7 +27,9 @@
 
 - 기능 구현: 미시작.
 - 테스트·Checkstyle·ArchUnit: 미실행.
-- 실제 시작 커밋·PR URL·검증 결과: 작업 시작·실행 후 기록.
+- 실제 시작 커밋: `4b81541e92e3afce2fbbba25342b979bb2328385`.
+- 첫 설계 문답: 준비 TX의 동일 주문 동시 요청을 기존 주문 행 잠금 또는 주문 상태 CAS로 조율할지 확인 중.
+- PR URL·검증 결과: 원격 PR 생성·기능 실행 후 기록.
 - `result.md`: 실제 구현·검증 후 작성.
 
 [요구사항](requirement.md) · [전체 요구사항](../total_requirement.md)

@@ -1,12 +1,12 @@
 # 5주차 다음 작업 인계
 
-2026-10-21 작업 인계에 2026-10-22 PR 게시 상태를 반영했다. 다음 작업 때 이 문서부터 읽는다.
+2026-10-21 작업 인계에 2026-10-22 PR 병합·R02 착수 상태를 반영했다. 다음 작업 때 이 문서부터 읽는다.
 
 ## 현재 위치
 
-- 브랜치: `volume-5/r01-pg-payment-foundation`.
+- 현재 브랜치: `volume-5/r02-pg-order-payment`. 시작 커밋은 R01 병합 커밋 `4b81541`이다.
 - PR01 로컬 구현·검증 완료. 구현·검증 정리의 마지막 커밋은 `5e7e596`이다.
-- 사용자 요청으로 기준/작업 브랜치를 원격 게시하고 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)를 생성했다. 대상은 `volume-5/main`이며 아직 병합하지 않았다. 기준 브랜치는 준비 커밋 `d443cdc`다.
+- 사용자 요청으로 기준/작업 브랜치를 원격 게시하고 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)를 생성했다. 대상은 `volume-5/main`이며 사용자 병합을 확인했다. 로컬 기준 브랜치를 `4b81541`로 fast-forward했다.
 - [PR01 결과](r01-pg-payment-foundation/result.md)에 구현 범위·검증·한계를 기록했다.
 - 작업 폴더에는 기존 사용자 변경인 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`만 남긴다. 수정·staging·되돌리기 금지.
 
@@ -22,8 +22,8 @@
 ## 다음에 시작할 일
 
 1. PR01 [결과](r01-pg-payment-foundation/result.md)와 [계획](r01-pg-payment-foundation/plan.md)을 확인한다. 완료한 검사를 이유 없이 반복하지 않는다.
-2. PR #24의 리뷰·CI 결과를 확인한다. 게시·PR 생성은 승인받아 완료했으며 병합은 아직 요청받지 않았다.
-3. R01 병합 후 최신 `volume-5/main`에서 `volume-5/r02-pg-order-payment`를 생성한다. 지금 미리 생성하거나 작업 브랜치를 직접 합치지 않는다.
+2. PR #24는 사용자 병합 완료. R01의 실제 결과와 모델 계약을 R02에서 재사용한다.
+3. R02 브랜치는 최신 기준 `4b81541`에서 생성 완료. 현재 준비 TX의 동일 주문 조율 방식을 사용자에게 질문했고 선택 대기 중이다.
 4. PR02 [요구사항](r02-pg-order-payment/requirement.md)·[남은 설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md)을 사용자와 논의한다. 우선 준비 TX의 주문/재고 잠금 순서·발송 권한, 실제 재고 복구 경계와 API 소유권 범위를 구체화한다.
 5. 합의한 뒤 PR02 상세 커밋·최소 검증 계획을 작성하고 세 관점 계획 리뷰를 거쳐 구현한다. 현재 [PR02 계획](r02-pg-order-payment/plan.md)은 틀만 있고 구현은 시작하지 않았다.
 
