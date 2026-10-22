@@ -28,6 +28,7 @@ public class ApiErrorMapper {
             case USER_NOT_FOUND, BRAND_NOT_FOUND, PRODUCT_NOT_FOUND, ORDER_NOT_FOUND,
                  PAYMENT_ATTEMPT_NOT_FOUND -> ErrorType.NOT_FOUND;
             case PAYMENT_REQUEST_CONFLICT -> ErrorType.CONFLICT;
+            case ORDER_ADMIN_FORBIDDEN -> ErrorType.FORBIDDEN;
         };
     }
 }

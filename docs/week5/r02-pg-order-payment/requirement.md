@@ -2,7 +2,7 @@
 
 ## 상태·목표
 
-- 상태: **기반·준비 TX·공통 업무 반영·고객 confirm PG 전환·범용 save 제거 구현 및 관련 검증 완료**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다. 고객/관리자 상세 결제 조회·GET 소유권·callback/대사 진입 연결은 후속 단계다.
+- 상태: **기반·준비/공통 TX·고객 confirm PG 전환·고객/관리자 결제 조회·미완료 목록 구현 및 관련 검증 완료**. [R01](../r01-pg-payment-foundation/requirement.md)은 PR #24로 병합됐다. callback/대사 진입 연결은 후속 단계다.
 - 2026-10-22 최신 기준 `4b81541`에서 `volume-5/r02-pg-order-payment`를 생성했다.
 - 최신 `volume-5/main`에서 `volume-5/r02-pg-order-payment`를 생성한다. PR 대상은 `volume-5/main`이다.
 - 기존 confirm을 재고 선차감 → PG 결제 → 결과 반영으로 교체한다. 멱등성·발송 제어·callback·수동 대사를 연결한다.
@@ -44,7 +44,21 @@
 - 차감 후 삭제된 상품은 저장된 주문·금액·차감 기록으로 PG 결과를 마무리한다. 실패 복구가 상품을 다시 노출하지 않게 한다.
 - 차감과 복구의 commit/rollback을 기존 상품 상세 캐시 정책에 연결한다.
 
-## callback·수동 대사
+## 현재 조회 API 읽는 법
+
+| 조회 | 접근·반환 |
+|---|---|
+| 고객 주문 단건·목록 | 기존 X-USER-ID의 본인 주문만 조회. 타인 단건은 없는 주문과 같은 404 |
+| 관리자 주문 단건·목록 | 기존 X-USER-ID=1. 다른 유효 사용자는 403 |
+| GET /api-admin/v1/payments/incomplete | 관리자 1번. 결제 대기·수동 확인·결과 충돌 주문을 기존 page/size로 조회 |
+
+조회 성공은 모두 200이다. 결제 대기를 조회해도 GET 응답 자체는 성공이다. 조회만으로 PG에 다시 물어보거나 재고·복구 진행을 바꾸지 않는다.
+`paymentMethod`는 과거 기록이면 POINT, 결제 시도가 있으면 PG, 결제를 시작하지 않았으면 null이다. 기존 `paymentStatus`는 PAID/null을 유지하며 PG 결과를 대신하지 않는다.
+`paymentAttempt`의 outcome은 확인한 PG 결과, recoveryState는 우리 후속 처리의 진행이다. 실패 근거·충돌·조회 횟수/시각/이유를 따로 보여준다. 카드·테스트 조건은 반환하지 않는다.
+`attentionRequired`는 수동 확인 또는 결과 충돌이면 true다. 완료 후 충돌도 미완료 목록에 포함하지만 완료 상태를 되돌리지 않는다.
+결제 시도가 있는 응답의 `paymentLookupUrl`은 고객에게 고객 단건 URL, 관리자에게 관리자 단건 URL을 준다. 시도 없는 주문은 null이다.
+
+## callback·수동 대사 · 후속 단계
 
 - `POST /api/v1/orders/{orderId}/payment/reconcile`은 미완료 시도의 기존 거래를 조회·반영한다.
 - 2026-10-22 결정: 저장된 검증 종결 결과가 있으면 PG 조회 없이 재적용한다. 그 외에는 수동 요청당 PG 조회 최대 1회이며 PENDING/미확인일 때 202로 응답하고 다음 명시적 대사를 기다린다. 자동 사용 회차를 증가시키거나 예산을 초기화하지 않는다.

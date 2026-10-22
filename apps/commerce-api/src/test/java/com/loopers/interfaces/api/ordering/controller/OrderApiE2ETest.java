@@ -49,6 +49,104 @@ import org.springframework.http.ResponseEntity;
 
 @E2ETest
 class OrderApiE2ETest {
+    @Autowired private com.loopers.domain.ordering.repository.OrderRepository orders;
+    @Autowired private com.loopers.domain.pay.repository.PaymentRecoveryTaskRepository tasks;
+
+    @Test
+    @DisplayName("관리자가 타인 미완료 주문의 안내된 조회 경로를 그대로 따라가도 200을 받는다")
+    void followsAdministratorLookupUrlForAnotherCustomer() {
+        // arrange
+        userRepository.save(User.create(1L));
+        userRepository.save(User.create(2L));
+        long productId = createProduct("상품", 1000L, 5);
+        long orderId = createOrder(2L, List.of(new OrderApiDto.ItemRequest(productId, 1))).getBody().data().orderId();
+        restTemplate.exchange("/api/v1/orders/" + orderId + "/confirm", HttpMethod.POST,
+            new HttpEntity<>(confirmBody(orderId), headers("2")), String.class);
+        // act
+        ResponseEntity<ApiResponse<PageResult<AdminOrderView>>> list = restTemplate.exchange(
+            "/api-admin/v1/payments/incomplete", HttpMethod.GET, new HttpEntity<>(null, headers("1")),
+            new ParameterizedTypeReference<>() {});
+        AdminOrderView listed = list.getBody().data().items().get(0);
+        // assert
+        assertThat(getQuery(listed.paymentLookupUrl(), "1").getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(listed.paymentLookupUrl()).isEqualTo("/api-admin/v1/orders/" + orderId);
+        assertThat(getQuery("/api/v1/orders/" + orderId, "1").getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("과거 POINT도 본인 상세만 허용하고 주문 관리자 세 경로는 1번 fixture만 허용한다")
+    void protectsCustomerAndAdministratorQueryRoutes() {
+        // arrange
+        userRepository.save(User.create(1L));
+        userRepository.save(User.create(2L));
+        com.loopers.domain.ordering.model.Order legacy = com.loopers.domain.ordering.model.Order.create(2L,
+            List.of(com.loopers.domain.ordering.model.OrderItem.create(1L, "과거 상품", 1000L, 1)));
+        legacy.confirm();
+        long orderId = orders.insert(legacy).getId();
+        // act / assert
+        ResponseEntity<String> other = getQuery("/api/v1/orders/" + orderId, "1");
+        ResponseEntity<String> missing = getQuery("/api/v1/orders/999999", "1");
+        assertThat(other.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(other.getBody()).isEqualTo(missing.getBody());
+        ResponseEntity<ApiResponse<OrderView>> owner = restTemplate.exchange("/api/v1/orders/" + orderId,
+            HttpMethod.GET, new HttpEntity<>(null, headers("2")), new ParameterizedTypeReference<>() {});
+        assertThat(owner.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(owner.getBody().data().paymentMethod().name()).isEqualTo("POINT");
+        assertThat(owner.getBody().data().paymentAttempt()).isNull();
+        assertThat(getQuery("/api/v1/orders/" + orderId, null).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(getQuery("/api-admin/v1/orders/" + orderId, "1").getStatusCode()).isEqualTo(HttpStatus.OK);
+        for (String path : List.of("/api-admin/v1/orders", "/api-admin/v1/orders/" + orderId,
+                "/api-admin/v1/payments/incomplete")) {
+            assertThat(getQuery(path, "2").getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(getQuery(path, null).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(getQuery(path, "invalid").getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(getQuery(path, "9999").getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+        verify(gateway, never()).create(any(), any(), any());
+        verify(gateway, never()).lookup(any());
+    }
+
+    @Test
+    @DisplayName("고객·관리자·미완료 GET은 PG 상태를 200으로 보여주며 거래·재고·복구 진행을 바꾸지 않는다")
+    void exposesPendingAcrossGetRoutesWithoutEffects() {
+        // arrange
+        userRepository.save(User.create(1L));
+        long productId = createProduct("상품", 1000L, 5);
+        long orderId = createOrder(1L, List.of(new OrderApiDto.ItemRequest(productId, 2))).getBody().data().orderId();
+        sendConfirm(orderId);
+        String key = confirmBody(orderId).paymentAttemptKey();
+        var before = tasks.findByKey(key).orElseThrow();
+        org.mockito.Mockito.clearInvocations(gateway);
+        // act / assert
+        OrderView customer = findOrder(orderId).getBody().data();
+        assertThat(customer.paymentMethod().name()).isEqualTo("PG");
+        assertThat(customer.paymentStatus()).isNull();
+        assertThat(customer.paymentAttempt().outcome().name()).isEqualTo("PENDING");
+        assertThat(findOrders(1L).getBody().data().items().get(0).paymentAttempt()).isEqualTo(customer.paymentAttempt());
+        ResponseEntity<ApiResponse<PageResult<AdminOrderView>>> incomplete = restTemplate.exchange(
+            "/api-admin/v1/payments/incomplete?size=1", HttpMethod.GET, new HttpEntity<>(null, headers("1")),
+            new ParameterizedTypeReference<>() {});
+        assertThat(incomplete.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(incomplete.getBody().data().totalElements()).isEqualTo(1);
+        assertThat(incomplete.getBody().data().items().get(0).paymentAttempt()).isEqualTo(customer.paymentAttempt());
+        assertThat(getQuery("/api-admin/v1/orders/" + orderId, "1").getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getQuery("/api-admin/v1/orders", "1").getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getQuery("/api-admin/v1/payments/incomplete?size=0", "1").getStatusCode())
+            .isEqualTo(HttpStatus.BAD_REQUEST);
+        var after = tasks.findByKey(key).orElseThrow();
+        assertThat(after.snapshot()).isEqualTo(before.snapshot());
+        assertThat(after.getUpdatedAt()).isEqualTo(before.getUpdatedAt());
+        assertThat(currentStock(productId)).isEqualTo(3);
+        assertThat(orders.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+        verify(gateway, never()).create(any(), any(), any());
+        verify(gateway, never()).lookup(any());
+    }
+
+    private ResponseEntity<String> getQuery(String path, String userId) {
+        return restTemplate.exchange(path, HttpMethod.GET,
+            userId == null ? HttpEntity.EMPTY : new HttpEntity<>(null, headers(userId)), String.class);
+    }
+
     @Autowired private PaymentProviderGateway gateway;
     @Autowired private ObjectMapper json;
 
@@ -228,7 +326,7 @@ class OrderApiE2ETest {
             ResponseEntity<ApiResponse<AdminOrderView>> adminDetail = restTemplate.exchange(
                 "/api-admin/v1/orders/" + orderId,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                new HttpEntity<>(null, headers("1")),
                 new ParameterizedTypeReference<>() {}
             );
 
@@ -266,7 +364,7 @@ class OrderApiE2ETest {
             ResponseEntity<ApiResponse<AdminOrderView>> adminDetail = restTemplate.exchange(
                 "/api-admin/v1/orders/" + orderId,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                new HttpEntity<>(null, headers("1")),
                 new ParameterizedTypeReference<>() {}
             );
 
@@ -366,10 +464,11 @@ class OrderApiE2ETest {
         @DisplayName("없는 주문은 404를 반환한다")
         @Test
         void returnsNotFound_whenOrderDoesNotExist() {
+            userRepository.save(User.create(1L));
             ResponseEntity<ApiResponse<Object>> response = restTemplate.exchange(
                 "/api/v1/orders/999",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                new HttpEntity<>(null, headers("1")),
                 new ParameterizedTypeReference<>() {}
             );
 
@@ -390,7 +489,7 @@ class OrderApiE2ETest {
             ResponseEntity<ApiResponse<PageResult<AdminOrderView>>> response = restTemplate.exchange(
                 "/api-admin/v1/orders",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                new HttpEntity<>(null, headers("1")),
                 new ParameterizedTypeReference<>() {}
             );
 
@@ -403,10 +502,11 @@ class OrderApiE2ETest {
         @DisplayName("없는 주문은 404를 반환한다")
         @Test
         void returnsNotFound_whenOrderDoesNotExist() {
+            userRepository.save(User.create(1L));
             ResponseEntity<ApiResponse<Object>> response = restTemplate.exchange(
                 "/api-admin/v1/orders/999",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                new HttpEntity<>(null, headers("1")),
                 new ParameterizedTypeReference<>() {}
             );
 
@@ -486,7 +586,7 @@ class OrderApiE2ETest {
         return restTemplate.exchange(
             "/api/v1/orders/" + orderId,
             HttpMethod.GET,
-            HttpEntity.EMPTY,
+            new HttpEntity<>(null, headers("1")),
             new ParameterizedTypeReference<>() {}
         );
     }
