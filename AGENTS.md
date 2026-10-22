@@ -4,7 +4,7 @@
 
 ## 5주차 적용 안내
 
-다음 작업은 [인계 문서](docs/week5/handoff.md)에서 현재 브랜치·완료 검증·PR02 착수 조건을 먼저 확인한다.
+다음 작업은 [인계 문서](docs/week5/handoff.md)에서 현재 브랜치·완료 검증·남은 범위를 먼저 확인한다.
 
 현재 준비 범위·진행 순서·완료 조건은 [5주차 전체 요구사항](docs/week5/total_requirement.md)을 따른다.
 기준 브랜치는 `volume-5/main`이며, `volume-4/main`의 `9eff402`에서 시작한다.
@@ -14,7 +14,10 @@ PR은 아래 세 개로 나눈다. 각 작업 브랜치는 작업 시작 시 최
 - R02 `volume-5/r02-pg-order-payment`: 재고 선차감·PG 주문 전환·멱등성·callback·대사.
 - R03 `volume-5/r03-payment-resilience`: 조회 회복 전략·통합 장애 검증·제출 정리.
 
-R01은 [구현 계획](docs/week5/r01-pg-payment-foundation/plan.md)에 따른 로컬 구현·검증을 완료했다. [실제 결과](docs/week5/r01-pg-payment-foundation/result.md)에 전체 검사 384건·실연결·재시작·POINT 호환과 승인 보완을 기록했다. payment-lab은 commerce8080/PG8081/commerce관리8082와 INFO 콘솔을 사용한다. 2026-10-22 사용자 요청으로 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)를 게시했으며 아직 병합하지 않았다. [상태 문서](docs/week5/states/total.md)는 R01 기반과 R02 목표 흐름을 구분하며 R02/R03은 구현 전이다.
+R01은 로컬 구현·검증 후 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)로 병합됐다(`4b81541`). [R01 결과](docs/week5/r01-pg-payment-foundation/result.md)에 전체 검사 384건·실연결·보존과 승인 보완을 기록했다. payment-lab은 commerce8080/PG8081/commerce관리8082와 INFO 콘솔을 사용한다.
+R02도 이 병합 기준에서 시작해 **로컬 구현·검증을 완료했다.** [R02 결과](docs/week5/r02-pg-order-payment/result.md)에 전체 검사 432건(PG25/commerce407, 실패·오류·건너뛰기0), 독립 JVM 실험 10개와 기존 POINT/사용자 파일 보존을 기록했다. 준비/공통 업무 TX·주문 CAS·실제 PG confirm·고객/관리자 조회·단일 수동 대사/인계·동기 callback을 연결했다. 기능마다 세 관점 리뷰와 중요 수정 승인·재리뷰를 마쳤으며 [리뷰 기록](docs/week5/r02-pg-order-payment/review.md)에 미해결 중요 지적은 없다. 이번 최종 검증은 기능 변경 없이 완료했다. 원격 게시·PR 생성은 요청 시 수행한다. R03의 자동 재조회·회로·fallback은 구현 전이다. [상태 문서](docs/week5/states/total.md)는 R01/R02 구현과 R03 목표를 구분한다.
+2026-10-22 R02 설계 결정: 준비 진입은 주문 상태 DRAFT→PAYMENT_PENDING CAS로 선점하고, 공통 결과 반영도 PAYMENT_PENDING→CONFIRMED/PAYMENT_FAILED CAS 성공자가 맡는다. 결과 반영은 결제 시도 행을 짧게 잠가 저장된 결과/충돌을 확인하며 관련 주문 기록·재고·작업 변경을 같은 TX에서 보호한다. 상품 재고 잠금·복구 작업 CAS·관찰 저장 경계는 유지한다. callback은 요청 안의 동기 처리이며 PG 권위 조회는 TX 밖, 관찰 commit 후 공통 업무 TX를 호출한다. 별도 callback 접수 실행기는 추가하지 않는다. 수동 대사는 저장 종결 근거가 있으면 조회 없이 반영하고, 그 외 요청당 PG 조회 최대 1회·미완료 202다. 자동 회차를 소비/초기화하거나 새 자동 대기 작업을 만들지 않는다. 재고 복구 한도 초과는 업무 전체 rollback·PG 실패 보존·수동 처리로 정했다. 관리자 반환 예정량 집계 제한은 추가하지 않는다. 준비·공통 반영·수동 대사·동기 callback API를 연결했다. callback은 초기 실행 비교값으로 늦은 실패 표시를 보호하며 작업 인계·회차 소비를 하지 않는다.
+2026-10-22 고객 소유권 결정: confirm/고객 상세/reconcile에 기존 X-USER-ID와 저장된 주문 userId 비교를 추가한다. 과거 POINT 고객 상세도 포함하며 타인 주문은 없는 주문과 같은 404·ORDER_NOT_FOUND·메시지다. 주문 상태·기존 결제 결과 반환이나 CAS/재고/PG/작업 변경 전에 검사한다. 실제 로그인·Spring Security는 추가하지 않는다. 주문 관리자 조회·미완료 목록·운영자 대사는 기존 X-USER-ID=1 관리자 fixture를 확인한다. 고객 경로는 1번도 본인 주문만 처리하며 상품 등 다른 관리자 API 변경·역할 테이블은 포함하지 않는다. 이 결정은 과거 2주차의 본인 검사 제외 정책보다 우선한다. confirm과 고객 GET 소유권 및 주문 관리자 GET 접근은 구현했다. 수동 대사의 접근/처리와 고객 헤더를 사용하지 않는 callback 권위 확인도 연결했다.
 2026-10-21 최신 사용자 요청에 따라 **기능 동작을 바꾸는 구현만 비즈니스·사용자 경험·기술 서브에이전트 리뷰**를 받는다. 동작 변경 없는 문서·빌드 구성·테스트 전용 변경은 별도 리뷰하지 않는다. 최신 사용자 요청에 따라 중요한 기능 리뷰 수정은 구체안을 사용자에게 확인받고 진행하며 사소한 보완까지 승인 대상으로 확대하지 않는다. 테스트는 핵심 상태/멱등성·저장/경합·HTTP 오류·보존에 필요한 최소 사례만 작성하고 변경마다 관련 검사만 실행한다. 필수 전체 검사는 PR 마무리에 한 번 실행하고 이후 변경/실패로 필요해진 경우만 반복한다. 기존 검사 기준은 완화하지 않는다. 커밋은 Green 이후 최소 기능 단위·`type: 한글 요약`·명시 staging을 유지한다.
 구현 계획의 기본값은 독립 apps:test-pg·127.0.0.1:8081·loopers_test_pg/test_pg·보존용 payment-lab 프로필과 validate/명시 SQL이다. 시도 키는 표준 UUID(공백 거절·소문자 정규화), 테스트 조건은 향후 confirm의 요청별 옵션(생략 NORMAL_SUCCESS)이다. enum·옵션 필드·주기·프리셋 등은 계획을 따른다. 아래 이전 논의의 미정 목록보다 최신 계획의 구체값을 우선하며 기능 완료로 해석하지 않는다.
 후속 [학습용 최소 보완](docs/week5/r01-pg-payment-foundation/trade_off/10-learning-scope-completion.md)을 확정했다. 검증 결과/확정 거절 사실은 기존 pay 시도에 짧은 TX로 먼저 commit하고 공통 업무 반영 TX는 분리한다. 저장된 종결 결과의 미반영은 재조회 없이 재적용할 수 있다. 실효 테스트 조건은 고정 필드로 보존·비교한다. PG는 DB 예정 시각/결과를 주기 조회해 완료하고 재시작 실험용 프로필은 테이블을 보존하며 초기화는 명시 실행한다. 수동 대사는 실행 ID 조건부 교체로 옛 진행 갱신을 차단한다. commerce의 지터/다음 예약 정보는 영속화하지 않는다. 정확한 필드·프로필/초기화 파일·조건식·주기 등은 상세 설계 대상이다.
@@ -28,7 +31,7 @@ application 파사드가 모델 간 흐름을 조율한다. [A안](docs/week5/r0
 8번은 기존 비관적 잠금 선택을 변경해 [멱등성 키 + 조건부 상태 갱신 + 실행 식별자](docs/week5/r01-pg-payment-foundation/trade_off/08-recovery-claim-coordination.md)를 채택했다. 복구 작업 실행 권한에 명시적 SELECT FOR UPDATE를 필수로 두지 않고 DB의 원자적 갱신 결과와 현재 실행 식별자를 검증한다. DB 쓰기 내부 잠금까지 제거하거나 상품 재고/공통 결과 반영의 보호를 없앤 선택이 아니다. JPA 쓰기 규칙은 유지하며 수동 인계는 실행 ID 조건부 교체로 확정했고 구체적인 조건식/응답·bulk/Entity 정합성은 후속 설계 대상이다. 자동 lease는 보류한다.
 후속 사용자 결정으로 정상 실행은 최초 조회+추가 재조회 최대 3회, 간격 1초·3초·10초와 지터 ±20%를 적용한다. 실패/수동 전환 기준은 [재확인 정책](docs/week5/r03-payment-resilience/trade_off/01-reconciliation-retry-policy.md)을 따른다. @Retryable + DB 기록은 유지하고 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](docs/week5/r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. [조회 직전에 횟수를 DB에 기록·commit](docs/week5/r03-payment-resilience/trade_off/07-retry-attempt-accounting.md)하며 실제 조회 전 종료돼도 소비를 취소하지 않는다. 목록 GET은 조회 전용, 실제 대사는 명시적인 POST 요청이다. 자동 예산을 새로 부여하지 않으며 PG create 재시도는 금지한다. 하위 HTTP timeout은 위 설정으로 확정했으며 총 예산·수동 경합·실행기 등은 미정이다.
 아래 과거 포인트 주문의 단일 TX 규칙이나 2주차 동시성 제외 규칙을 5주차 PG 경계에 그대로 적용하지 않는다.
-소유권·관리자 접근에 관한 원문과 기존 fixture 정책의 차이는 전체 요구사항과 R02 설계 질문에 남겼으며 적용 범위는 미정이다.
+소유권·관리자 접근의 적용 범위는 위 2026-10-22 결정을 따른다. confirm·고객 GET·주문 관리자 GET·고객/관리자 수동 대사의 접근 검사를 구현했다.
 기존 패키지·계층 의존·순수 도메인·데이터 접근·TDD·Checkstyle·ArchUnit·검사 완화 금지와 사용자 변경 보존 규칙은 유지한다.
 준비 문서나 계획을 구현·테스트 완료로 기록하지 않고 `result.md`는 실제 구현·검증 후 작성한다.
 

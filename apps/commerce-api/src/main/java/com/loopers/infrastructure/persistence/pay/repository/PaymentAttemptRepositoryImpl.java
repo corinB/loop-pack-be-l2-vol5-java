@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.OptimisticLockException;
 import java.util.Optional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -53,5 +54,12 @@ public class PaymentAttemptRepositoryImpl implements PaymentAttemptRepository {
         return entityManager.createQuery("select a from PaymentAttemptJpaEntity a where a.orderId = :orderId",
                 PaymentAttemptJpaEntity.class).setParameter("orderId", orderId)
                 .getResultStream().findFirst().map(mapper::toDomain);
+    }
+
+    @Override
+    public List<PaymentAttempt> findByProviderOrderId(String providerOrderId) {
+        return entityManager.createQuery("select a from PaymentAttemptJpaEntity a where a.providerOrderId = :providerOrderId",
+                PaymentAttemptJpaEntity.class).setParameter("providerOrderId", providerOrderId)
+            .getResultList().stream().map(mapper::toDomain).toList();
     }
 }

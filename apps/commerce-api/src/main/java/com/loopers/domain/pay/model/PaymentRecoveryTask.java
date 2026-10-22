@@ -16,7 +16,7 @@ public final class PaymentRecoveryTask {
     private final State state;
     private final String executionId;
     private final int usedRounds;
-    // 응답 완료 시각이 아니라, 조회 직전 회차를 소비한 시각이다.
+    // 조회 시작 직전 시각이다. 수동 조회는 자동 회차를 소비하지 않는다.
     private final Instant lastCheckedAt;
     private final Reason lastReason;
     private final Instant updatedAt;
@@ -78,10 +78,24 @@ public final class PaymentRecoveryTask {
         return new PaymentRecoveryTask(attemptKey, State.MANUAL_REQUIRED, executionId, usedRounds, lastCheckedAt, reason, now);
     }
 
+    // 명시적인 수동 조회는 자동 예산을 소비하지 않는다.
+    public PaymentRecoveryTask startManualLookup(String id, Instant now) {
+        ensureOwner(id);
+        return new PaymentRecoveryTask(attemptKey, state, executionId, usedRounds,
+            now.truncatedTo(ChronoUnit.MICROS), lastReason, now);
+    }
+
     public PaymentRecoveryTask applied(Instant now) {
         return state == State.APPLIED ? this
                 : new PaymentRecoveryTask(attemptKey, State.APPLIED, executionId, usedRounds, lastCheckedAt, lastReason, now);
     }
+
+    public Snapshot snapshot() {
+        return new Snapshot(attemptKey, state, executionId, usedRounds);
+    }
+
+    /** 업무 시도 직전 확보한 비교값. rollback 뒤 최신 소유자로 교체하지 않는다. */
+    public record Snapshot(String attemptKey, State state, String executionId, int usedRounds) {}
 
     private void ensureOwner(String id) {
         if (state != State.RUNNING || !Objects.equals(executionId, PaymentAttempt.normalizeKey(id))) {

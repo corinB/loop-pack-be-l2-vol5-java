@@ -12,8 +12,8 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 로컬 구현·검증 완료([결과](r01-pg-payment-foundation/result.md)). 전체 검사 384건·실연결·재시작·POINT 호환·기본 웹 동시 기동 통과. R02/R03 구현 전. PR #24 게시·미병합 |
-| 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현 중. R02/R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
+| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 원격 게시 전. R03 구현 전 |
+| 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 작업 시작 시 최신 기준 브랜치에서 생성 |
 
 기준 자료:
 
@@ -55,9 +55,9 @@ TX 밖:     PG 결제 생성 또는 기존 거래 조회
 ```
 
 문서의 '재고 예약'은 특정 미완료 주문을 위해 재고를 확보한 의미다. 이번 구현 방향은 기존 가용 재고를 먼저 줄이고,
-주문별 차감 수량과 처리 상태를 DB에 보존하는 것이다. R01은 mall의 StockAdjustment/품목 기록을 저장한다. 실제 상품 수량 변경과 업무 TX 연결은 R02다.
+주문별 차감 수량과 처리 상태를 DB에 보존하는 것이다. R01은 mall의 StockAdjustment/품목 기록을 저장한다. R02에서 실제 상품 수량 변경과 업무 TX 연결을 완료했다.
 PG HTTP 호출 동안 DB 트랜잭션이나 재고 잠금을 유지하지 않는다.
-application의 조율 파사드와 별도 준비/공통 결과 반영 TX 컴포넌트를 두는 [A안](r02-pg-order-payment/trade_off/01-facade-transaction-boundary.md)을 채택했다. 전체 흐름을 하나의 TX로 감싸지 않고 PG HTTP는 TX 밖에서 수행한다. callback·수동 대사·자동 재확인은 같은 결과 반영 TX 진입점을 사용한다. 정확한 클래스/Context 배치·계약·잠금 순서는 미정이다.
+application의 조율 파사드와 별도 준비/공통 결과 반영 TX 컴포넌트를 두는 [A안](r02-pg-order-payment/trade_off/01-facade-transaction-boundary.md)을 채택했다. 전체 흐름을 하나의 TX로 감싸지 않고 PG HTTP는 TX 밖에서 수행한다. callback·수동 대사·자동 재확인은 같은 결과 반영 TX 진입점을 사용한다. R02에서 확정한 클래스/Context·저장/잠금 순서는 [구현 계획](r02-pg-order-payment/plan.md)을 따른다.
 후속 결정으로 검증 관찰 저장 진입점도 별도 짧은 TX로 분리해 TX B 전에 commit한다. TX B 실패로 관찰이 사라지지 않으며 저장된 신뢰할 종결 결과는 재조회 없이 재적용할 수 있다. 특히 거래 없는 확정 거절은 저장 근거로 재적용하고 빈 목록/404로 실패를 새로 판단하지 않는다. 관찰 저장 전 종료의 미확인 한계는 유지한다.
 
 | PG 관찰 | 주문·결제 처리 | 재고 처리 |
@@ -77,7 +77,7 @@ application의 조율 파사드와 별도 준비/공통 결과 반영 TX 컴포�
 - 결제 시도는 pay의 독립 모델·저장소로 두고 orderId로 주문과 연결한다. OrderRecord는 주문 확정 기록으로 유지하며 application이 같은 commerce DB의 로컬 TX에서 주문·시도·재고를 조율한다.
 - [확인한 결제 결과와 복구 진행을 나눈다](r01-pg-payment-foundation/trade_off/05-payment-attempt-state.md). 수동 전환·조회 오류가 검증한 PG 사실을 덮어쓰지 않으며, PG 결과 확인과 내부 업무 반영 완료를 구분한다. R01의 구체 상태·허용 조합은 [구현 계획](r01-pg-payment-foundation/plan.md)과 [결제 상태](states/payment.md)를 따른다.
 - [복구 진행은 별도 pay 작업 모델·저장소로 분리](r01-pg-payment-foundation/trade_off/06-recovery-progress-storage.md)한다. 사용 횟수·현재 실행/진행·최근 시각·오류를 우선 보존하고 같은 commerce DB의 로컬 TX에서 조율한다. commerce의 지터/다음 예약 시각·재시작 대기 재개 정보는 영속화하지 않는다. PG의 완료 예정 시각은 별도 사실로 저장한다.
-- [재고 차감·복구 기록은 mall의 별도 모델](r01-pg-payment-foundation/trade_off/07-stock-adjustment-boundary.md)로 둔다. 확정 실패 반영 TX에서 실제 재고 증가와 복구 완료 기록·관련 주문/결제/작업 변경을 함께 보호한다. 별도 비동기 재고 복구 worker는 두지 않으며 저장 구조는 R01에서 구현했고 실제 업무 반영의 잠금 순서는 R02에서 확정한다.
+- [재고 차감·복구 기록은 mall의 별도 모델](r01-pg-payment-foundation/trade_off/07-stock-adjustment-boundary.md)로 둔다. 확정 실패 반영 TX에서 실제 재고 증가와 복구 완료 기록·관련 주문/결제/작업 변경을 함께 보호한다. 별도 비동기 재고 복구 worker는 두지 않으며 저장 구조는 R01에서 구현했고 실제 업무 반영의 잠금 순서도 R02에서 확정·구현했다.
 - R02 전환 후 신규 결제와 기존 미확정 DRAFT의 결제는 PG를 사용한다. 포인트 차감은 0회이며 과거 POINT 결제 사실은 보존한다.
 - 주문당 결제 시도는 하나다. 내부 주문 ID·시도 키·PG용 주문 ID·PG 거래 키를 구분해 DB에 보존한다.
 - [결제 시도 키는 전체 결제 시도에서 전역 유일](r01-pg-payment-foundation/trade_off/02-idempotency-request-contract.md)하다. 고객이 달라도 같은 키를 다른 주문에 재사용하면 충돌한다. 주문당 한 시도 제약은 별도로 유지하며 R01은 표준 UUID 소문자 정규화·DB 전역/주문 유일 제약을 사용한다.
@@ -96,10 +96,10 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 원문은 수동 reconcile을 기본으로 두지만, 사용자 추가 결정으로 기존 거래를 자동 재확인하고 한도 도달 뒤 수동 확인으로 전환한다.
 최초 조회 후 추가 재조회 최대 3회, 각 확인 종료 후 1초·3초·10초 대기와 지터 ±20%를 적용한다.
 실패/수동 전환 분류도 [재확인 정책](r03-payment-resilience/trade_off/01-reconciliation-retry-policy.md)에서 확정했다.
-정상 실행은 [@Retryable + DB 진행 기록](r03-payment-resilience/trade_off/06-reconciliation-execution.md)으로 처리한다. 후속 결정으로 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. 자동 만료/갱신·회수는 보류한다.
+R03에서 연결할 정상 실행은 [@Retryable + DB 진행 기록](r03-payment-resilience/trade_off/06-reconciliation-execution.md)으로 처리한다. 후속 결정으로 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. 자동 만료/갱신·회수는 보류한다.
 조회 작업 직전에 [사용 횟수를 DB에 기록·commit](r03-payment-resilience/trade_off/07-retry-attempt-accounting.md)한다. 기록 뒤 실제 조회 전에 종료돼도 소비한 회차를 되돌리지 않는다.
 복구 작업 실행 권한은 [멱등성 키 + 조건부 상태 갱신 + 실행 식별자](r01-pg-payment-foundation/trade_off/08-recovery-claim-coordination.md)로 보호한다. 명시적 비관적 잠금 조회를 필수로 두지 않고 조건부 갱신 성공/commit 후 PG 조회한다. DB UPDATE 내부 잠금까지 없다는 뜻은 아니며 상품 재고 동시성·공통 결과 반영 TX의 보호는 유지한다. 수동 처리 조건·정확한 필드/갱신·영속성 정합성은 미정이고 자동 lease는 도입하지 않는다.
-수동 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록해 옛 진행 갱신을 차단한다. 중단 RUNNING도 인계할 수 있어야 하며 일반 save가 최신 실행/횟수를 되돌리지 않도록 한다. 정확한 조건식·허용 상태·응답·JPA 정합성 처리는 상세 설계에서 정한다.
+수동 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록해 옛 진행 갱신을 차단한다. 중단 RUNNING도 인계할 수 있어야 하며 일반 save가 최신 실행/횟수를 되돌리지 않도록 한다. 정확한 조건식·허용 상태·응답·JPA 정합성 처리는 R02 [구현 계획](r02-pg-order-payment/plan.md)과 [결과](r02-pg-order-payment/result.md)를 따른다.
 [HTTP 설정](r01-pg-payment-foundation/trade_off/03-http-client-settings.md)은 RestClient + Apache HttpClient 5·자동 retry/redirect 차단으로 확정했다. 연결 1초·연결 풀 대기 1초·응답 대기 2초를 초기값으로 사용하며 전체 호출의 절대 제한으로 해석하지 않는다.
 [adapter 결과·검증 분담](r01-pg-payment-foundation/trade_off/04-adapter-fixture.md)은 검증한 관찰/확인 불가 사유를 결과값으로 반환하는 A다. 실제 PG에서 정상·지연·유실·DB 보존을, 작은 테스트용 HTTP 서버에서 불완전 응답 등을 검증한다. 복구 실행기와 회로는 반환 결과를 분류해 연결한다.
 총 예산·횟수 기록의 원자성/동시 실행 조율·구체적인 의존성 버전·타입/사유 코드는 미정이며 결제 생성 재시도는 허용하지 않는다. 구체적인 읽기 제한 적용 지점과 실제 timeout 동작은 구현·검증해야 한다.
@@ -128,23 +128,24 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 
 원문은 본인 주문의 확정·상세·대사와 관리자/고객 접근 구분을 요구한다.
 기존 저장소는 인증·인가를 제외한 fixture 정책이며 `X-USER-ID`는 사용자 입력이지 인증이 아니다.
-현재 주문 목록은 사용자 조건이 있지만 상세·확정은 orderId로 대상을 선택하며 본인 여부를 비교하지 않는다.
+착수 전 주문 목록에는 사용자 조건이 있었지만 상세·확정에는 본인 검사가 없었다. 현재 confirm·상세 GET에는 소유권 검사를 연결했고 주문 관리자 GET은 1번 fixture만 허용한다.
 관리자 URL 분리도 관리자 권한 검증을 뜻하지 않는다.
 
-이 차이를 기존 기능이 이미 보장한다고 기록하지 않는다. R02 설계에서 로컬 사용자 입력 기반 소유권 검사와
-관리자 접근 구분의 적용 범위를 확인하고 요구사항·관련 지침을 일치시킨 뒤 구현한다.
-이번 준비 문서만으로 Spring Security·ADMIN 역할·CSRF 도입이나 기존 API 접근 정책 변경을 확정하지 않는다.
+2026-10-22 사용자 결정으로 고객 confirm/상세/reconcile에 기존 X-USER-ID와 저장된 userId를 비교하는 소유권 검사를 추가한다.
+과거 POINT 고객 상세도 같은 규칙이며 타인 주문은 없는 주문과 같은 404·오류 코드·메시지로 응답한다.
+confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fixture 검사는 구현했다. 고객/관리자 수동 대사의 접근·단일 조회·인계도 구현했다. [고객 API 결정](r02-pg-order-payment/trade_off/04-customer-ownership-and-api.md)을 따른다.
+같은 날 주문 관리자 조회·미완료 목록·운영자 대사는 기존 X-USER-ID=1 관리자 fixture를 확인하기로 정했다. 고객 경로는 1번도 본인 주문만 처리한다. 상품 등 다른 관리자 API 변경·실제 로그인·역할 테이블은 포함하지 않는다.
 
 ## PR 구성·진행 규칙
 
 | 순서 | PR·작업 브랜치 | 책임 | 상태 |
 |---|---|---|---|
-| 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 게시·미병합 |
-| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 구현 전 |
+| 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
+| 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 로컬 구현·통합/재시작·필수 전체 검사 완료, 원격 게시 전 |
 | 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 구현 전 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
-- R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [계획 틀](r02-pg-order-payment/plan.md)
+- R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [구현 계획](r02-pg-order-payment/plan.md) · [실제 결과](r02-pg-order-payment/result.md)
 - R03: [요구사항](r03-payment-resilience/requirement.md) · [설계 질문](r03-payment-resilience/trade_off/total_trade_off.md) · [계획 틀](r03-payment-resilience/plan.md)
 
 각 PR의 대상은 `volume-5/main`이다. 앞 PR을 검증·병합한 뒤 최신 기준 브랜치에서 다음 작업 브랜치를 생성한다.
@@ -152,7 +153,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 요구사항 → 설계 문답·결정 → 커밋·TDD 계획 → 구현·검증 → 실제 결과 순서로 진행한다.
 각 PR에 관련 테스트를 포함하고 R03에 검증을 모두 미루지 않는다. `result.md`는 실제 구현·검증 후 작성한다.
 
-R01은 로컬 구현·검증을 마쳤다. R02/R03의 미정 질문은 각 PR 시작 때 검토하고 결정된 내용을 설계 문서와 계획에 반영한다.
+R01은 병합했고 R02는 로컬 구현·검증을 마쳤다. R03의 미정 질문은 착수 시 검토하고 결정된 내용을 설계 문서와 계획에 반영한다.
 기존 패키지·계층 의존·순수 도메인·QueryDSL 조회/JPA 쓰기·TDD·Checkstyle·ArchUnit과 검사 완화 금지는 유지한다.
 PG 경계의 단일 TX 분리는 과거 포인트 주문 확정의 단일 TX 규칙을 그대로 적용하는 대상이 아니다.
 

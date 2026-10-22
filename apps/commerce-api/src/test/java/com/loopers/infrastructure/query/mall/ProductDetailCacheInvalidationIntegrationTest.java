@@ -12,7 +12,7 @@ import com.loopers.application.mall.usecase.DeleteProductUseCase;
 import com.loopers.application.mall.usecase.SetProductStockUseCase;
 import com.loopers.application.mall.usecase.UpdateBrandUseCase;
 import com.loopers.application.mall.usecase.UpdateProductUseCase;
-import com.loopers.application.ordering.command.ConfirmOrderCommand;
+import com.loopers.support.test.PgPaymentTestSupport;
 import com.loopers.application.ordering.usecase.ConfirmOrderUseCase;
 import com.loopers.application.shopping.command.LikeCommand;
 import com.loopers.application.shopping.service.LikeCountDeltaBuffer;
@@ -34,8 +34,6 @@ import com.loopers.domain.shopping.model.Like;
 import com.loopers.domain.shopping.model.User;
 import com.loopers.domain.shopping.repository.LikeRepository;
 import com.loopers.domain.shopping.repository.UserRepository;
-import com.loopers.domain.support.error.DomainErrorCode;
-import com.loopers.domain.support.error.DomainException;
 import com.loopers.infrastructure.persistence.mall.entity.QProductJpaEntity;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
@@ -57,6 +55,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 })
 // 테스트 자체를 트랜잭션으로 감싸지 않고 실제 커밋 후 리스너와 캐시를 검증한다.
 class ProductDetailCacheInvalidationIntegrationTest {
+    @Autowired private com.loopers.domain.pay.repository.PaymentRecoveryTaskRepository recoveryTasks;
+    @Autowired private PgPaymentTestSupport pg;
+    @BeforeEach void stubPg() { pg.usePendingProvider(); }
     private static final QProductJpaEntity PRODUCT = QProductJpaEntity.productJpaEntity;
 
     @Autowired
@@ -415,36 +416,38 @@ class ProductDetailCacheInvalidationIntegrationTest {
             long second = createProduct(brand);
             long otherId = createProduct(brand);
             createWallet(10_000L);
-            Order order = orderRepository.save(Order.create(1L, List.of(
+            Order order = orderRepository.insert(Order.create(1L, List.of(
                 OrderItem.create(first, "상품", 1_000L, 2), OrderItem.create(second, "상품", 1_000L, 1))));
             ProductDetailView firstBefore = detail(first);
             ProductDetailView secondBefore = detail(second);
             ProductDetailView other = detail(otherId);
 
             // act
-            confirmOrder.execute(new ConfirmOrderCommand(order.getId()));
+            pg.confirmAndComplete(order);
 
             // assert
             assertThat(detail(first)).isNotSameAs(firstBefore).extracting(ProductDetailView::stock).isEqualTo(3);
             assertThat(detail(second)).isNotSameAs(secondBefore).extracting(ProductDetailView::stock).isEqualTo(4);
             assertThat(detail(otherId)).isSameAs(other);
             assertThat(orderRepository.findById(order.getId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-            assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(7_000L);
+            assertThat(walletRepository.findByUserId(1L).orElseThrow().getBalance()).isEqualTo(10_000L);
         }
 
-        @DisplayName("재고 변경 이벤트 발행 뒤 결제가 실패해도 롤백된 재고와 기존 캐시를 보존한다")
+        @DisplayName("차감 이벤트 뒤 준비 기록 저장이 실패하면 롤백된 재고와 기존 캐시를 보존한다")
         @Test
         void keepsCacheWhenPaymentFailsAfterStockDecrease() {
             // arrange
             long productId = createProduct(createBrand());
             createWallet(0L);
-            Order order = orderRepository.save(Order.create(1L,
+            Order order = orderRepository.insert(Order.create(1L,
                 List.of(OrderItem.create(productId, "상품", 1_000L, 2))));
             ProductDetailView before = detail(productId);
+            transactionTemplate.executeWithoutResult(status -> recoveryTasks.insert(
+                com.loopers.domain.pay.model.PaymentRecoveryTask.create(PgPaymentTestSupport.command(order).paymentAttemptKey())));
 
             // act & assert
-            assertThatThrownBy(() -> confirmOrder.execute(new ConfirmOrderCommand(order.getId())))
-                .isInstanceOf(DomainException.class).extracting("errorCode").isEqualTo(DomainErrorCode.INSUFFICIENT_POINT);
+            assertThatThrownBy(() -> pg.confirmAndComplete(order))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
             assertThat(detail(productId)).isSameAs(before);
             assertThat(detail(productId).stock()).isEqualTo(5);
             assertThat(productRepository.findById(productId).orElseThrow().getStock()).isEqualTo(5);

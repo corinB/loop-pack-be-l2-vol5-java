@@ -68,6 +68,12 @@ public class PaymentRecoveryTaskRepositoryImpl implements PaymentRecoveryTaskRep
     }
 
     @Override
+    public boolean startManualLookup(String key, String executionId, int expectedUsed, Instant now) {
+        return update(ownedUpdate("t.lastCheckedAt = :now, t.updatedAt = :now", key, executionId, expectedUsed)
+            .setParameter("now", now));
+    }
+
+    @Override
     public boolean recordFailure(String key, String executionId, int expectedUsed,
                                  PaymentRecoveryTask.Reason reason, Instant now) {
         ensureReason(reason);
@@ -89,6 +95,28 @@ public class PaymentRecoveryTaskRepositoryImpl implements PaymentRecoveryTaskRep
                 update PaymentRecoveryTaskJpaEntity t set t.state = 'APPLIED', t.updatedAt = :now
                 where t.attemptKey = :key and t.state in ('READY', 'RUNNING', 'MANUAL_REQUIRED')
                 """).setParameter("key", PaymentAttempt.normalizeKey(key)).setParameter("now", now));
+    }
+
+    @Override
+    public boolean markApplicationFailed(PaymentRecoveryTask.Snapshot expected, String markerExecutionId, Instant now) {
+        if (expected.state() == null || expected.state() == PaymentRecoveryTask.State.APPLIED
+                || expected.usedRounds() < 0 || expected.usedRounds() > 4) {
+            return false;
+        }
+        boolean ready = expected.state() == PaymentRecoveryTask.State.READY;
+        if (ready && (expected.executionId() != null || expected.usedRounds() != 0)) {
+            return false;
+        }
+        String previous = ready ? null : PaymentAttempt.normalizeKey(expected.executionId());
+        String next = ready ? PaymentAttempt.normalizeKey(markerExecutionId) : previous;
+        return update(entityManager.createQuery("""
+                update PaymentRecoveryTaskJpaEntity t set t.state = 'MANUAL_REQUIRED', t.executionId = :next,
+                t.lastReason = 'APPLICATION_FAILED', t.updatedAt = :now
+                where t.attemptKey = :key and t.state = :state and t.usedRounds = :used
+                and (t.executionId = :previous or (t.executionId is null and :previous is null))
+                """).setParameter("key", PaymentAttempt.normalizeKey(expected.attemptKey()))
+                .setParameter("state", expected.state().name()).setParameter("used", expected.usedRounds())
+                .setParameter("previous", previous).setParameter("next", next).setParameter("now", now));
     }
 
     private Query ownedUpdate(String assignments, String key, String executionId, int expectedUsed) {
