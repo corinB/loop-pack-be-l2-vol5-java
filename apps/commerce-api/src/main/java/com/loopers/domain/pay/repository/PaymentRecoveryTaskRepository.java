@@ -17,4 +17,7 @@ public interface PaymentRecoveryTaskRepository {
 
     /** 주문·재고의 공통 업무 반영 TX 안에서만 호출하며 callback도 같은 경계를 사용한다. */
     boolean markApplied(String key, Instant now);
+
+    /** 실패한 업무 시도 당시의 상태·실행·회차가 그대로일 때만 수동 표시한다. */
+    boolean markApplicationFailed(PaymentRecoveryTask.Snapshot expected, String markerExecutionId, Instant now);
 }

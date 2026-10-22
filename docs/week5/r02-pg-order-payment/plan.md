@@ -1,6 +1,6 @@
 # R02 구현·검증·리뷰 및 커밋 계획
 
-상태: **커밋 3 준비 TX·선차감·최초 발송 권한 구현·관련 검증·세 관점 기능 리뷰 완료**. 2026-10-22 사용자 문답을 반영했다.
+상태: **커밋 4 공통 업무 반영 구현·승인 보완·세 관점 재리뷰 및 관련 검증 완료**. 2026-10-22 사용자 문답을 반영했다.
 아래 구체 API·클래스·저장 메서드는 실행 가능한 계획을 위한 제안이다. 사용자 결정과 구분하며 승인된 리뷰 보완을 포함한다.
 
 [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [상태 흐름](../states/total.md)
@@ -61,7 +61,8 @@
 | ordering.facade.PrepareOrderPaymentFacade | 내부 준비 UseCase 조율. TX 정상 반환의 발송 권한을 전달하고 CAS 패자·유일 제약 실패자는 원래 TX 종료 후 새 읽기 TX에서 재판정 |
 | ordering.service.PrepareOrderPaymentService | REQUIRES_NEW 준비 TX. 소유권→기존 시도 일치→주문 CAS→상품 검사/차감→PaymentAttempt STARTED·StockAdjustment DEDUCTED·RecoveryTask READY 저장. 재판정도 별도 REQUIRES_NEW 읽기 TX |
 | pay.service.RecordPaymentObservationService | R01의 REQUIRES_NEW 관찰 저장 재사용. 식별/종결/존재 상충을 보존하며 실패 관찰로 기존 사실을 지우지 않음 |
-| ordering.service.ApplyOrderPaymentService | 공통 업무 TX. 저장된 검증 SUCCESS/FAILED/NO_EFFECT 및 충돌을 확인해 주문 CAS와 한 번의 업무 효과를 반영 |
+| ordering.facade.ApplyOrderPaymentFacade | 내부 공통 반영 UseCase. 업무 직전 작업 비교값 확보→업무 TX 호출→rollback 뒤 원래 비교값으로 수동 표시→새 TX의 완료 우선 재판정 |
+| ordering.service.ApplyOrderPaymentService | REQUIRES_NEW 공통 업무 TX. 저장된 검증 SUCCESS/FAILED/NO_EFFECT 및 충돌을 확인해 주문 CAS와 한 번의 업무 효과를 반영. 경합/실패 후 재판정은 별도 읽기 TX |
 | ordering.facade.ReconcileOrderPaymentFacade | 고객/관리자 권한 확인 후 이미 업무 반영 완료면 저장 상태 반환. 미완료만 작업 CAS claim/인계 후 저장 종결 재적용 또는 TX 밖 단일 PG 조회→관찰 commit→공통 반영 |
 | pay.service.PaymentRecoveryProgressService | 짧은 진행 TX. 실행 ID·기대 상태/회차 조건부 갱신, 수동 조회 시각과 미완료 이유, 업무 실패 기록 |
 | ordering.facade.HandlePaymentCallbackFacade | 등록된 주문/시도의 알림 식별→TX 밖 권위 조회→관찰 commit→공통 반영. 본문 status로 직접 처리하지 않음 |
@@ -81,6 +82,7 @@
 - 업무 반영 직전 또는 해당 업무 TX 안에서 확인한 작업 상태·실행 ID·사용 회차를 변경 불가능한 비교값으로 확보한다. 업무 rollback 후 별도 짧은 TX의 APPLICATION_FAILED 실패 기록기에 이 값을 전달한다. rollback 뒤 최신 실행을 다시 읽어 비교 기준으로 삼지 않는다.
 - 당시 READY였다면 READY/실행 ID 없음/회차 0이 모두 같을 때만 새 표식 실행 ID와 수동 표시를 저장한다. 당시 RUNNING/MANUAL_REQUIRED였다면 당시 상태·실행 ID·회차가 모두 같아야 한다. 인계 등으로 조건이 바뀌면 갱신하지 않으며 APPLIED는 되돌리지 않는다.
 - 실패 기록 자체가 DB 장애로 저장되지 못해도 주문 미완료+저장 종결 결과가 운영 목록에 남는다. 이유 저장 성공을 업무 복구 성공으로 표시하지 않는다.
+- 2026-10-22 리뷰 보완 승인: 수동 실패 표식 저장만 실패하면 로그에 남기고 새 TX의 현재 상태 조회를 한 번 시도한다. 완료 상태를 우선 반환하고 미완료는 확인 필요로 표현하며, 조회까지 실패하면 오류를 전파한다. 표식 저장 재시도는 추가하지 않는다.
 - callback은 정상 실행 중 작업을 선점하지 않는다. 현재 실행을 모르는 지연 처리기가 새 실행의 진행을 덮지 않도록 실패 기록 조건을 검사한다.
 - 이미 적용된 뒤 늦은 PG 종결 충돌은 적용을 반전하지 않는다. 저장 Conflict를 운영 목록/응답의 주의 표시로 노출한다. 권한 확인 후 이미 업무 반영 완료라면 claim/인계·PG 조회 없이 저장된 완료 상태와 주의를 반환한다. 이번 범위에 강제 충돌 해소·환불 API는 추가하지 않는다.
 
@@ -110,6 +112,7 @@
 
 - 기존 OrderView/AdminOrderView의 orderId/status/totalAmount/paymentAmount/paymentStatus/createdAt/items를 유지한다. paymentStatus는 주문 기록의 PAID/null 의미를 유지한다.
 - paymentMethod(POINT/PG/null), paymentAttempt, paymentLookupUrl을 추가한다. paymentAttempt는 key·발송 상태·검증 결과·거래 키·거절·충돌·복구 진행/사용 회차·시각·이유를 구분한다. 카드/원문/비밀 입력은 반환하지 않는다.
+- 내부 공통 반영 결과의 APPLIED는 성공/실패에 따른 업무 반영 완료다. attentionRequired는 충돌/이번 업무 실패의 주의 표시이며 운영 수동 상태 전체를 대신하지 않는다. API에서는 복구 작업의 MANUAL_REQUIRED도 별도로 보여준다.
 - 기존 POINT는 paymentMethod=POINT, 시도 없음이다. DRAFT/시도 없음은 결제수단을 임의로 PG로 표시하지 않는다. PG 미완료는 주문 기록 필드가 null이어도 시도 결과/진행을 별도로 보여준다.
 - 운영 미완료 목록은 주문 PAYMENT_PENDING 또는 작업 MANUAL_REQUIRED 또는 pay Conflict≠NONE을 포함한다. APPLIED 뒤 늦은 충돌도 누락하지 않으며 오래된 RUNNING을 확실한 프로세스 사망으로 단정하지 않는다.
 - 조회는 QueryDSL projection·품목 일괄 조회를 유지한다. 고객 단건은 orderId/userId 조건을 같은 조회에 적용한다. 관리자 fixture 검사 후 전체 조회한다.
@@ -153,5 +156,6 @@
 - 이 계획: 세 관점 초안 리뷰의 UX 1건·기술 2건을 사용자가 함께 승인했고 위 계획에 반영했다. 세 관점 재리뷰에서도 중요 지적 없이 구현 진행 가능으로 확인했다. [리뷰 기록](review.md)을 따른다.
 - 커밋 2: 네 주문 상태·기록 불변식·insert/준비 CAS/종결 CAS와 안전한 재고 반환을 구현했다. 새 PG 흐름은 아직 고객 API에 연결하지 않았으며 기존 POINT confirm/save는 유지한다. 기반의 기능 리뷰 세 관점 모두 중요 지적 없음이다. 관련 검사 결과는 [리뷰 기록](review.md)에 남긴다.
 - 커밋 3: 준비 UseCase/조율자와 별도 TX 컴포넌트를 연결했다. 기존 상품 차감 서비스·상품 잠금·AFTER_COMMIT 이벤트를 재사용하고 모든 준비 기록을 같은 TX에 저장한다. 경합 패자는 새 TX에서 재판정하며 재요청에는 발송 권한을 다시 주지 않는다. 최소 관련 24건 통과, 세 관점 기능 리뷰 중요 지적 없음이다.
-- 커밋 4 이후: 미구현. 다음은 PG 결과의 공통 업무 반영·재고 복구·실패 표시다. 실제 PG HTTP와 고객 confirm 전환·범용 save 제거는 계획대로 커밋 5에서 수행한다.
-- 기준: 기반 커밋 `f47dee8` 다음의 준비 기능 작업이다. JMeter 사용자 변경은 보존한다.
+- 커밋 4: 공통 업무 TX·현재 재고 반환·실패 당시 snapshot CAS를 구현했다. 표식 저장 실패 뒤에도 새 상태 조회를 진행하는 중요 보완 1건을 사용자 승인으로 반영했고 세 관점 재리뷰 중요 지적 없음이다. 최종 핵심 10건과 Checkstyle을 통과했고 앞서 통과한 관련 20건을 포함해 중복 제외 30개 시나리오가 최종 통과 상태다. [리뷰 기록](review.md)을 따른다.
+- 커밋 5 이후: 미구현. 실제 PG HTTP와 고객 confirm 전환·범용 save 제거는 계획대로 커밋 5에서 수행한다.
+- 기준: 준비 커밋 `2b75630` 다음의 공통 업무 반영 작업이다. JMeter 사용자 변경은 보존한다.

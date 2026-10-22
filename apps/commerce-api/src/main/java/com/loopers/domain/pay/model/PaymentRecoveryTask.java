@@ -83,6 +83,13 @@ public final class PaymentRecoveryTask {
                 : new PaymentRecoveryTask(attemptKey, State.APPLIED, executionId, usedRounds, lastCheckedAt, lastReason, now);
     }
 
+    public Snapshot snapshot() {
+        return new Snapshot(attemptKey, state, executionId, usedRounds);
+    }
+
+    /** 업무 시도 직전 확보한 비교값. rollback 뒤 최신 소유자로 교체하지 않는다. */
+    public record Snapshot(String attemptKey, State state, String executionId, int usedRounds) {}
+
     private void ensureOwner(String id) {
         if (state != State.RUNNING || !Objects.equals(executionId, PaymentAttempt.normalizeKey(id))) {
             throw invalidProgress();
