@@ -92,6 +92,9 @@ R01의 `PaymentAttempt.startDispatch()`는 모델의 상태 전이이며, 이 �
 이 선택으로 전체 업무 반영의 잠금 순서, 다른 주문의 전역 키 충돌 응답, 조회/소유권·응답 우선순위까지 확정한 것으로 보지 않는다.
 현재는 사용자 결정 기록이며 기능 구현·검증 완료를 뜻하지 않는다.
 
+후속 커밋 3에서 내부 준비 흐름을 구현했다. PrepareOrderPaymentFacade는 TX를 감싸지 않고, 별도 PrepareOrderPaymentService의 REQUIRES_NEW 준비 TX가 commit된 뒤 최초 발송 권한을 받는다.
+CAS 패자·유일 제약 실패자는 원래 TX 종료 후 별도 읽기 TX에서 기존 요청을 확인한다. 준비에는 카드/HTTP가 없고 실제 PG 호출은 confirm 전환 단계에서 연결한다. 구현 검증은 [리뷰 기록](../review.md)을 따른다.
+
 - 구체적인 클래스명·Context·UseCase 계약과 오류 반환 경계.
 - 결제 시도·복구 작업·주문·상품·mall 재고 기록의 잠금 순서와 실행 권한 확보 방식.
 - 먼저 commit할 PG 관찰/거절 사실의 정확한 필드·저장 계약, 내부 반영 실패 기록·재적용 입력. 관찰/업무 반영 TX 분리는 확정이다.

@@ -1,6 +1,6 @@
 # R02 구현·검증·리뷰 및 커밋 계획
 
-상태: **계획 승인·세 관점 재리뷰 완료·커밋 2 기반 구현·관련 검증·세 관점 기능 리뷰 완료**. 2026-10-22 사용자 문답을 반영했다.
+상태: **커밋 3 준비 TX·선차감·최초 발송 권한 구현·관련 검증·세 관점 기능 리뷰 완료**. 2026-10-22 사용자 문답을 반영했다.
 아래 구체 API·클래스·저장 메서드는 실행 가능한 계획을 위한 제안이다. 사용자 결정과 구분하며 승인된 리뷰 보완을 포함한다.
 
 [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [상태 흐름](../states/total.md)
@@ -58,7 +58,8 @@
 | 역할·제안 클래스 | 책임 |
 |---|---|
 | ordering.facade.ConfirmOrderFacade | 고객 입력/시도 식별, 준비 결과에 따른 최초 PG POST, 관찰 저장, 공통 반영, 최신 응답 조회 |
-| ordering.service.PrepareOrderPaymentService | 준비 TX. 소유권→기존 시도 일치→주문 CAS→상품 검사/차감→PaymentAttempt STARTED·StockAdjustment DEDUCTED·RecoveryTask READY 저장 |
+| ordering.facade.PrepareOrderPaymentFacade | 내부 준비 UseCase 조율. TX 정상 반환의 발송 권한을 전달하고 CAS 패자·유일 제약 실패자는 원래 TX 종료 후 새 읽기 TX에서 재판정 |
+| ordering.service.PrepareOrderPaymentService | REQUIRES_NEW 준비 TX. 소유권→기존 시도 일치→주문 CAS→상품 검사/차감→PaymentAttempt STARTED·StockAdjustment DEDUCTED·RecoveryTask READY 저장. 재판정도 별도 REQUIRES_NEW 읽기 TX |
 | pay.service.RecordPaymentObservationService | R01의 REQUIRES_NEW 관찰 저장 재사용. 식별/종결/존재 상충을 보존하며 실패 관찰로 기존 사실을 지우지 않음 |
 | ordering.service.ApplyOrderPaymentService | 공통 업무 TX. 저장된 검증 SUCCESS/FAILED/NO_EFFECT 및 충돌을 확인해 주문 CAS와 한 번의 업무 효과를 반영 |
 | ordering.facade.ReconcileOrderPaymentFacade | 고객/관리자 권한 확인 후 이미 업무 반영 완료면 저장 상태 반환. 미완료만 작업 CAS claim/인계 후 저장 종결 재적용 또는 TX 밖 단일 PG 조회→관찰 commit→공통 반영 |
@@ -70,6 +71,7 @@
 - 같은 주문/키/금액/실효 조건은 기존 상태를 반환한다. 다른 키/조건은 409다. 카드 원문은 명령/DTO에만 잠시 존재하고 toString/오류/저장에 노출하지 않는다.
 - PG 생성 뒤에는 결과 미확인·중단·commit 응답 불명확을 이유로 POST를 재전송하지 않는다. STARTED 직후 호출 전 종료도 수동 확인 대상으로 남긴다.
 - R02 confirm의 PENDING/미확인은 저장 상태를 반환한다. 자동 조회 worker를 임시로 넣지 않는다. callback 또는 명시 대사로 마무리한다.
+- 준비의 dispatchAllowed=true는 준비 TX commit이 정상 반환된 최초 호출에만 준다. 같은 요청의 저장 시도에서는 항상 false다. 이 내부 권한을 받아 PG HTTP로 연결하는 confirm 전환은 커밋 5에서 수행한다. 준비 조율자의 재판정은 조회 API가 아닌 쓰기 경합 처리다.
 
 ### 진행 상태와 실패 기록 보완
 
@@ -150,5 +152,6 @@
 - 확정 문답: 주문 준비/종결 CAS, 재고 실패 수동 처리, 고객 소유권/타인404, 관리자1, 동기 callback, 수동 최대 조회1.
 - 이 계획: 세 관점 초안 리뷰의 UX 1건·기술 2건을 사용자가 함께 승인했고 위 계획에 반영했다. 세 관점 재리뷰에서도 중요 지적 없이 구현 진행 가능으로 확인했다. [리뷰 기록](review.md)을 따른다.
 - 커밋 2: 네 주문 상태·기록 불변식·insert/준비 CAS/종결 CAS와 안전한 재고 반환을 구현했다. 새 PG 흐름은 아직 고객 API에 연결하지 않았으며 기존 POINT confirm/save는 유지한다. 기반의 기능 리뷰 세 관점 모두 중요 지적 없음이다. 관련 검사 결과는 [리뷰 기록](review.md)에 남긴다.
-- 커밋 3 이후: 미구현. 다음은 재고 선차감과 결제 준비 TX·발송 권한 연결이다. 범용 save 제거는 계획대로 커밋 5에서 수행한다.
-- 기준: 승인 보완 커밋 `6587337` 다음의 첫 기능 작업이다. JMeter 사용자 변경은 보존한다.
+- 커밋 3: 준비 UseCase/조율자와 별도 TX 컴포넌트를 연결했다. 기존 상품 차감 서비스·상품 잠금·AFTER_COMMIT 이벤트를 재사용하고 모든 준비 기록을 같은 TX에 저장한다. 경합 패자는 새 TX에서 재판정하며 재요청에는 발송 권한을 다시 주지 않는다. 최소 관련 24건 통과, 세 관점 기능 리뷰 중요 지적 없음이다.
+- 커밋 4 이후: 미구현. 다음은 PG 결과의 공통 업무 반영·재고 복구·실패 표시다. 실제 PG HTTP와 고객 confirm 전환·범용 save 제거는 계획대로 커밋 5에서 수행한다.
+- 기준: 기반 커밋 `f47dee8` 다음의 준비 기능 작업이다. JMeter 사용자 변경은 보존한다.
