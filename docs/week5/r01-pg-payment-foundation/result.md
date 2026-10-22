@@ -1,6 +1,6 @@
 # R01 구현 결과
 
-2026-10-21 기준으로 **로컬 구현·검증을 완료했다.** 작업 브랜치는 `volume-5/r01-pg-payment-foundation`이며 대상은 `volume-5/main`이다. 원격 게시·PR 생성·병합은 하지 않았다.
+2026-10-21 기준으로 **로컬 구현·검증을 완료했다.** 작업 브랜치는 `volume-5/r01-pg-payment-foundation`이며 대상은 `volume-5/main`이다. 2026-10-22 사용자 요청으로 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)를 게시했다. 아직 병합하지 않았다.
 
 [요구사항](requirement.md) · [구현 계획·진행 기록](plan.md) · [전체 상태 흐름](../states/total.md) · [실행·SQL·보존 실험](../../../docker/payment-lab/README.md)
 
