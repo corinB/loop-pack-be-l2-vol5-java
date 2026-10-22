@@ -134,7 +134,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 2026-10-22 사용자 결정으로 고객 confirm/상세/reconcile에 기존 X-USER-ID와 저장된 userId를 비교하는 소유권 검사를 추가한다.
 과거 POINT 고객 상세도 같은 규칙이며 타인 주문은 없는 주문과 같은 404·오류 코드·메시지로 응답한다.
 이는 R02 설계 결정이고 아직 기능 구현 전이다. [고객 API 결정](r02-pg-order-payment/trade_off/04-customer-ownership-and-api.md)을 따른다.
-관리자/운영 담당자 접근 범위는 별도 문답 대상이며 Spring Security·ADMIN 역할·CSRF 도입은 확정하지 않는다.
+같은 날 주문 관리자 조회·미완료 목록·운영자 대사는 기존 X-USER-ID=1 관리자 fixture를 확인하기로 정했다. 고객 경로는 1번도 본인 주문만 처리한다. 상품 등 다른 관리자 API 변경·실제 로그인·역할 테이블은 포함하지 않는다.
 
 ## PR 구성·진행 규칙
 
