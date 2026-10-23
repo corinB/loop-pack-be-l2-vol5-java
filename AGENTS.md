@@ -4,9 +4,11 @@
 
 ## 5주차 적용 안내
 
-2026-10-23 최종 점검: R03 [PR #26](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/26)까지 병합한 기준은 `volume-5/main`의 `b70d83b`다. [5주차 최종 점검](docs/week5/final-audit.md)을 먼저 읽는다. 병합 트리는 검증된 `8e2e92f`와 같으며 전체 검사509건/실제 R03 실험14건의 기존 근거를 대조했다. 발견한 PG 실패 반환 캐시 검증 공백은 사용자 요청으로 commit/rollback2건을 추가해 보완했다. 캐시16건/ArchUnit8건의 관련24건과 테스트 Checkstyle을 통과했고 기능 수정은 없다. 이번 보완과 점검 문서는 기준 브랜치 위의 로컬 커밋이며 원격 게시는 별도 요청 범위다. 아래 PR 생성 예정·미정 표현은 당시 진행 기록이며 현재 범위는 최종 점검과 인계 문서를 우선한다.
+2026-10-23 최종 점검: R03 [PR #26](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/26)까지 병합한 기준은 `volume-5/main`의 `b70d83b`다. [5주차 최종 점검](docs/week5/final-audit.md)을 먼저 읽는다. 병합 트리는 검증된 `8e2e92f`와 같으며 전체 검사509건/실제 R03 실험14건의 기존 근거를 대조했다. 발견한 PG 실패 반환 캐시 검증 공백은 사용자 요청으로 commit/rollback2건을 추가해 보완했다. 캐시16건/ArchUnit8건의 관련24건과 테스트 Checkstyle을 통과했고 기능 수정은 없다. 반환 캐시 보완과 점검 문서는 e200e78로 volume-5/main에 게시했다. 아래 PR 생성 예정·미정 표현은 당시 진행 기록이며 현재 범위는 최종 점검과 인계 문서를 우선한다.
 
 다음 작업은 [인계 문서](docs/week5/handoff.md)에서 현재 브랜치·완료 검증·남은 범위를 먼저 확인한다.
+
+처음 읽는 개발자용 [결제 장애 대응 안내](docs/week5/resilience/README.md)를 추가했다. [서킷브레이커](docs/week5/resilience/circuit-breaker.md)·[폴백 전략](docs/week5/resilience/fallback.md)은 현재 구현을 설명하고 기존 [요청 상태 모델](docs/week5/states/payment.md)을 재사용한다. 고객 confirm/reconcile의 본문에는 completed가 없으며 callback 응답만 이를 노출한다. 해당 문서 표현을 실제 controller/View에 맞춰 바로잡았다. 문서 변경은 기능/테스트 재검사나 별도 기능 리뷰 대상으로 확대하지 않는다.
 
 현재 준비 범위·진행 순서·완료 조건은 [5주차 전체 요구사항](docs/week5/total_requirement.md)을 따른다.
 기준 브랜치는 `volume-5/main`이며, `volume-4/main`의 `9eff402`에서 시작한다.

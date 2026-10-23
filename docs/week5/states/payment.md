@@ -1,6 +1,32 @@
-# 결제 상태
+# 결제 요청 상태 모델
 
-[전체 흐름](total.md) · [주문 상태](order.md) · [재고 상태](stock.md) · [R01 결정 목록](../r01-pg-payment-foundation/trade_off/total_trade_off.md)
+[전체 흐름](total.md) · [주문 상태](order.md) · [재고 상태](stock.md) · [장애 대응 읽기 안내](../resilience/README.md)
+
+## 처음 읽는 개발자를 위한 상태 구분
+
+이 문서의 ‘결제 요청’은 고객이 confirm을 호출하면서 시작한 한 번의 논리적 결제 시도다. 같은 주문·키로 다시 요청하거나 PG를 여러 번 조회해도 새 결제를 뜻하지 않는다. 이 시도를 발송 기록·확인한 결과·후속 처리로 나눠 저장한다.
+
+| 궁금한 것 | 확인할 모델·필드 | 쉬운 뜻 |
+|---|---|---|
+| 주문 처리가 끝났는가? | Order.status | 주문 생성·결제 대기·확정·실패 |
+| PG 요청을 보내기 시작했는가? | PaymentAttempt.dispatchState | READY 또는 STARTED. STARTED만으로 PG 도착을 보장하지 않음 |
+| PG 결과를 어디까지 확인했는가? | PaymentAttempt.outcome | UNKNOWN·PENDING·SUCCESS·FAILED |
+| 후속 작업은 어디까지 끝났는가? | PaymentRecoveryTask.state | READY·RUNNING·MANUAL_REQUIRED·APPLIED |
+| 차감한 재고는 어떻게 마무리됐는가? | StockAdjustment.state | DEDUCTED·CONSUMED·RESTORED |
+
+예를 들어 같은 주문에서 다음 조합이 가능하다.
+
+| 상황 | 주문 | 확인한 PG 결과 | 복구 진행 | 재고 처리 기록 |
+|---|---|---|---|---|
+| PG가 처리 중임을 확인하고 자동 조회 중 | PAYMENT_PENDING | PENDING | RUNNING | DEDUCTED |
+| 조회 회로 차단으로 수동 확인 필요 | PAYMENT_PENDING | 마지막 UNKNOWN/PENDING 유지 | MANUAL_REQUIRED | DEDUCTED |
+| PG 성공은 저장했지만 주문 반영이 rollback됨 | PAYMENT_PENDING | SUCCESS | MANUAL_REQUIRED | DEDUCTED |
+| 성공 업무 반영까지 완료 | CONFIRMED | SUCCESS | APPLIED | CONSUMED |
+| 확정 실패와 반환까지 완료 | PAYMENT_FAILED | FAILED | APPLIED | RESTORED |
+
+위 조합은 대표 사례이며 모든 중간 상태를 나열한 것은 아니다. 회로의 CLOSED/OPEN/HALF_OPEN은 이 표와 별개로 여러 주문이 공유하는 **PG 조회 허용 상태**다. 이번 호출의 `PaymentObservation.Kind.UNAVAILABLE`도 DB 결제 결과 enum과 다르다. 자세한 대응은 [서킷브레이커](../resilience/circuit-breaker.md)와 [폴백 전략](../resilience/fallback.md)을 함께 읽는다.
+
+## 구현된 연결
 
 R01에서 아래 결제 시도·복구 작업 모델과 저장 기반을 구현했다. R02 고객 confirm은 준비 저장 후 실제 PG를 한 번 호출하고, 관찰 저장 후 공통 업무 TX로 주문·재고·작업 APPLIED를 함께 처리한다. 업무 실패는 당시 실행 정보로만 수동 표시한다. 고객/관리자 GET에는 저장한 결과·복구 상태·주의를 연결했고, GET으로 다시 결제하거나 PG를 조회하지 않는다. 수동 대사는 단일 조회·저장 근거 재적용·실행 인계에 연결했다. callback도 동기 권위 조회·관찰 저장·공통 반영에 연결했다. callback은 작업을 인계하거나 조회 회차를 소비하지 않는다. 제한된 자동 재조회도 연결했다. 최초 confirm만 시작하고 서버 중단 뒤 자동 재개하지 않는다. 실제 PG 장애/재시작 실험 14건과 전체 검사 509건의 [검증 결과](../r03-payment-resilience/result.md), [담당자 처리 절차](../r03-payment-resilience/operations.md)를 함께 읽는다.
 

@@ -17,6 +17,7 @@
 
 기준 자료:
 
+- [처음 읽는 개발자 안내: 상태 모델·서킷브레이커·폴백](resilience/README.md)
 - [상태 문서: 전체 흐름·주문·재고·결제](states/total.md)
 - [학습 자료 원문](reference/learning.md)
 - [Implementation Quest·체크리스트·Technical Writing Quest 원문](reference/implementation-quest.md)

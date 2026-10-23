@@ -63,7 +63,7 @@ Content-Type: application/json
 - 운영 미완료 목록: `GET /api-admin/v1/payments/incomplete?page=0&size=100`
 - 명시적 수동 대사: `POST /api-admin/v1/orders/{orderId}/payment/reconcile`
 
-관리자 경로에는 1번 fixture 헤더가 필요하다. GET 상세에는 `completed` 필드가 없으므로 `status`와 `paymentAttempt.recoveryState`를 본다. `completed`는 confirm·reconcile 응답의 필드다. GET으로 확인하는 polling은 PG를 직접 조회하거나 자동 작업을 다시 시작하지 않는다.
+관리자 경로에는 1번 fixture 헤더가 필요하다. 고객 confirm·고객/관리자 reconcile·주문 GET 본문에는 `completed` 필드가 없으므로 `status`와 `paymentAttempt.recoveryState`를 본다. confirm/reconcile은 내부 완료 여부로 HTTP200/202를 선택하며 `completed`가 응답에 노출되는 것은 별도 callback 경로다. GET으로 확인하는 polling은 PG를 직접 조회하거나 자동 작업을 다시 시작하지 않는다. [폴백 응답 설명](../resilience/fallback.md)에 실제 응답 필드와 읽는 순서를 정리했다.
 
 ## 대표 실험
 

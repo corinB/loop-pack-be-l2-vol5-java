@@ -4,9 +4,10 @@
 
 ## 현재 위치와 먼저 읽을 문서
 
-- 현재 브랜치: `volume-5/main`, 원격 병합 기준: `b70d83b`. fast-forward한 뒤 반환 캐시 테스트와 점검 문서를 로컬 후속 커밋으로 관리한다.
+- 현재 브랜치: `volume-5/main`. PR03 병합 기준은 `b70d83b`, 반환 캐시 테스트/점검 보완은 `e200e78`로 원격 게시까지 완료했다. 이후 장애 대응 설명 문서를 같은 기준 브랜치에서 정리한다.
 - R01 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24), R02 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)는 사용자 병합 완료. R03은 R02 병합 `42c22c2`에서 시작했다.
-- R03 [PR #26](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/26)도 사용자 병합 완료. 최종 기능 커밋은 `ae46776`, 검증 정리 HEAD는 `8e2e92f`이며 병합 트리와 같다. 이후 점검/캐시 테스트 보완은 로컬 커밋이며 아직 원격 게시하지 않았다.
+- R03 [PR #26](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/26)도 사용자 병합 완료. 최종 기능 커밋은 `ae46776`, 검증 정리 HEAD는 `8e2e92f`이며 병합 트리와 같다. 이후 점검/캐시 테스트 보완 `e200e78`도 게시했다.
+- 처음 읽는 개발자는 [장애 대응 읽기 안내](resilience/README.md) → [서킷브레이커](resilience/circuit-breaker.md) → [폴백 전략](resilience/fallback.md)과 [요청 상태 모델](states/payment.md)을 연결해 읽는다. 고객 confirm/reconcile의 실제 응답과 달랐던 completed 문서 설명도 바로잡았다.
 - [R03 결과](r03-payment-resilience/result.md) → [운영 확인](r03-payment-resilience/operations.md) → [재현 방법](r03-payment-resilience/verification.md) → [기능 리뷰](r03-payment-resilience/review.md) 순서로 읽는다. [기술 글](r03-payment-resilience/technical-article.md)·[상태 문서](states/total.md)도 정리했다.
 - 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
 
@@ -25,7 +26,7 @@
 
 ## 이어서 할 작업
 
-세 PR은 모두 게시·병합됐고, 최종 점검에서 찾은 반환 캐시 검증2건도 보완했다. 점검한 요구사항의 미해결 필수 보완은 없다. 사용자 요청대로 기존 컨벤션의 로컬 테스트/문서 커밋으로 정리하며 원격 게시는 후속 요청 범위다. 기능/설정 변경이 없으므로 전체 check나 실서버 실험을 반복하지 않는다.
+세 PR은 모두 게시·병합됐고, 반환 캐시 검증2건과 점검 문서 `e200e78`도 게시했다. 점검한 요구사항의 미해결 필수 보완은 없다. 후속으로 처음 읽는 개발자를 위한 회로/폴백 안내와 기존 상태 모델의 읽기 순서를 정리했다. 기능/설정/테스트 변경이 없어 문서 링크·응답 필드·현재 수치와 코드 일치를 확인하며 전체 check나 실서버 실험은 반복하지 않는다.
 
 완료한 정책을 미정으로 돌리지 않는다. 재고 선차감·확정 실패만 한 번 반환·미확인 유지, 관찰 먼저 commit/업무 TX 분리, 주문 CAS·복구 작업 실행 ID 보호·기존 접근 경계는 유지한다.
 

@@ -2,6 +2,8 @@
 
 [결정 목록](total_trade_off.md) · [자동 재확인 정책](01-reconciliation-retry-policy.md) · [실행 방식](06-reconciliation-execution.md) · [횟수 기록](07-retry-attempt-accounting.md)
 
+처음 읽는 개발자는 [현재 구현의 서킷브레이커 안내](../../resilience/circuit-breaker.md)와 [폴백 전략](../../resilience/fallback.md)을 먼저 읽는다. 이 문서는 결정 과정의 기록이며 아래 ‘설정 예정·아직 정할 것·미실행’ 표현은 논의 당시 기준이다. 현재 수치·코드·검증 근거는 새 안내와 결과 문서를 따른다.
+
 상태: **2026-10-23 정책 구현·세 관점 기능 리뷰·최종 검증 완료**. 전체 검사 509건과 실제 PG 장애/재시작 실험 14건의 증거·검증 한계는 [결과](../result.md)를 따른다. 아래 논의는 결정 과정이며 현재 클래스와 완료 범위는 [계획](../plan.md)·[리뷰 기록](../review.md)에 연결한다. 원격 PR은 후속 범위다.
 
 ## 먼저 구분할 세 가지

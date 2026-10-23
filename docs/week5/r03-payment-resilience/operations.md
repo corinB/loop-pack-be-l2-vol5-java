@@ -2,6 +2,8 @@
 
 [실제 결과](result.md) · [재현 방법](verification.md) · [결제 상태](../states/payment.md) · [회로 집계 기준](trade_off/02-lookup-circuit-breaker.md)
 
+처음 읽는다면 [장애 대응 읽기 안내](../resilience/README.md)에서 상태 모델·서킷브레이커·폴백의 역할을 먼저 확인한다. 이 문서는 담당자가 실제로 조회하고 처리하는 순서를 설명한다.
+
 ## 먼저 저장된 상태를 읽는다
 
 결제 요청이 202로 끝나면 아직 성공·실패 업무가 완료되지 않은 것이다. 새 결제를 보내지 말고 응답의 조회 URL을 따라 현재 상태를 읽는다. 고객 URL은 본인 주문만, 관리자 URL은 학습용 1번 fixture로 확인한다.
@@ -16,7 +18,7 @@ X-USER-ID: 1
 
 고객 상세는 `GET /api/v1/orders/{orderId}`다. 고객은 자신의 `X-USER-ID`를 사용한다. 타인 주문은 없는 주문과 같은 404다. 이 헤더는 학습용 fixture이며 실제 로그인 체계는 아니다.
 
-GET은 우리 DB를 읽기만 한다. PG 조회·재결제·자동 작업 재시작을 하지 않는다. 상세 응답은 주문 `status`와 `paymentAttempt`의 결과·복구 상태·회차·최근 확인 시각·사유·주의 표시를 함께 본다. `completed`는 상세 GET이 아닌 confirm/reconcile 응답의 필드다.
+GET은 우리 DB를 읽기만 한다. PG 조회·재결제·자동 작업 재시작을 하지 않는다. 상세 응답은 주문 `status`와 `paymentAttempt`의 결과·복구 상태·회차·최근 확인 시각·사유·주의 표시를 함께 본다. 고객 confirm·고객/관리자 reconcile·주문 GET 본문에는 `completed`가 없다. confirm/reconcile은 내부 완료 판단을 HTTP200/202로 표현하며, 본문은 status와 recoveryState로 읽는다. `completed`가 노출되는 경로는 별도 callback 응답이다.
 
 | 저장 상태 | 의미와 처리 |
 |---|---|
