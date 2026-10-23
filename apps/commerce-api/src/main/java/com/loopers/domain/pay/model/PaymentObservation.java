@@ -7,7 +7,7 @@ public record PaymentObservation(Kind kind, String transactionKey, String provid
                                  ProviderPaymentStatus status, Reason reason, Integer httpStatus) {
     public enum Kind { VERIFIED, REJECTED_NO_EFFECT, NOT_FOUND, UNAVAILABLE, CONFLICT }
     public enum Reason { NONE, NOT_FOUND, TIMEOUT, TRANSPORT_ERROR, HTTP_ERROR, INVALID_RESPONSE,
-        IDENTITY_MISMATCH, MULTIPLE_TRANSACTIONS }
+        IDENTITY_MISMATCH, MULTIPLE_TRANSACTIONS, CIRCUIT_BLOCKED }
 
     public PaymentObservation {
         Objects.requireNonNull(kind);

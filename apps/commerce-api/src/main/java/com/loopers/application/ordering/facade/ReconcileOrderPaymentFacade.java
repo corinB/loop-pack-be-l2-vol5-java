@@ -8,13 +8,14 @@ import com.loopers.application.ordering.service.OrderPaymentResultService;
 import com.loopers.application.ordering.service.PrepareOrderReconciliationService;
 import com.loopers.application.ordering.usecase.ApplyOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.ReconcileOrderPaymentUseCase;
-import com.loopers.application.pay.gateway.PaymentProviderGateway;
-import com.loopers.application.pay.gateway.PaymentProviderGateway.ExpectedPayment;
+import com.loopers.application.pay.gateway.PaymentLookupGateway;
+import com.loopers.application.pay.gateway.PaymentLookupGateway.LookupRequest;
 import com.loopers.application.pay.service.PaymentRecoveryProgressService;
 import com.loopers.application.pay.usecase.RecordPaymentObservationUseCase;
 import com.loopers.domain.pay.model.PaymentAttempt;
 import com.loopers.domain.pay.model.PaymentObservation;
 import com.loopers.domain.pay.model.PaymentRecoveryTask;
+import com.loopers.domain.pay.policy.PaymentLookupPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class ReconcileOrderPaymentFacade implements ReconcileOrderPaymentUseCase {
     private final PrepareOrderReconciliationService preparation;
-    private final PaymentProviderGateway gateway;
+    private final PaymentLookupGateway gateway;
     private final RecordPaymentObservationUseCase observations;
     private final ApplyOrderPaymentUseCase application;
     private final PaymentRecoveryProgressService progress;
@@ -43,12 +44,9 @@ public class ReconcileOrderPaymentFacade implements ReconcileOrderPaymentUseCase
         if (attempt.getConflict() == PaymentAttempt.Conflict.NONE
                 && (attempt.getOutcome() == PaymentAttempt.Outcome.UNKNOWN || attempt.getOutcome() == PaymentAttempt.Outcome.PENDING)) {
             if (!progress.startManualLookup(prepared.execution())) { return current(command, prepared, false); }
-            PaymentObservation observation = gateway.lookup(new ExpectedPayment(attempt.getProviderOrderId(),
-                attempt.getAmount(), attempt.getTransactionKey()));
+            PaymentObservation observation = gateway.lookup(LookupRequest.from(attempt));
             observations.execute(attempt.getAttemptKey(), observation);
-            if (observation.kind() == PaymentObservation.Kind.VERIFIED) {
-                incompleteReason = PaymentRecoveryTask.Reason.PENDING;
-            }
+            incompleteReason = PaymentLookupPolicy.incompleteReason(observation);
         }
         ApplyOrderPaymentResult applied = application.execute(attempt.getAttemptKey(), prepared.execution());
         boolean attention = applied.attentionRequired();

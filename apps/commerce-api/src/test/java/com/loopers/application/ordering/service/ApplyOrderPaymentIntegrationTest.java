@@ -6,12 +6,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 
 import com.loopers.application.ordering.command.PrepareOrderPaymentCommand;
 import com.loopers.application.ordering.result.ApplyOrderPaymentResult;
 import com.loopers.application.ordering.usecase.ApplyOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.PrepareOrderPaymentUseCase;
 import com.loopers.application.pay.service.PaymentRecoveryProgressService;
+import com.loopers.application.pay.gateway.PaymentProviderGateway;
 import com.loopers.application.pay.usecase.RecordPaymentObservationUseCase;
 import com.loopers.domain.mall.model.Brand;
 import com.loopers.domain.mall.model.Product;
@@ -34,6 +38,11 @@ import com.loopers.domain.pay.repository.PaymentRecoveryTaskRepository;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.support.test.OrderConfirmProbe;
 import com.loopers.utils.DatabaseCleanUp;
+import io.github.resilience4j.retry.RetryRegistry;
+import io.github.resilience4j.core.functions.Either;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import jakarta.persistence.EntityManagerFactory;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -41,12 +50,20 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @IntegrationTest
@@ -65,10 +82,16 @@ class ApplyOrderPaymentIntegrationTest {
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private OrderConfirmProbe probe;
     @Autowired private DatabaseCleanUp databaseCleanUp;
+    @Autowired private RetryOrderPaymentService retry;
+    @Autowired private RetryRegistry retries;
+    @Autowired private CircuitBreakerRegistry circuits;
+    @Autowired private PaymentProviderGateway provider;
+    @Autowired private EntityManagerFactory entityManagerFactory;
 
     @AfterEach
     void tearDown() {
         reset(orders);
+        circuits.circuitBreaker("pg-lookup").reset();
         databaseCleanUp.truncateAllTables();
     }
 
@@ -174,6 +197,7 @@ class ApplyOrderPaymentIntegrationTest {
         assertThat(task(attempt).getState()).isEqualTo(PaymentRecoveryTask.State.MANUAL_REQUIRED);
         assertThat(task(attempt).getExecutionId()).isNotNull();
         assertThat(task(attempt).getLastReason()).isEqualTo(PaymentRecoveryTask.Reason.APPLICATION_FAILED);
+        verify(orders, times(1)).completePgIfPending(eq(attempt.getOrderId()), any(), any());
         reset(orders);
         assertThat(apply.execute(attempt.getAttemptKey()).state()).isEqualTo(ApplyOrderPaymentResult.State.APPLIED);
         assertThat(probe.countPaidOrderRecords(attempt.getOrderId())).isEqualTo(1L);
@@ -227,6 +251,95 @@ class ApplyOrderPaymentIntegrationTest {
         assertThat(apply.execute(attempt.getAttemptKey()).state()).isEqualTo(ApplyOrderPaymentResult.State.APPLIED);
         assertThat(progress.markApplicationFailed(running)).isFalse();
         assertThat(task(attempt).getState()).isEqualTo(PaymentRecoveryTask.State.APPLIED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProviderPaymentStatus.class, names = {"SUCCESS", "FAILED"})
+    @DisplayName("코드로 식별한 데드락의 실제 rollback 뒤 새 TX로 한 번 더 반영하고 PG·조회 회차를 늘리지 않는다")
+    void retriesOneDeadlockInNewTransaction(ProviderPaymentStatus outcome) {
+        PaymentAttempt attempt = prepared(5, 2);
+        observe(attempt, outcome);
+        AtomicInteger calls = new AtomicInteger();
+        var holders = new ArrayList<Object>();
+        tx().executeWithoutResult(status -> doAnswer(invocation -> {
+            holders.add(TransactionSynchronizationManager.getResource(entityManagerFactory));
+            if (calls.incrementAndGet() == 2) {
+                assertThat(orders.findById(attempt.getOrderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+                assertThat(probe.countPaidOrderRecords(attempt.getOrderId())).isZero();
+            }
+            Object result = invocation.callRealMethod();
+            if (calls.get() == 1) { throw deadlock(); }
+            return result;
+        }).when(orders).completePgIfPending(eq(attempt.getOrderId()), any(), any()));
+
+        assertThat(AopUtils.isAopProxy(retry)).isTrue();
+        assertThat(apply.execute(attempt.getAttemptKey()).state()).isEqualTo(ApplyOrderPaymentResult.State.APPLIED);
+
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(holders).hasSize(2).doesNotContainNull();
+        assertThat(holders.get(1)).isNotSameAs(holders.getFirst());
+        boolean success = outcome == ProviderPaymentStatus.SUCCESS;
+        assertThat(orders.findById(attempt.getOrderId()).orElseThrow().getStatus())
+            .isEqualTo(success ? OrderStatus.CONFIRMED : OrderStatus.PAYMENT_FAILED);
+        assertThat(probe.countPaidOrderRecords(attempt.getOrderId())).isEqualTo(success ? 1 : 0);
+        assertThat(products.findById(productId(attempt)).orElseThrow().getStock()).isEqualTo(success ? 3 : 5);
+        assertThat(adjustment(attempt).getState()).isEqualTo(success ? StockAdjustment.State.CONSUMED : StockAdjustment.State.RESTORED);
+        assertThat(task(attempt).getState()).isEqualTo(PaymentRecoveryTask.State.APPLIED);
+        assertThat(task(attempt).getUsedRounds()).isZero();
+        assertThat(attempt(attempt).getOutcome().name()).isEqualTo(outcome.name());
+        assertThat(circuits.circuitBreaker("pg-lookup").getMetrics().getNumberOfBufferedCalls()).isZero();
+        verify(provider, never()).lookup(any());
+        verify(provider, never()).create(any(), any(), any());
+        var config = retries.retry("payment-application").getRetryConfig();
+        assertThat(config.getMaxAttempts()).isEqualTo(2);
+        assertThat(config.getIntervalBiFunction().apply(1, Either.left(deadlock()))).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("데드락 2회 소진 뒤에도 최초 snapshot으로만 표시해 인계받은 실행·회차를 보호한다")
+    void exhaustedDeadlocksCannotMarkNewOwner() {
+        PaymentAttempt attempt = prepared(5, 2);
+        observe(attempt, ProviderPaymentStatus.SUCCESS);
+        String first = UUID.randomUUID().toString();
+        String next = UUID.randomUUID().toString();
+        tx().executeWithoutResult(status -> {
+            assertThat(tasks.claim(attempt.getAttemptKey(), first, Instant.now())).isTrue();
+            assertThat(tasks.consumeRound(attempt.getAttemptKey(), first, 0, Instant.now())).isTrue();
+        });
+        var original = progress.capture(attempt.getAttemptKey());
+        AtomicInteger calls = new AtomicInteger();
+        tx().executeWithoutResult(status -> doAnswer(invocation -> {
+            invocation.callRealMethod();
+            if (calls.incrementAndGet() == 2) {
+                TransactionTemplate handover = tx();
+                handover.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                handover.executeWithoutResult(ignored -> {
+                    assertThat(tasks.handover(attempt.getAttemptKey(), original.state(), first, 1, next, Instant.now())).isTrue();
+                    assertThat(tasks.consumeRound(attempt.getAttemptKey(), next, 1, Instant.now())).isTrue();
+                });
+            }
+            throw deadlock();
+        }).when(orders).completePgIfPending(eq(attempt.getOrderId()), any(), any()));
+
+        assertThat(apply.execute(attempt.getAttemptKey(), original).state()).isEqualTo(ApplyOrderPaymentResult.State.APPLICATION_FAILED);
+
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(task(attempt).getExecutionId()).isEqualTo(next);
+        assertThat(task(attempt).getUsedRounds()).isEqualTo(2);
+        assertThat(task(attempt).getState()).isEqualTo(PaymentRecoveryTask.State.RUNNING);
+        assertThat(task(attempt).getLastReason()).isEqualTo(PaymentRecoveryTask.Reason.NONE);
+        assertThat(attempt(attempt).getOutcome()).isEqualTo(PaymentAttempt.Outcome.SUCCESS);
+        assertThat(probe.countPaidOrderRecords(attempt.getOrderId())).isZero();
+        assertThat(orders.findById(attempt.getOrderId()).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+        assertThat(products.findById(productId(attempt)).orElseThrow().getStock()).isEqualTo(3);
+        assertThat(adjustment(attempt).getState()).isEqualTo(StockAdjustment.State.DEDUCTED);
+        verify(provider, never()).lookup(any());
+        verify(provider, never()).create(any(), any(), any());
+    }
+
+    private CannotAcquireLockException deadlock() {
+        // 코드가 있는 예외를 SQL 뒤 주입한다. 실제 TX rollback과 새 TX는 DB로 확인하며 DB victim 선정 실험은 후속 범위다.
+        return new CannotAcquireLockException("주입한 데드락", new SQLException("deadlock", "40001", 1213));
     }
 
     private void failAfterOrderSql(PaymentAttempt attempt) {

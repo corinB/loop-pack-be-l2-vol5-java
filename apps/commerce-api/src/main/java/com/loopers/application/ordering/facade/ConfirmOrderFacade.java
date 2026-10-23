@@ -8,6 +8,7 @@ import com.loopers.application.ordering.service.OrderPaymentResultService;
 import com.loopers.application.ordering.usecase.PrepareOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.ApplyOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.ConfirmOrderUseCase;
+import com.loopers.application.ordering.usecase.StartAutomaticPaymentRecoveryUseCase;
 import com.loopers.application.pay.gateway.PaymentProviderGateway;
 import com.loopers.application.pay.gateway.PaymentProviderGateway.ExpectedPayment;
 import com.loopers.application.pay.usecase.RecordPaymentObservationUseCase;
@@ -26,6 +27,7 @@ public class ConfirmOrderFacade implements ConfirmOrderUseCase {
     private final RecordPaymentObservationUseCase observations;
     private final ApplyOrderPaymentUseCase application;
     private final OrderPaymentResultService results;
+    private final StartAutomaticPaymentRecoveryUseCase automatic;
 
     @Override
     public ConfirmOrderResult execute(ConfirmOrderCommand command) {
@@ -40,6 +42,9 @@ public class ConfirmOrderFacade implements ConfirmOrderUseCase {
             observations.execute(attempt.getAttemptKey(), observation);
         }
         ApplyOrderPaymentResult applied = application.execute(attempt.getAttemptKey());
+        if (prepared.dispatchAllowed() && applied.state() == ApplyOrderPaymentResult.State.PENDING) {
+            automatic.execute(attempt.getAttemptKey());
+        }
         return results.read(command.userId(), command.orderId(), applied.attentionRequired());
     }
 }
