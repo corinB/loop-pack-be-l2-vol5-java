@@ -2,6 +2,8 @@
 
 [전체 설계 질문](total_trade_off.md) · [요구사항](../requirement.md) · [R01 모델 논의](../../r01-pg-payment-foundation/trade_off/01-payment-attempt-ownership.md)
 
+처음 읽는 개발자는 [현재 구현의 재시도 전략](../../resilience/retry.md)을 먼저 읽는다. PG 조회와 내부 반영의 목적·조건·횟수·시간·중단 후 행동을 나눠 설명한다. 이 문서는 정책 결정 과정의 기록이며 과거 Spring Retry 선택보다 최종 Resilience4j 구현을 따른다.
+
 상태: **2026-10-23 정책 구현·세 관점 기능 리뷰·최종 검증 완료**. 전체 검사 509건과 실제 PG 장애/재시작 실험 14건의 증거·검증 한계는 [결과](../result.md)를 따른다. 아래 논의는 결정 과정이며 현재 클래스와 완료 범위는 [계획](../plan.md)·[리뷰 기록](../review.md)에 연결한다. 원격 PR은 후속 범위다.
 
 ## 사용자 결정과 남은 질문

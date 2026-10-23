@@ -7,7 +7,7 @@
 - 현재 브랜치: `volume-5/main`. PR03 병합 기준은 `b70d83b`, 반환 캐시 테스트/점검 보완은 `e200e78`로 원격 게시까지 완료했다. 이후 장애 대응 설명 문서를 같은 기준 브랜치에서 정리한다.
 - R01 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24), R02 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)는 사용자 병합 완료. R03은 R02 병합 `42c22c2`에서 시작했다.
 - R03 [PR #26](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/26)도 사용자 병합 완료. 최종 기능 커밋은 `ae46776`, 검증 정리 HEAD는 `8e2e92f`이며 병합 트리와 같다. 이후 점검/캐시 테스트 보완 `e200e78`도 게시했다.
-- 처음 읽는 개발자는 [장애 대응 읽기 안내](resilience/README.md) → [서킷브레이커](resilience/circuit-breaker.md) → [폴백 전략](resilience/fallback.md)과 [요청 상태 모델](states/payment.md)을 연결해 읽는다. 고객 confirm/reconcile의 실제 응답과 달랐던 completed 문서 설명도 바로잡았다.
+- 처음 읽는 개발자는 [장애 대응 읽기 안내](resilience/README.md)와 [요청 상태 모델](states/payment.md)에서 시작해 [서킷브레이커](resilience/circuit-breaker.md) → [재시도 전략](resilience/retry.md) → [폴백 전략](resilience/fallback.md)을 연결해 읽는다. 회로/폴백 안내는 `16a0f11`로 게시했고 후속으로 조회 Retry와 내부 반영 Retry를 구분한 문서를 추가했다. 고객 confirm/reconcile의 실제 응답과 달랐던 completed 문서 설명도 바로잡았다.
 - [R03 결과](r03-payment-resilience/result.md) → [운영 확인](r03-payment-resilience/operations.md) → [재현 방법](r03-payment-resilience/verification.md) → [기능 리뷰](r03-payment-resilience/review.md) 순서로 읽는다. [기술 글](r03-payment-resilience/technical-article.md)·[상태 문서](states/total.md)도 정리했다.
 - 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
 
