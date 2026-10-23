@@ -8,9 +8,11 @@ import static org.mockito.Mockito.verify;
 
 import com.loopers.application.ordering.command.PrepareOrderPaymentCommand;
 import com.loopers.application.ordering.command.ReconcileOrderPaymentCommand;
+import com.loopers.application.ordering.command.HandlePaymentCallbackCommand;
 import com.loopers.application.ordering.result.ConfirmOrderResult;
 import com.loopers.application.ordering.usecase.PrepareOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.ReconcileOrderPaymentUseCase;
+import com.loopers.application.ordering.usecase.HandlePaymentCallbackUseCase;
 import com.loopers.application.pay.gateway.PaymentProviderGateway;
 import com.loopers.application.pay.usecase.RecordPaymentObservationUseCase;
 import com.loopers.domain.mall.model.Brand;
@@ -29,6 +31,7 @@ import com.loopers.domain.pay.model.ProviderPaymentStatus;
 import com.loopers.domain.pay.repository.PaymentRecoveryTaskRepository;
 import com.loopers.support.test.IntegrationTest;
 import com.loopers.utils.DatabaseCleanUp;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,8 +61,43 @@ class ReconcileOrderPaymentIntegrationTest {
     @Autowired private PaymentRecoveryTaskRepository tasks;
     @Autowired private TransactionTemplate tx;
     @Autowired private DatabaseCleanUp cleanup;
+    @Autowired private CircuitBreakerRegistry circuits;
+    @Autowired private HandlePaymentCallbackUseCase callback;
 
-    @AfterEach void clean() { cleanup.truncateAllTables(); }
+    @BeforeEach void resetCircuit() { circuits.circuitBreaker("pg-lookup").reset(); }
+    @AfterEach void clean() { cleanup.truncateAllTables(); circuits.circuitBreaker("pg-lookup").reset(); }
+
+    @Test
+    @DisplayName("수동 대사와 callback은 공유 OPEN 회로에서 PG 미호출·차감 유지·자동 회차 보존이다")
+    void sharesOpenCircuitWithCallback() {
+        PaymentAttempt attempt = prepared();
+        circuits.circuitBreaker("pg-lookup").transitionToOpenState();
+        ConfirmOrderResult result = reconcile.execute(command(attempt));
+        assertThat(result.completed()).isFalse();
+        assertThat(result.attentionRequired()).isTrue();
+        assertThat(result.paymentAttempt().lastReason()).isEqualTo(PaymentRecoveryTask.Reason.CIRCUIT_BLOCKED);
+        assertThat(result.paymentAttempt().usedRounds()).isZero();
+        assertThat(result.paymentAttempt().outcome()).isEqualTo(PaymentAttempt.Outcome.UNKNOWN);
+        assertThat(callback.execute(new HandlePaymentCallbackCommand(attempt.getProviderOrderId(), "PG-1", ProviderPaymentStatus.SUCCESS)).completed()).isFalse();
+        assertThat(stock(attempt)).isEqualTo(3);
+        verify(gateway, never()).lookup(any());
+        verify(gateway, never()).create(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {403, 204})
+    @DisplayName("수동 대사는 요청/계약 오류 사유를 구분하며 단일 조회로 끝낸다")
+    void recordsNonRetryableLookupReason(int status) {
+        PaymentAttempt attempt = prepared();
+        doAnswer(invocation -> PaymentObservation.httpFailure(status)).when(gateway).lookup(any());
+        ConfirmOrderResult result = reconcile.execute(command(attempt));
+        assertThat(result.paymentAttempt().lastReason()).isEqualTo(status == 403
+            ? PaymentRecoveryTask.Reason.LOOKUP_REQUEST_ERROR : PaymentRecoveryTask.Reason.LOOKUP_CONTRACT_ERROR);
+        assertThat(result.paymentAttempt().usedRounds()).isZero();
+        assertThat(result.order().status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+        assertThat(stock(attempt)).isEqualTo(3);
+        verify(gateway).lookup(any());
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})

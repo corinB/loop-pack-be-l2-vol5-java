@@ -45,6 +45,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,8 +74,10 @@ class PaymentCallbackApiE2ETest {
     @Autowired private OrderConfirmProbe probe;
     @Autowired private TransactionTemplate tx;
     @Autowired private DatabaseCleanUp cleanup;
+    @Autowired private CircuitBreakerRegistry circuits;
 
-    @AfterEach void clean() { cleanup.truncateAllTables(); }
+    @BeforeEach void resetCircuit() { circuits.circuitBreaker("pg-lookup").reset(); }
+    @AfterEach void clean() { cleanup.truncateAllTables(); circuits.circuitBreaker("pg-lookup").reset(); }
 
     @Test
     @DisplayName("성공 알림이어도 PG가 PENDING이면 202·재고 유지이며 알림 키는 검증 뒤에만 연결한다")
@@ -112,6 +116,7 @@ class PaymentCallbackApiE2ETest {
         assertThat(late.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(late.getBody()).contains("\"completed\":true", "\"attentionRequired\":true");
         assertThat(saved(attempt).getConflict()).isEqualTo(PaymentAttempt.Conflict.TERMINAL_CONFLICT);
+        assertThat(circuits.circuitBreaker("pg-lookup").getMetrics().getNumberOfBufferedCalls()).isEqualTo(2);
         assertThat(probe.orderStatus(attempt.getOrderId())).isEqualTo("CONFIRMED");
         assertThat(stock(attempt)).isEqualTo(3);
     }

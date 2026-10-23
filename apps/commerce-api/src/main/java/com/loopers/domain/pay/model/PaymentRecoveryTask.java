@@ -10,7 +10,8 @@ import lombok.Getter;
 @Getter
 public final class PaymentRecoveryTask {
     public enum State { READY, RUNNING, MANUAL_REQUIRED, APPLIED }
-    public enum Reason { NONE, RETRY_EXHAUSTED, LOOKUP_UNAVAILABLE, PENDING, IDENTITY_CONFLICT, APPLICATION_FAILED }
+    public enum Reason { NONE, RETRY_EXHAUSTED, LOOKUP_UNAVAILABLE, PENDING, IDENTITY_CONFLICT, APPLICATION_FAILED,
+        CIRCUIT_BLOCKED, LOOKUP_CONTRACT_ERROR, LOOKUP_REQUEST_ERROR }
 
     private final String attemptKey;
     private final State state;

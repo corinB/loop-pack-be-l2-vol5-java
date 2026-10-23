@@ -9,8 +9,8 @@ import com.loopers.application.ordering.service.OrderPaymentResultService;
 import com.loopers.application.ordering.service.ResolvePaymentCallbackService;
 import com.loopers.application.ordering.usecase.ApplyOrderPaymentUseCase;
 import com.loopers.application.ordering.usecase.HandlePaymentCallbackUseCase;
-import com.loopers.application.pay.gateway.PaymentProviderGateway;
-import com.loopers.application.pay.gateway.PaymentProviderGateway.ExpectedPayment;
+import com.loopers.application.pay.gateway.PaymentLookupGateway;
+import com.loopers.application.pay.gateway.PaymentLookupGateway.LookupRequest;
 import com.loopers.application.pay.usecase.RecordPaymentObservationUseCase;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class HandlePaymentCallbackFacade implements HandlePaymentCallbackUseCase {
     private final ResolvePaymentCallbackService resolver;
-    private final PaymentProviderGateway gateway;
+    private final PaymentLookupGateway gateway;
     private final RecordPaymentObservationUseCase observations;
     private final ApplyOrderPaymentUseCase application;
     private final OrderPaymentResultService results;
@@ -37,8 +37,7 @@ public class HandlePaymentCallbackFacade implements HandlePaymentCallbackUseCase
         PaymentCallbackContext context = resolver.resolve(command);
         PaymentAttempt attempt = context.attempt();
         // 저장된 키가 없으면 주문별 조회로 거래를 확인한다. 알림 키를 조회/결합의 권위로 사용하지 않는다.
-        PaymentObservation observation = gateway.lookup(new ExpectedPayment(attempt.getProviderOrderId(),
-            attempt.getAmount(), attempt.getTransactionKey()));
+        PaymentObservation observation = gateway.lookup(LookupRequest.from(attempt));
         if (observation.kind() == PaymentObservation.Kind.VERIFIED
                 && !command.transactionKey().equals(observation.transactionKey())) {
             throw new ApplicationException(ApplicationErrorCode.PAYMENT_CALLBACK_CONFLICT);

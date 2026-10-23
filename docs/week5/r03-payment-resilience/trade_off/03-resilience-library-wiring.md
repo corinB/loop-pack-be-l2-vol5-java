@@ -2,7 +2,7 @@
 
 [결정 목록](total_trade_off.md) · [재확인 정책](01-reconciliation-retry-policy.md) · [회로 집계](02-lookup-circuit-breaker.md) · [작업 실행](06-reconciliation-execution.md)
 
-상태: **2026-10-22 Resilience4j로 통일·애노테이션 연결 확정·상세 설계 중·구현 전**.
+상태: **2026-10-23 조회 CircuitBreaker·구체적 fallback·기본 회로 지표 연결 구현 및 세 관점 재리뷰 완료·관련 검사 통과**. 자동 Retry·실행기·내부 반영 Retry는 아직 구현하지 않았다.
 
 ## 이번에 바뀐 결정
 
@@ -27,9 +27,12 @@
 
 ## 연결에서 지킬 경계
 
+첫 기능은 `PaymentLookupGateway` → `CircuitPaymentLookupGateway`의 공개 `@CircuitBreaker` 진입점 → 기존 HTTP adapter 순서로 연결했다. Resilience4j는 commerce 앱에서 BOM 2.3.0으로 정렬했다. Spring Cloud BOM의 일부 2.2.0과 2.3.0 starter가 섞일 때 생긴 클래스 누락을 해소하고 실제 프록시 검사로 확인했다. 기본 회로 지표와 상태 전이 로그를 연결했으며 Retry 지표는 후속 Retry 구현 범위다.
+
 자동 작업의 한 회차는 **사용 회차 DB commit → 회로를 거친 PG 조회 → 관찰 저장 → 공통 업무 반영**으로 구분한다. 계속 조회할 이유가 있을 때만 정한 간격을 기다린다.
 
 - 회로는 한 번의 PG 조회와 응답 검증 결과를 측정한다. DB 처리·재시도 대기·전체 자동 작업을 회로 표본에 섞지 않는다.
+- 조회 요청에 기존 결제 결과·생성 전 거절 사실을 함께 전달해 알려진 종결/존재 충돌을 제외한다. 제외 fallback은 원래 관찰을 복원해 저장 TX가 충돌을 보존하도록 한다. 조회 도중 다른 실행의 저장으로 뒤늦게 발견된 충돌은 표본을 소급 변경하지 않는 승인 한계이며 [집계 문서](02-lookup-circuit-breaker.md)를 따른다.
 - Retry가 다시 실행할 때도 현재 상태·실행 ID·남은 횟수/시간을 확인한다. PG 생성이나 이미 끝난 업무를 자동 조회 반복에 넣지 않는다.
 - PG adapter의 결과값을 정상·실패·제외로 구분하고, 재조회 여부는 별도로 판단한다. PENDING은 회로 정상이어도 재조회할 수 있고, 계약 오류는 회로 실패여도 즉시 수동이다.
 - 라이브러리 교체로 기본 재시도 횟수나 기본 대기 값을 사용하지 않는다. 별도의 HTTP client 재시도도 추가하지 않는다.

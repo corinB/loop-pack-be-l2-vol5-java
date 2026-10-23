@@ -1,6 +1,6 @@
 # R03 상세 구현 계획
 
-상태: **중요 보완 사용자 승인·계획 반영 및 세 관점 재리뷰 완료·미해결 중요 지적 없음·구현 전**. 아래 클래스 이름은 구현 위치를 설명하는 제안이며 새 기능이나 검사 통과를 뜻하지 않는다. [리뷰 기록](review.md)을 함께 읽는다.
+상태: **첫 기능인 공유 PG 조회 회로·fallback 구현 및 세 관점 재리뷰 완료·관련 검사 76건·Checkstyle/ArchUnit 통과**. 자동 Retry·실행기·내부 반영 Retry는 구현 전이다. 아래 구조 중 첫 기능의 실제 클래스와 검사는 하단 진행 기록을 기준으로 읽는다. [리뷰 기록](review.md)을 함께 읽는다.
 
 [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [라이브러리·운영 범위](trade_off/03-resilience-library-wiring.md)
 
@@ -22,6 +22,7 @@
 - application에 조회 전용 계약 `PaymentLookupGateway`를 두고, infrastructure의 별도 Spring 빈이 구현한다. 기존 `PaymentProviderGateway`는 실제 생성/조회 HTTP adapter로 재사용한다. 생성 호출은 기존 경로를 유지한다.
 - 조회 전용 빈의 공개 메서드에 `@CircuitBreaker(name = "pg-lookup", fallbackMethod = ...)`를 붙인다. 자동 조회·수동 대사·callback이 이 계약을 호출한다.
 - 순수 분류 정책으로 관찰 결과의 회로 분류와 자동 재조회 여부를 따로 판단한다. HTTP client의 정상 반환을 전부 회로 정상으로 세지 않는다.
+- 조회 전 확보한 Outcome/Rejection을 조회 요청에 포함해 알려진 종결·존재 충돌을 제외한다. 원래 관찰은 그대로 저장 TX에 전달한다. 조회 도중 새 저장으로 발견된 충돌을 회로 표본에 소급 반영하지 않는 승인 한계는 [02](trade_off/02-lookup-circuit-breaker.md)에 기록한다.
 - 회로 실패는 결과 predicate로 연결한다. 집계 제외 관찰은 원래 관찰을 가진 전용 내부 예외로 프록시 밖에 전달하고, ignore 설정과 구체적인 fallback으로 원래 관찰을 복원하는 방향이다. 회로 차단은 `UNAVAILABLE`의 새 차단 사유로 반환한다. 넓은 예외 fallback으로 구현 오류를 숨기지 않는다.
 - 실패/제외/정상/느림의 구체적인 표와 수치는 [02](trade_off/02-lookup-circuit-breaker.md)를 따른다. 제외는 느림/분모에도 포함하지 않는다. 계약 밖 2xx/3xx는 실패 집계·즉시 수동이며 모든 5xx는 실패 집계다.
 - Resilience4j `2.3.0`의 `resilience4j-spring-boot3`와 Spring Boot AOP starter를 계획 기준으로 삼는다. 기존 Boot 3.4.4·Java 21은 유지한다. 실제 의존성 해석과 프록시 적용은 구현 시 확인한다.
@@ -101,7 +102,9 @@
 ## 계획 검토와 실제 진행
 
 - 비즈니스·사용자 경험 초회 계획 리뷰: 중요 지적 없음. 기술 초회 리뷰의 중요 보완 1건은 사용자가 설명을 확인한 뒤 명시적으로 승인해 위 계획에 반영했다. 작은 명시 보완과 함께 세 관점 재리뷰를 마쳤으며 미해결 중요 지적은 없다. [리뷰 기록](review.md)을 따른다.
-- 기능 구현·테스트·Checkstyle·ArchUnit·통합 실험: 미시작/미실행.
+- 첫 기능: PaymentLookupPolicy·PaymentLookupGateway/LookupRequest·CircuitPaymentLookupGateway·회로 설정/로그·수동/callback 연결·회로 기본 지표를 구현했다. 생성 경로는 조회 회로 밖이며 아직 자동 조회 작업은 만들지 않는다.
+- 기능 리뷰의 중요 지적 1건(알려진 종결/존재 충돌 제외)은 사용자 승인 후 적용했다. 비즈니스·사용자 경험·기술 재리뷰 모두 미해결 중요 지적 없음. 보완 후 관련 검사 76건(실패·오류·skip 0)과 Checkstyle main/test·ArchUnit 8건을 통과했다. ArchUnit은 76건에 포함된다. 실제 Spring 프록시 정상/실패/제외·OPEN 차단·HALF_OPEN 복귀/느림·알려진 충돌 6경계·수동/callback 보존·raw HTTP 계약·기존 confirm을 확인했다. 새 전체 검사나 독립 PG 실험을 수행한 결과는 아니다.
+- 후속: 내부 반영 데드락 Retry → 제한된 자동 조회/실행기 → 실제 PG 장애·재시작 실험과 필수 전체 검사. 아직 완료로 기록하지 않는다.
 - result.md와 R03 PR: 아직 없음.
 
 ## 확인한 기술 근거

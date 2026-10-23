@@ -12,7 +12,7 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 요구사항/설계 문답 중·구현 전 |
+| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 첫 기능인 공유 조회 회로·fallback 구현·관련 검사 완료. 자동/내부 Retry와 통합 실험·필수 전체 검사는 후속 |
 | 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 최신 기준 42c22c2에서 `volume-5/r03-payment-resilience` 생성 완료 |
 
 기준 자료:
@@ -144,7 +144,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 |---|---|---|---|
 | 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
 | 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 구현·통합/재시작·필수 전체 검사 완료, PR #25 병합 완료 |
-| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 42c22c2에서 브랜치 생성·설계 문답 중, 구현 전 |
+| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 42c22c2에서 브랜치 생성·계획 리뷰 완료. 공유 조회 회로·fallback 첫 기능 완료, 나머지 진행 전 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
 - R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [구현 계획](r02-pg-order-payment/plan.md) · [실제 결과](r02-pg-order-payment/result.md)
@@ -155,7 +155,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 요구사항 → 설계 문답·결정 → 커밋·TDD 계획 → 구현·검증 → 실제 결과 순서로 진행한다.
 각 PR에 관련 테스트를 포함하고 R03에 검증을 모두 미루지 않는다. `result.md`는 실제 구현·검증 후 작성한다.
 
-R01/R02는 병합했고 R03은 설계 문답 중이다. 결정한 내용을 설계 문서에 반영하고 남은 질문을 정한 뒤 상세 구현 계획을 작성한다.
+R01/R02는 병합했고 R03은 상세 계획과 세 관점 리뷰 후 첫 기능을 구현했다. 공유 조회 회로·fallback의 관련 검사 76건과 Checkstyle/ArchUnit을 통과했다. 자동 Retry·실행기·내부 반영 Retry와 통합 장애/재시작 실험·필수 전체 검사는 아직 남아 있다.
 기존 패키지·계층 의존·순수 도메인·QueryDSL 조회/JPA 쓰기·TDD·Checkstyle·ArchUnit과 검사 완화 금지는 유지한다.
 PG 경계의 단일 TX 분리는 과거 포인트 주문 확정의 단일 TX 규칙을 그대로 적용하는 대상이 아니다.
 
