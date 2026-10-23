@@ -1,6 +1,6 @@
 # PG 조회 재시도와 내부 반영 재시도 이해하기
 
-[읽기 안내](README.md) · [결제 요청 상태 모델](../states/payment.md) · [서킷브레이커](circuit-breaker.md) · [폴백 전략](fallback.md)
+[읽기 안내](README.md) · [결제 요청 상태 모델](../states/payment.md) · [멱등성과 동시성 제어](idempotency-and-concurrency.md) · [서킷브레이커](circuit-breaker.md) · [폴백 전략](fallback.md)
 
 ## 먼저 두 작업을 구분한다
 

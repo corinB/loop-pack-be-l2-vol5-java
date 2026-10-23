@@ -1,6 +1,6 @@
 # 결제 요청 상태 모델
 
-[전체 흐름](total.md) · [주문 상태](order.md) · [재고 상태](stock.md) · [장애 대응 읽기 안내](../resilience/README.md) · [재시도 전략](../resilience/retry.md)
+[전체 흐름](total.md) · [주문 상태](order.md) · [재고 상태](stock.md) · [장애 대응 읽기 안내](../resilience/README.md) · [멱등성과 동시성 제어](../resilience/idempotency-and-concurrency.md) · [재시도 전략](../resilience/retry.md)
 
 ## 처음 읽는 개발자를 위한 상태 구분
 

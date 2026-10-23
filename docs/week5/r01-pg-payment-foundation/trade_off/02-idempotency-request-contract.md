@@ -1,5 +1,7 @@
 # 멱등성 키의 유일 범위·동일 요청 계약
 
+현재 구현을 처음 읽는 개발자는 [멱등성과 동시성 제어 안내](../../resilience/idempotency-and-concurrency.md)를 먼저 읽는다. 아래의 구현 전·미정 표현은 당시 설계 논의의 기록이다.
+
 [설계 질문 목록](total_trade_off.md) · [요구사항 G02/G03](../requirement.md) · [실행 권한 결정](08-recovery-claim-coordination.md)
 
 상태: **전역 유일 A·조건 비교 C·카드 제외 F·실효 조건 고정 저장·UUID 채택·구현 전**. 표준 UUID 입력·소문자 36자 저장으로 구체화했다. 정확한 옵션 필드/기본값은 [구현 계획](../plan.md)을 따른다. 키 보존 기간 정책은 별도 구현하지 않는다.
