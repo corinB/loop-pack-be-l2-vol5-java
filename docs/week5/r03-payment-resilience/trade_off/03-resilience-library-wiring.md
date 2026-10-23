@@ -2,7 +2,7 @@
 
 [결정 목록](total_trade_off.md) · [재확인 정책](01-reconciliation-retry-policy.md) · [회로 집계](02-lookup-circuit-breaker.md) · [작업 실행](06-reconciliation-execution.md)
 
-상태: **2026-10-23 조회 CircuitBreaker·구체적 fallback·기본 회로 지표 연결 구현 및 세 관점 재리뷰 완료·관련 검사 통과**. 내부 반영용 @Retry(payment-application)도 구현하고 관련 검사를 마쳤다. 자동 조회용 @Retry(payment-auto-lookup)·전용 2/2 실행기도 구현하고 관련 검사를 마쳤다. 실제 PG 통합 실험·전체 검사는 후속이다.
+상태: **2026-10-23 정책 구현·세 관점 기능 리뷰·최종 검증 완료**. 전체 검사 509건과 실제 PG 장애/재시작 실험 14건의 증거·검증 한계는 [결과](../result.md)를 따른다. 아래 논의는 결정 과정이며 현재 클래스와 완료 범위는 [계획](../plan.md)·[리뷰 기록](../review.md)에 연결한다. 원격 PR은 후속 범위다.
 
 ## 이번에 바뀐 결정
 
@@ -27,7 +27,7 @@
 
 ## 연결에서 지킬 경계
 
-첫 기능은 `PaymentLookupGateway` → `CircuitPaymentLookupGateway`의 공개 `@CircuitBreaker` 진입점 → 기존 HTTP adapter 순서로 연결했다. Resilience4j는 commerce 앱에서 BOM 2.3.0으로 정렬했다. Spring Cloud BOM의 일부 2.2.0과 2.3.0 starter가 섞일 때 생긴 클래스 누락을 해소하고 실제 프록시 검사로 확인했다. 기본 회로 지표와 상태 전이 로그를 연결했으며 Retry 지표는 후속 Retry 구현 범위다.
+첫 기능은 `PaymentLookupGateway` → `CircuitPaymentLookupGateway`의 공개 `@CircuitBreaker` 진입점 → 기존 HTTP adapter 순서로 연결했다. Resilience4j는 commerce 앱에서 BOM 2.3.0으로 정렬했다. Spring Cloud BOM의 일부 2.2.0과 2.3.0 starter가 섞일 때 생긴 클래스 누락을 해소하고 실제 프록시 검사로 확인했다. 회로 지표·상태 전이 로그와 두 Retry의 기본 지표도 연결했고 실제 Prometheus 응답으로 확인했다.
 
 자동 작업의 한 회차는 **사용 회차 DB commit → 회로를 거친 PG 조회 → 관찰 저장 → 공통 업무 반영**으로 구분한다. 계속 조회할 이유가 있을 때만 정한 간격을 기다린다.
 

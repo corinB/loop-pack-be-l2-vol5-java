@@ -1,6 +1,6 @@
 # R03 상세 구현 계획
 
-상태: **조회 회로·fallback과 내부 반영 데드락 Retry 구현·세 관점 기능 리뷰 및 관련 검사 통과**. 제한된 자동 조회 Retry·실행기도 구현·세 관점 기능 리뷰와 관련 53건·Checkstyle/ArchUnit을 마쳤다. 실제 PG 장애/재시작 실험과 필수 전체 검사는 후속이다. 아래 구조 중 완료한 기능의 실제 클래스와 검사는 하단 진행 기록을 기준으로 읽는다. [리뷰 기록](review.md)을 함께 읽는다.
+상태: **2026-10-23 로컬 구현·세 관점 기능 리뷰·실제 PG 장애/재시작 실험 14건·필수 전체 검사 509건 완료**. 최종 검증의 기능 기준은 `ae46776`이다. [결과](result.md)·[리뷰 기록](review.md)을 따른다. 원격 게시/PR 생성은 후속 요청 범위다. 아래 계획과 기능별 진행 기록은 당시 순서를 보존한다.
 
 [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md) · [라이브러리·운영 범위](trade_off/03-resilience-library-wiring.md)
 
@@ -107,8 +107,8 @@
 - 기능 리뷰의 중요 지적 1건(알려진 종결/존재 충돌 제외)은 사용자 승인 후 적용했다. 비즈니스·사용자 경험·기술 재리뷰 모두 미해결 중요 지적 없음. 보완 후 관련 검사 76건(실패·오류·skip 0)과 Checkstyle main/test·ArchUnit 8건을 통과했다. ArchUnit은 76건에 포함된다. 실제 Spring 프록시 정상/실패/제외·OPEN 차단·HALF_OPEN 복귀/느림·알려진 충돌 6경계·수동/callback 보존·raw HTTP 계약·기존 confirm을 확인했다. 새 전체 검사나 독립 PG 실험을 수행한 결과는 아니다.
 - 두 번째 기능: RetryOrderPaymentService·TX 완료 확인·정확한 MySQL 코드 식별·최초 snapshot 보호·commit 미확인의 상태 우선 조회를 구현했다. 세 관점 기능 리뷰에 중요 지적이 없다. 관련 고유 검사 49건(초회 47건＋테스트 설정 API 수정 후 2건 재검사)과 Checkstyle main/test·ArchUnit 8건이 통과했다. ArchUnit은 49건에 포함된다. PG 호출/회차/표본 증가 없음, 실제 rollback/새 TX와 소진/인계 보호를 확인했다. MySQL 코드 예외 주입 검사이며 실제 DB 경합에서 victim 선정을 재현한 실험은 아니다.
 - 세 번째 기능: 최초 confirm 연결·claim/consume TX·commit 후 재확인·2/2 실행기·실행별 지터/30초·중단 사유를 구현했다. 세 관점 기능 리뷰에 중요 지적이 없다. 관련 53건(실패·오류·skip 0)과 Checkstyle/ArchUnit이 통과했고 기본 지표/운영 간격 및 실행기 assertion을 보강한 2건을 재검사해 통과했다. 실제 Retry 프록시 최대4회·중간 종결·차단/요청 오류·저장 종결 재적용·용량·시간/인계/미확인 경계를 확인했다. test 프로필은 confirm 자동 시작만 끄고 컴포넌트/프록시/DB를 직접 검사한다.
-- 후속: 실제 PG 장애·재시작 실험과 필수 전체 검사·운영/결과/기술 글 정리. 아직 완료로 기록하지 않는다.
-- result.md와 R03 PR: 아직 없음.
+- 최종 검증: 독립 PG/commerce의 새 주문 55~68 실험 14건과 필수 전체 검사 509건(PG25/commerce484, 실패·오류·skip 0)을 마쳤다. 유실 뒤 성공/실패·4회 소진·DB 대기/큐 만료·접수 거절·느림 회로/회복·PG 재시작·업무 rollback·회차 commit 뒤 commerce 종료/재시작을 확인했다. 마지막 기능 코드 변경은 없으며 원문/JMeter·POINT 보존과 실험 자원 정리도 완료했다. [결과](result.md)·[재현](verification.md)·[운영](operations.md)·[기술 글](technical-article.md)에 기록했다.
+- result.md 작성 완료. PR 설명 초안은 로컬에 준비했으며 원격 PR은 아직 생성하지 않았다.
 
 ## 확인한 기술 근거
 

@@ -12,7 +12,7 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 조회 회로·fallback·내부 반영 Retry·제한된 자동 조회/실행기 구현·관련 검사 완료. 실제 PG 장애/재시작 통합 실험·필수 전체 검사/제출 정리는 후속 |
+| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 로컬 구현·세 관점 기능 리뷰·전체 검사 509건·실제 PG 장애/재시작 실험 14건 완료([결과](r03-payment-resilience/result.md)). 운영/상태/기술 글과 로컬 PR 설명 초안을 정리했다. 원격 PR 생성·게시는 후속 요청 범위 |
 | 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 최신 기준 42c22c2에서 `volume-5/r03-payment-resilience` 생성 완료 |
 
 기준 자료:
@@ -102,9 +102,9 @@ R03에서 연결한 정상 실행은 [Resilience4j Retry + DB 진행 기록](r03
 수동 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록해 옛 진행 갱신을 차단한다. 중단 RUNNING도 인계할 수 있어야 하며 일반 save가 최신 실행/횟수를 되돌리지 않도록 한다. 정확한 조건식·허용 상태·응답·JPA 정합성 처리는 R02 [구현 계획](r02-pg-order-payment/plan.md)과 [결과](r02-pg-order-payment/result.md)를 따른다.
 [HTTP 설정](r01-pg-payment-foundation/trade_off/03-http-client-settings.md)은 RestClient + Apache HttpClient 5·자동 retry/redirect 차단으로 확정했다. 연결 1초·연결 풀 대기 1초·응답 대기 2초를 초기값으로 사용하며 전체 호출의 절대 제한으로 해석하지 않는다.
 [adapter 결과·검증 분담](r01-pg-payment-foundation/trade_off/04-adapter-fixture.md)은 검증한 관찰/확인 불가 사유를 결과값으로 반환하는 A다. 실제 PG에서 정상·지연·유실·DB 보존을, 작은 테스트용 HTTP 서버에서 불완전 응답 등을 검증한다. 복구 실행기와 회로는 반환 결과를 분류해 연결한다.
-총 예산·횟수 기록의 원자성/동시 실행 조율·구체적인 의존성 버전·타입/사유 코드는 미정이며 결제 생성 재시도는 허용하지 않는다. 구체적인 읽기 제한 적용 지점과 실제 timeout 동작은 구현·검증해야 한다.
+총 예산·회차 기록/실행 ID 조건부 갱신·Resilience4j 버전과 사유 코드는 R03 [계획](r03-payment-resilience/plan.md)과 [결과](r03-payment-resilience/result.md) 기준으로 구현·검증했다. 결제 생성 재시도는 허용하지 않는다. HTTP 응답 검증과 실제 timeout은 R01 이후 검사 및 독립 PG 실험으로 확인했다.
 
-2026-10-22 R03 후속 결정: 자동/수동/callback PG 조회는 하나의 회로를 공유한다. 차단 시 자동은 확보한 회차를 유지하고 즉시 수동 전환하며 실제 HTTP/회로 표본은 0이다. 첫 자동 조회는 작업 시작 후 즉시, 명확한 실행기 접수 거절은 100ms 뒤 전달만 1회 재시도한다. timeout·통신·5xx·408·429·잘못된 정상 응답은 회로 실패, 검증한 결과/계약상 거래 없음은 정상, 그 외 4xx·식별 충돌·우리 DB/실행기 오류·차단은 제외다. [집계/재조회/업무 처리 표](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. 후속 회로 수치는 건수 기준 최근 10건/최소 5건·실패율 50%·1초 초과 느림 비율 50%·OPEN 10초 후 요청 기반 탐색·HALF_OPEN 표본 2건/최대 10초 미판정 시 재차단으로 확정했다. 자동 조회 전체 예산·내부 반영 재시도 등은 아직 미정이며 자동 조회·회로를 구현했다는 뜻은 아니다.
+2026-10-22 R03 후속 결정: 자동/수동/callback PG 조회는 하나의 회로를 공유한다. 차단 시 자동은 확보한 회차를 유지하고 즉시 수동 전환하며 실제 HTTP/회로 표본은 0이다. 첫 자동 조회는 작업 시작 후 즉시, 명확한 실행기 접수 거절은 100ms 뒤 전달만 1회 재시도한다. timeout·통신·5xx·408·429·잘못된 정상 응답은 회로 실패, 검증한 결과/계약상 거래 없음은 정상, 그 외 4xx·식별 충돌·우리 DB/실행기 오류·차단은 제외다. [집계/재조회/업무 처리 표](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. 회로 수치는 최근 10건/최소 5건·실패율 50%·1초 초과 느림 비율 50%·OPEN 10초 후 요청 기반 탐색·HALF_OPEN 표본 2건/최대 10초 미판정 시 재차단이다. 자동 조회 예산은 최초 전달부터30초, 내부 반영은 전체 rollback 확인된 MySQL 데드락만100ms 뒤 추가1회로 확정해 구현·검증했다.
 
 ## R01 착수 전 구현과 5주차 추가 범위
 
@@ -144,11 +144,11 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 |---|---|---|---|
 | 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
 | 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 구현·통합/재시작·필수 전체 검사 완료, PR #25 병합 완료 |
-| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 42c22c2에서 브랜치 생성·계획 리뷰 완료. 조회 회로·내부 반영 Retry·제한된 자동 조회/실행기 구현·관련 검사 완료, 통합 실험·전체 검사·제출 정리는 후속 |
+| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 로컬 구현·기능 리뷰·전체509건·실제PG실험14건·문서 완료. 원격 PR은 후속 요청 범위 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
 - R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [구현 계획](r02-pg-order-payment/plan.md) · [실제 결과](r02-pg-order-payment/result.md)
-- R03: [요구사항](r03-payment-resilience/requirement.md) · [설계 질문](r03-payment-resilience/trade_off/total_trade_off.md) · [상세 계획](r03-payment-resilience/plan.md)
+- R03: [요구사항](r03-payment-resilience/requirement.md) · [설계 질문](r03-payment-resilience/trade_off/total_trade_off.md) · [상세 계획](r03-payment-resilience/plan.md) · [실제 결과](r03-payment-resilience/result.md) · [운영 확인](r03-payment-resilience/operations.md) · [기술 글](r03-payment-resilience/technical-article.md)
 
 각 PR의 대상은 `volume-5/main`이다. 앞 PR을 검증·병합한 뒤 최신 기준 브랜치에서 다음 작업 브랜치를 생성한다.
 작업 브랜치끼리 직접 병합하지 않으며 세 작업 브랜치를 준비 시점에 미리 만들지 않는다.

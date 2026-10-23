@@ -1,62 +1,47 @@
 # 5주차 다음 작업 인계
 
-2026-10-22 R02 PR #25 병합 후 기준 최신화·R03 브랜치 생성과 요구사항/설계 문답을 진행했다. 2026-10-23 R03 조회 회로·fallback과 내부 반영 데드락 Retry의 구현·관련 검사를 마쳤다. 제한된 자동 조회·실행기 구현과 관련 검사도 마쳤다. 다음은 실제 PG 장애/재시작 실험과 필수 전체 검사다. 다음 작업 때 현재 위치와 남은 범위를 먼저 확인한다.
+2026-10-23 R03 로컬 구현과 최종 검증까지 완료했다. 다음 작업은 사용자 요청에 따른 원격 게시·PR 생성이다. 검증을 다시 처음부터 시작하지 않는다.
 
-## 현재 위치
+## 현재 위치와 먼저 읽을 문서
 
-- 현재 브랜치: `volume-5/r03-payment-resilience`. R02 병합 커밋 `42c22c2`에서 시작했다. 로컬 `volume-5/main`도 이 커밋으로 fast-forward했다.
-- R01은 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)로 사용자 병합 완료. 당시 병합 기준은 `4b81541`이며 현재 기준은 R02 병합 `42c22c2`다.
-- R02 기능 코드 검증 기준은 동기 callback 커밋 `73bc6cf`다. 이후 최종 변경은 검증 기록·문서다.
-- R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 게시·사용자 병합 완료. R03은 세 번째 기능인 제한된 자동 PG 조회·실행기까지 로컬 구현·관련 검사를 마쳤으며 원격 게시/PR은 아직 없다.
-- [R02 결과](r02-pg-order-payment/result.md) → [재현 방법](r02-pg-order-payment/verification.md) → [계획](r02-pg-order-payment/plan.md) → [리뷰 기록](r02-pg-order-payment/review.md) 순서로 확인한다.
-- 기존 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
-
-## 완료한 구현
-
-재고 선차감 준비 TX·최초 PG 발송 권한, 실제 PG confirm, 검증 관찰 선저장, 주문 종결 CAS·공통 업무 반영과 한 번의 재고 반환을 연결했다. 범용 OrderRepository.save와 신규 POINT confirm 조율은 제거했다.
-고객/관리자 결제 조회·소유권·관리자 1번 fixture·미완료 목록, 단일 조회 수동 대사·실행 인계, 동기 callback 권위 조회를 연결했다.
-기능 커밋마다 비즈니스·사용자 경험·기술 리뷰를 받았고 중요한 보완은 사용자 승인 후 수정·재검사·재리뷰했다. 미해결 중요 지적은 없다.
+- 브랜치: `volume-5/r03-payment-resilience`, PR 대상: `volume-5/main`.
+- R01 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24), R02 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)는 사용자 병합 완료. R03은 R02 병합 `42c22c2`에서 시작했다.
+- R03 최종 기능 커밋: `ae46776`. 이후 변경은 검증 결과·문서다. 아직 R03 원격 PR은 없다.
+- [R03 결과](r03-payment-resilience/result.md) → [운영 확인](r03-payment-resilience/operations.md) → [재현 방법](r03-payment-resilience/verification.md) → [기능 리뷰](r03-payment-resilience/review.md) 순서로 읽는다. [기술 글](r03-payment-resilience/technical-article.md)·[상태 문서](states/total.md)도 정리했다.
+- 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
 
 ## 완료한 검증
 
-- 전체 check: PG 25건 + commerce 407건 = **432건**, 실패·오류·건너뛰기 0. Checkstyle·ArchUnit·기존 slow/example 포함.
-- 별도 PG/commerce JVM 실험 10개: 동시 confirm·callback 먼저/늦은 생성 응답·유실 뒤 실패·관리자 재고 변경·삭제 상품 반환·성공 후 내부 rollback·commerce/PG 강제 종료와 재시작·생성 전 거절·callback 송신 timeout 뒤 실제 완료·반환 overflow 수동 복구.
-- 새 실험 주문 45~54: 성공 5건/실패 처리 완료 5건, USE 0건. 성공 재고 3, 일반 실패 5, 관리자 수량 10 설정 후 실패 12. 재고/거래/주문 기록의 중복 효과 없음.
-- 기존 POINT 주문 42의 CONFIRMED·7000·PAID·POINT·기록 시각을 보존했고 실제 GET도 200.
-- JMeter 사용자 변경·두 원문 SHA-256 보존. 검사 기준 완화 없음. 최종 검증에서 추가 기능 수정은 없었다.
+- 필수 전체 check: **509건(PG25/commerce484), 실패·오류·건너뛰기 0**, 종료 코드 0. Checkstyle·ArchUnit과 기존 slow/example도 포함한다. 앞선 기능별 검사 수와 중복 합산하지 않는다.
+- 독립 PG/commerce JVM의 **새 주문 55~68, 14건**: 응답 유실 후 자동 성공/실패·4회 소진·35초 DB 대기 뒤 시간 재확인·큐 만료·실행기 접수 거절·느린 조회의 OPEN/탐색/복귀·PG 재시작·성공 관찰 후 업무 rollback·회차 commit 후 HTTP 전 commerce 강제 종료/재시작.
+- 최종 효과: 생성 POST14·PG 거래14·APPLIED14·CONFIRMED13·PAYMENT_FAILED1·주문 기록13·CONSUMED13·RESTORED1·포인트 USE0. 성공 재고3/실패 재고5. 중복 거래·주문 확정·재고 반환 없음.
+- commerce 재시작 뒤 DB 사용 회차1·실행 ID·최근 시각이 유지됐다. GET/동일 confirm은 자동 조회를 재개하지 않고 명시적 수동 대사만 새 실행으로 인계했다.
+- PG 성공 뒤 업무 오류는 SUCCESS 사실을 보존했다. 장애 주입 제거 뒤 PG가 정지한 상태에서도 추가 조회 없이 재적용했다.
+- 과거 POINT 주문42의 CONFIRMED·7000·POINT·PAID·기록 시각과 실제 GET200을 보존했다. 원문 두 파일·사용자 JMeter 해시도 동일하다.
+- 이번 최종 검증의 기능 수정은 없다. 검사 기준·테스트 기대값을 완화하지 않았다. 실제 DB 데드락 victim 선정 실험은 하지 않았고 예외 주입＋실제 rollback/새 TX 검사로 검증했다.
 
-자동화 검사에서 HTTP 호출 횟수·거래 없음/충돌·4회 사용 fixture와 옛 실행 차단을 확인했다. 실제 commerce 재시작 실험은 사용 회차 0의 보존을 확인한 것이며 자동 4회 실행 검증이 아니다.
-각 검증의 분담과 증거는 [결과](r02-pg-order-payment/result.md)에 남겼다. 새 변경이나 실패가 없으면 전체 check를 다시 반복하지 않는다.
+과거 R01 전체384건·R02 전체432건/실험10개는 각 결과 문서의 당시 기록이다. 새 변경/실패가 없다면 전체 check를 반복하지 않는다.
 
-## 다음 작업 범위
+## 이어서 할 작업
 
-R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[상세 계획](r03-payment-resilience/plan.md)을 먼저 읽는다. 주요 정책 문답을 마치고 계획 초안의 세 관점 초회 리뷰를 받았다. [리뷰 기록](r03-payment-resilience/review.md)의 회차 commit 뒤 권한/시간 재확인은 사용자가 승인해 계획에 반영했고 세 관점 재리뷰를 마쳤다. 계획의 미해결 중요 지적은 없다. 첫 기능인 공유 PG 조회 회로·fallback·수동/callback 연결·기본 지표를 구현했다. 기능 리뷰의 알려진 충돌 제외 보완도 사용자 승인 후 적용했으며 세 관점 재리뷰에 미해결 중요 지적이 없다. 관련 검사 76건(실패·오류·skip 0)과 Checkstyle/ArchUnit을 통과했다. 기록은 위 R03 리뷰 문서에 남겼다. 두 번째 내부 반영 데드락 Retry도 구현했다. rollback 완료 확인＋MySQL1213/40001에만 새 TX로100ms 뒤 추가1회, commit 미확인은 상태 우선 조회, 최초 snapshot 보호를 유지한다. 세 관점 기능 리뷰에 중요 지적이 없고 관련 고유49건·Checkstyle/ArchUnit이 통과했다. 세 번째 자동 조회·실행기도 구현했다. 최초 confirm만 시작·최대4회/30초·2스레드/대기2·회차 commit 후 권한/시간 재확인·원래/예정 snapshot 보호를 연결했다. 세 관점 리뷰 중요 지적 없음, 관련 53건·Checkstyle/ArchUnit과 2건 보강 재검사를 마쳤다. 다음은 실제 PG 장애/재시작 실험·필수 전체 check·결과/운영 문서/기술 글 정리다.
+사용자가 PR 게시를 요청하면 현재 브랜치와 변경 상태를 확인하고 `volume-5/main` 대상으로 게시한다. 로컬 설명 초안은 무시 대상 `build/r03-pr-body.md`에 있으며 저장소 템플릿과 결과 문서의 실측·한계를 반영했다. 기기별 초안이 없으면 [결과](r03-payment-resilience/result.md)에서 다시 작성할 수 있다. 이번 마무리는 원격 push·PR 생성을 포함하지 않는다.
 
-- 자동 조회 Retry와 공유 조회 CircuitBreaker는 Resilience4j 애노테이션이다. 기존 Spring Retry 선택은 대체했다. [연결/운영 문서](r03-payment-resilience/trade_off/03-resilience-library-wiring.md)를 따른다.
-- 최초 confirm에서만 자동 시작한다. DB claim commit 후 전용 2스레드/큐2에 전달하며 접수 거절은 100ms 뒤 전달만 추가1회다. 대기 중도 RUNNING이다.
-- 최초＋추가3회·1/3/10초±20%·최초전달부터30초다. 회차는 조회 직전 commit한다. 이미 시작한 조회의 저장/반영은 마무리하고 중단 후 자동 재개하지 않는다.
-- 내부 반영은 확실히 rollback된 MySQL 데드락에만100ms 뒤 추가1회다. 다른 오류와 commit 불명확은 재시도하지 않고 저장 상태부터 확인한다.
-- 회로 수치·정상/실패/제외·HTTP 분류는 [집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. Retry-After는 미지원이다.
-- 운영 범위는 기존 조회＋로그＋기본 Prometheus 지표다. 주요 중단 사유를 기존 필드로 구분하고 별도 운영 API나 대시보드는 추가하지 않는다.
-- 계획 리뷰의 중요 보완은 사용자와 구체안을 정한 뒤 반영한다. 실제 구현도 기능 커밋 전 세 관점 리뷰·필요 최소 검사 정책을 유지한다.
-공유 조회 CircuitBreaker·fallback과 내부 반영/자동 PG 조회용 Resilience4j Retry·실행기를 구현했다. test 프로필만 confirm 자동 시작을 끄고 새 컴포넌트/프록시/DB 경계를 직접 검사한다. 일반 실행은 기본 활성화다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
+완료한 정책을 미정으로 돌리지 않는다. 재고 선차감·확정 실패만 한 번 반환·미확인 유지, 관찰 먼저 commit/업무 TX 분리, 주문 CAS·복구 작업 실행 ID 보호·기존 접근 경계는 유지한다.
 
-확정한 선차감 정책·주문 CAS·관찰 선저장·파사드/TX 분리·복구 작업 CAS·고객/관리자 접근·수동 조회 최대 1회·동기 callback은 다시 미정으로 돌리지 않는다.
-같은 주문·키·금액·실효 조건은 기존 상태를 반환하며 발송 시작 후 create를 다시 보내지 않는다. 실패 근거 없이 timeout/빈 조회만으로 재고를 복구하지 않는다. 신규 PG는 포인트를 쓰지 않고 과거 POINT는 유지한다.
+- Resilience4j `@Retry`와 조회 전용 `@CircuitBreaker`를 별도 빈으로 연결했다. create는 조회 회로/자동 Retry 밖이다.
+- 최초 confirm만 자동 시작한다. claim commit 후 2스레드/큐2에 전달한다. 최대4회·1/3/10초±20%·최초전달부터30초다.
+- 회차 commit 후 새 TX에서 실행 ID·RUNNING·확보 회차·완료를 재확인하고 HTTP 직전 시간을 확인한다.
+- 자동 lease/재시작 회수는 없다. 담당자 GET 후 명시적 POST 대사이며 저장 종결 근거가 없을 때 요청당 PG 조회 최대1회다. 자동 예산을 초기화하지 않는다.
+- 내부 반영은 전체 rollback 확인＋MySQL1213/40001에만100ms 뒤 추가1회다. commit 미확인은 저장 상태부터 읽는다.
+- 회로 수치/오류 분류는 [집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. 회로/Retry 지표는 재시작하면 초기화되며 Retry-After는 미지원이다.
 
-## 이어서 지킬 작업 방식
+## 작업 방식과 자원 상태
 
-- 기능 동작 변경만 커밋 전에 비즈니스·사용자 경험·기술 서브에이전트 리뷰를 받는다. 문서·검증 전용 변경은 별도 리뷰하지 않는다.
-- 중요한 수정은 구체안을 사용자에게 설명하고 승인 후 수정·관련 검사·재리뷰한다.
-- 테스트는 필요한 대표 사례만 추가한다. 관련 검사 후 필수 전체 check는 PR 마무리에 한 번 실행하고 변경/실패로 필요할 때만 반복한다. 기존 기준을 완화하지 않는다.
-- 커밋은 `type: 한글 요약`·한글 상세 본문·명시 staging을 따른다. 원격 게시 범위를 임의로 확대하지 않는다.
+기능 동작 변경만 커밋 전 비즈니스·사용자 경험·기술 서브에이전트 리뷰를 받는다. 중요 수정은 구체안의 사용자 승인 후 진행한다. 동작 변경 없는 문서·검증은 별도 리뷰하지 않는다. 필요한 최소 검사·Green 커밋·`type: 한글 요약`/한글 bullet 본문·명시 staging·검사 완화 금지를 유지한다.
 
-## 로컬 실행 상태
-
-- 이 작업에서 시작한 commerce/PG JVM과 전용 MySQL `payment-lab-verification`은 정지했다. 임시 실패/지연 trigger도 모두 제거했다. 데이터와 볼륨은 보존했다.
-- 실험은 host MySQL 13316의 두 스키마만 사용했다. 기존 사용자 MySQL/Redis에는 변경·정지 작업을 하지 않았다.
-- 기존 전용 DB에는 000~007이 적용돼 있다. 새 빈 DB가 아니면 000을 실행하지 않는다. 이전 실험 주문 43의 PG SUCCESS/commerce PENDING과 주문 44의 확정 거절도 그대로 남겼다.
-- 프로필은 `payment-lab`, commerce8080/관리8082/PG8081, `ddl-auto=validate`·명시 SQL·INFO 콘솔이다. [실행 문서](../../docker/payment-lab/README.md)를 따른다.
-- 이 PC의 JDK21은 `C:/Program Files/Java/jdk-21.0.10`. Gradle에는 JAVA_HOME을 지정했다.
-- 무시 대상 `build/docker-api.init.gradle`은 Docker 테스트 JVM의 `api.version=1.44` 호환만 처리한다. 기기별 임시 설정·로그·helper는 커밋하지 않는다.
-- 전체 검사 로그/집계는 `build/r02-full-check.log`, `build/r02-full-check-summary.json`, 각 모듈 `build/test-results/test/`. 실서버 로그/관찰은 `build/r02-final-{api,pg}-*.log`, `build/r02-final-lab-state.json`.
+- 자신의 commerce/PG JVM과 디버거는 종료했고 8080/8081/8082/5005 listener가 없다. 전용 MySQL `payment-lab-verification`도 정지했다. 데이터·볼륨은 남겼다.
+- 임시 trigger는 모두 제거해 0개다. 기존 사용자 MySQL/Redis/다른 테스트 컨테이너는 변경·정지하지 않았다.
+- 실험 DB는 호스트13316, commerce `loopers`/PG `loopers_test_pg`다. 기존 SQL000~007 적용 DB이며 새 빈 DB가 아니면 000을 실행하지 않는다.
+- `payment-lab`은 commerce8080/관리8082/PG8081, `ddl-auto=validate`, INFO 콘솔이다. [실행 안내](../../docker/payment-lab/README.md)를 따른다.
+- 이 PC의 JDK21: `C:/Program Files/Java/jdk-21.0.10`. 무시 대상 `build/docker-api.init.gradle`은 Docker API1.44 호환만 처리한다.
+- 검사 로그/집계: `build/r03-full-check.log`, `build/r03-full-check.exit`, `build/r03-full-check-summary.json`. 실험 증거: `build/r03-final-lab-state.json`, `build/r03-final-{api,pg}-*.log`, `build/r03-final-metrics.prom`. 임시 계측·장애 주입 helper와 함께 커밋하지 않는다.
