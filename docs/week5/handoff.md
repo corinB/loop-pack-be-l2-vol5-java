@@ -1,13 +1,13 @@
 # 5주차 다음 작업 인계
 
-2026-10-22 R02 PR #25 병합 후 기준 최신화·R03 브랜치 생성과 요구사항/설계 문답을 진행했다. 2026-10-23 R03 조회 회로·fallback과 내부 반영 데드락 Retry의 구현·관련 검사를 마쳤다. 자동 재조회·실행기는 후속 범위다. 다음 작업 때 현재 위치와 남은 범위를 먼저 확인한다.
+2026-10-22 R02 PR #25 병합 후 기준 최신화·R03 브랜치 생성과 요구사항/설계 문답을 진행했다. 2026-10-23 R03 조회 회로·fallback과 내부 반영 데드락 Retry의 구현·관련 검사를 마쳤다. 제한된 자동 조회·실행기 구현과 관련 검사도 마쳤다. 다음은 실제 PG 장애/재시작 실험과 필수 전체 검사다. 다음 작업 때 현재 위치와 남은 범위를 먼저 확인한다.
 
 ## 현재 위치
 
 - 현재 브랜치: `volume-5/r03-payment-resilience`. R02 병합 커밋 `42c22c2`에서 시작했다. 로컬 `volume-5/main`도 이 커밋으로 fast-forward했다.
 - R01은 [PR #24](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/24)로 사용자 병합 완료. 당시 병합 기준은 `4b81541`이며 현재 기준은 R02 병합 `42c22c2`다.
 - R02 기능 코드 검증 기준은 동기 callback 커밋 `73bc6cf`다. 이후 최종 변경은 검증 기록·문서다.
-- R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 게시·사용자 병합 완료. R03은 두 번째 기능인 내부 반영 데드락 Retry까지 로컬 구현·검증했으며 원격 게시/PR은 아직 없다.
+- R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 게시·사용자 병합 완료. R03은 세 번째 기능인 제한된 자동 PG 조회·실행기까지 로컬 구현·관련 검사를 마쳤으며 원격 게시/PR은 아직 없다.
 - [R02 결과](r02-pg-order-payment/result.md) → [재현 방법](r02-pg-order-payment/verification.md) → [계획](r02-pg-order-payment/plan.md) → [리뷰 기록](r02-pg-order-payment/review.md) 순서로 확인한다.
 - 기존 사용자 변경 `docs/week4/r01-product-list-index/jmeter/product-list-ui.jmx`는 그대로 남긴다. 수정·staging·되돌리기 금지.
 
@@ -30,7 +30,7 @@
 
 ## 다음 작업 범위
 
-R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[상세 계획](r03-payment-resilience/plan.md)을 먼저 읽는다. 주요 정책 문답을 마치고 계획 초안의 세 관점 초회 리뷰를 받았다. [리뷰 기록](r03-payment-resilience/review.md)의 회차 commit 뒤 권한/시간 재확인은 사용자가 승인해 계획에 반영했고 세 관점 재리뷰를 마쳤다. 계획의 미해결 중요 지적은 없다. 첫 기능인 공유 PG 조회 회로·fallback·수동/callback 연결·기본 지표를 구현했다. 기능 리뷰의 알려진 충돌 제외 보완도 사용자 승인 후 적용했으며 세 관점 재리뷰에 미해결 중요 지적이 없다. 관련 검사 76건(실패·오류·skip 0)과 Checkstyle/ArchUnit을 통과했다. 기록은 위 R03 리뷰 문서에 남겼다. 두 번째 내부 반영 데드락 Retry도 구현했다. rollback 완료 확인＋MySQL1213/40001에만 새 TX로100ms 뒤 추가1회, commit 미확인은 상태 우선 조회, 최초 snapshot 보호를 유지한다. 세 관점 기능 리뷰에 중요 지적이 없고 관련 고유49건·Checkstyle/ArchUnit이 통과했다. 다음은 계획의 세 번째 기능인 제한된 자동 PG 조회·실행기 연결이다.
+R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[상세 계획](r03-payment-resilience/plan.md)을 먼저 읽는다. 주요 정책 문답을 마치고 계획 초안의 세 관점 초회 리뷰를 받았다. [리뷰 기록](r03-payment-resilience/review.md)의 회차 commit 뒤 권한/시간 재확인은 사용자가 승인해 계획에 반영했고 세 관점 재리뷰를 마쳤다. 계획의 미해결 중요 지적은 없다. 첫 기능인 공유 PG 조회 회로·fallback·수동/callback 연결·기본 지표를 구현했다. 기능 리뷰의 알려진 충돌 제외 보완도 사용자 승인 후 적용했으며 세 관점 재리뷰에 미해결 중요 지적이 없다. 관련 검사 76건(실패·오류·skip 0)과 Checkstyle/ArchUnit을 통과했다. 기록은 위 R03 리뷰 문서에 남겼다. 두 번째 내부 반영 데드락 Retry도 구현했다. rollback 완료 확인＋MySQL1213/40001에만 새 TX로100ms 뒤 추가1회, commit 미확인은 상태 우선 조회, 최초 snapshot 보호를 유지한다. 세 관점 기능 리뷰에 중요 지적이 없고 관련 고유49건·Checkstyle/ArchUnit이 통과했다. 세 번째 자동 조회·실행기도 구현했다. 최초 confirm만 시작·최대4회/30초·2스레드/대기2·회차 commit 후 권한/시간 재확인·원래/예정 snapshot 보호를 연결했다. 세 관점 리뷰 중요 지적 없음, 관련 53건·Checkstyle/ArchUnit과 2건 보강 재검사를 마쳤다. 다음은 실제 PG 장애/재시작 실험·필수 전체 check·결과/운영 문서/기술 글 정리다.
 
 - 자동 조회 Retry와 공유 조회 CircuitBreaker는 Resilience4j 애노테이션이다. 기존 Spring Retry 선택은 대체했다. [연결/운영 문서](r03-payment-resilience/trade_off/03-resilience-library-wiring.md)를 따른다.
 - 최초 confirm에서만 자동 시작한다. DB claim commit 후 전용 2스레드/큐2에 전달하며 접수 거절은 100ms 뒤 전달만 추가1회다. 대기 중도 RUNNING이다.
@@ -39,7 +39,7 @@ R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-p
 - 회로 수치·정상/실패/제외·HTTP 분류는 [집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. Retry-After는 미지원이다.
 - 운영 범위는 기존 조회＋로그＋기본 Prometheus 지표다. 주요 중단 사유를 기존 필드로 구분하고 별도 운영 API나 대시보드는 추가하지 않는다.
 - 계획 리뷰의 중요 보완은 사용자와 구체안을 정한 뒤 반영한다. 실제 구현도 기능 커밋 전 세 관점 리뷰·필요 최소 검사 정책을 유지한다.
-공유 조회 CircuitBreaker·fallback과 내부 반영용 Resilience4j Retry는 구현했으며 자동 PG 조회용 Retry·실행기는 아직 구현하지 않았다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
+공유 조회 CircuitBreaker·fallback과 내부 반영/자동 PG 조회용 Resilience4j Retry·실행기를 구현했다. test 프로필만 confirm 자동 시작을 끄고 새 컴포넌트/프록시/DB 경계를 직접 검사한다. 일반 실행은 기본 활성화다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
 
 확정한 선차감 정책·주문 CAS·관찰 선저장·파사드/TX 분리·복구 작업 CAS·고객/관리자 접근·수동 조회 최대 1회·동기 callback은 다시 미정으로 돌리지 않는다.
 같은 주문·키·금액·실효 조건은 기존 상태를 반환하며 발송 시작 후 create를 다시 보내지 않는다. 실패 근거 없이 timeout/빈 조회만으로 재고를 복구하지 않는다. 신규 PG는 포인트를 쓰지 않고 과거 POINT는 유지한다.

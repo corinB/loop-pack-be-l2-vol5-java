@@ -31,6 +31,12 @@ public class PaymentRecoveryProgressService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recordLookup(PaymentRecoveryTask.Snapshot execution, PaymentRecoveryTask.Reason reason) {
+        return tasks.recordFailure(execution.attemptKey(), execution.executionId(), execution.usedRounds(),
+            reason, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean requireManual(PaymentRecoveryTask.Snapshot execution, PaymentRecoveryTask.Reason reason) {
         return tasks.requireManual(execution.attemptKey(), execution.executionId(), execution.usedRounds(), reason, Instant.now());
     }

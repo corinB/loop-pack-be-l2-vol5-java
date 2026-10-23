@@ -41,6 +41,10 @@ pg:
 resilience4j:
   retry:
     instances:
+      payment-auto-lookup:
+        max-attempts: 4
+        retry-exceptions:
+          - com.loopers.application.ordering.support.RepeatPaymentLookupException
       payment-application:
         max-attempts: 2
         wait-duration: 100ms
@@ -77,6 +81,9 @@ spring:
 
 ---
 spring.config.activate.on-profile: test
+payment:
+  recovery:
+    auto-start-enabled: false
 
 scheduler:
   like-count:

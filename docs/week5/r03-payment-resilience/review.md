@@ -1,6 +1,6 @@
 # R03 계획·기능 리뷰 기록
 
-상태: **2026-10-23 조회 회로·fallback과 내부 반영 데드락 Retry 구현·세 관점 기능 리뷰 완료·미해결 중요 지적 없음·관련 검사 통과**. 첫 기능 76건, 두 번째 고유 49건의 관련 검사와 Checkstyle/ArchUnit 결과는 아래 회차별 기록을 따른다.
+상태: **2026-10-23 조회 회로·fallback·내부 반영 Retry·제한된 자동 조회/실행기 구현·세 관점 기능 리뷰 완료·미해결 중요 지적 없음·관련 검사 통과**. 첫 기능 76건, 두 번째 고유49건, 세 번째53건의 관련 검사와 Checkstyle/ArchUnit 결과는 아래 회차별 기록을 따른다. 독립 PG 통합 실험과 필수 전체 검사는 아직 후속이다.
 
 [상세 계획](plan.md) · [요구사항](requirement.md) · [결정 목록](trade_off/total_trade_off.md)
 
@@ -105,3 +105,24 @@
 - 초회 관련 검사 49건 중 47건이 통과했고 2건은 업무 검증 후 100ms 설정을 읽는 테스트의 구 API 접근에서 NPE가 발생했다. intervalBiFunction으로 같은 100ms 기대값을 확인하도록 고치고 실패한 2건만 다시 실행해 통과했다. 기능 코드 수정이나 검사 기대값 완화는 아니다. 최종 고유 49건은 실패·오류·skip 0이며, 재검사 Gradle은 BUILD SUCCESSFUL이다. Checkstyle main/test와 ArchUnit 8건도 통과했다(ArchUnit은 49건에 포함).
 - 분담: 코드 식별 6건·rollback 미확인 1건·반영 facade 7건·실제 DB 공통 반영 10건·수동 대사 9건·callback 8건·ArchUnit 8건이다. 초회 로그는 `build/r03-c02-focused-first.log`, 초회 XML은 `build/r03-c02-first-results/`, 2건 재검사/스타일 로그는 `build/r03-c02-corrected.log`, 고유 사례 집계는 `build/r03-c02-summary.json`에 남겼다. 49건을 같은 명령에서 한 번에 모두 통과했다고 기록하지 않는다.
 - SQL 실행 뒤 데드락 코드가 있는 예외를 주입하고 실제 DB rollback·새 TX를 확인하는 범위다. MySQL이 실제 경합에서 victim을 고르는 실험을 완료했다고 기록하지 않는다. 통합 장애 실험·필수 전체 check는 후속 범위다.
+
+## 2026-10-23 · 세 번째 기능 리뷰
+
+대상은 내부 반영 Retry 커밋 `b867f8d` 이후의 제한된 자동 PG 조회·실행기다. 최초 confirm 시작·claim/consume commit·commit 뒤 권한/시간 재확인·Resilience4j Retry·2/2 실행기·수동 사유를 포함한다. 독립 PG 장애/재시작 실험과 필수 전체 검사는 후속 범위다.
+
+| 관점 | 기능 리뷰 결과 |
+|---|---|
+| 비즈니스 | 중요 지적 없음. 최초 발송 승자만 시작·PG 생성 반복 없음·소비 회차 보존·미확인 차감 유지·기존/예정 snapshot으로 인계 보호 |
+| 사용자 경험 | 중요 지적 없음. 완료 우선·대기 중 RUNNING·중단 사유 구분·미확인의 실패 전환 없음·30초는 새 조회 제한 |
+| 기술 | 중요 지적 없음. claim/consume CAS와 commit·새 TX 재확인·HTTP 직전 시간 검사·2/2 거절 처리·실행별 interval/fallback 확인 |
+
+세 리뷰어 모두 기능 코드만 읽기 전용으로 확인했다. 테스트 설계 자체 리뷰·검사 실행·코드 수정은 하지 않았다. 기술 리뷰는 Resilience4j 2.3.0 소스와 연결 경계도 대조했다. 승인받아야 할 중요 수정 지적은 없었다.
+
+### 세 번째 기능 검사 결과
+
+- 지터·시간 예산·미확인 회차 비교·최초 confirm 시작 범위 검사를 먼저 추가해 미구현 컴파일 실패(Red)를 확인했다.
+- 기본 검사 뒤 실제 Spring/DB 및 시간·인계 경계의 관련 53건이 모두 통과했다(실패·오류·skip 0). Checkstyle main/test와 ArchUnit 8건도 통과했으며 ArchUnit은 53건에 포함된다. 기본 Retry 지표/운영 간격과 실행기 assertion 전달을 보강한 2건만 추가 재검사했고 BUILD SUCCESSFUL이다.
+- 분담: confirm 4건·실행 예산/회차 5건·조회 경계 6건·전달 3건·중단 표시 3건·실제 Spring/DB/실행기 7건·기존 수동 대사 9건·callback 8건·ArchUnit 8건이다. 초회 로그는 `build/r03-c03-focused.log`, XML 보존은 `build/r03-c03-first-results/`, 보강 재검사는 `build/r03-c03-final-focused.log`, 고유 사례 집계는 `build/r03-c03-summary.json`이다. 전체 PR 검사로 합산하거나 중복 실행을 다른 사례로 세지 않는다.
+- 실제 Retry 프록시 검사는 이 이름의 간격만 0으로 교체하고 종료 후 원래 인스턴스를 복원한다. 운영 간격/지터는 별도로 검사하며 라이브러리 전역 sleep은 변경하지 않는다.
+- test 프로필은 confirm 자동 시작만 끈다. 기존 DB 정리와 백그라운드 작업의 경합을 피하며 자동 컴포넌트·프록시·DB 경계는 별도 핵심 검사로 확인한다. 일반 프로필은 기본 활성화다. 실제 payment-lab confirm부터 끝까지의 장애·재시작 실험은 다음 검증 단계다.
+- JMeter 사용자 변경과 첨부 원문 두 개의 SHA-256을 다시 확인해 보존했다. 실제 프로세스 재시작·독립 PG HTTP 효과 수·필수 전체 check·결과/기술 글은 후속 범위다. 아직 R03 result.md나 원격 PR은 만들지 않았다.
