@@ -96,7 +96,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 원문은 수동 reconcile을 기본으로 두지만, 사용자 추가 결정으로 기존 거래를 자동 재확인하고 한도 도달 뒤 수동 확인으로 전환한다.
 최초 조회 후 추가 재조회 최대 3회, 각 확인 종료 후 1초·3초·10초 대기와 지터 ±20%를 적용한다.
 실패/수동 전환 분류도 [재확인 정책](r03-payment-resilience/trade_off/01-reconciliation-retry-policy.md)에서 확정했다.
-R03에서 연결할 정상 실행은 [@Retryable + DB 진행 기록](r03-payment-resilience/trade_off/06-reconciliation-execution.md)으로 처리한다. 후속 결정으로 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. 자동 만료/갱신·회수는 보류한다.
+R03에서 연결할 정상 실행은 [Resilience4j Retry + DB 진행 기록](r03-payment-resilience/trade_off/06-reconciliation-execution.md)으로 처리한다. 2026-10-22 후속 결정으로 자동 조회 Retry와 공유 조회 CircuitBreaker를 Resilience4j로 통일해 기존 Spring Retry @Retryable 선택을 대체했다. 기존 재조회 정책·30초 예산·DB 기록은 유지하며 [연결 문서](r03-payment-resilience/trade_off/03-resilience-library-wiring.md)를 따른다. 후속 결정으로 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. 자동 만료/갱신·회수는 보류한다.
 조회 작업 직전에 [사용 횟수를 DB에 기록·commit](r03-payment-resilience/trade_off/07-retry-attempt-accounting.md)한다. 기록 뒤 실제 조회 전에 종료돼도 소비한 회차를 되돌리지 않는다.
 복구 작업 실행 권한은 [멱등성 키 + 조건부 상태 갱신 + 실행 식별자](r01-pg-payment-foundation/trade_off/08-recovery-claim-coordination.md)로 보호한다. 명시적 비관적 잠금 조회를 필수로 두지 않고 조건부 갱신 성공/commit 후 PG 조회한다. DB UPDATE 내부 잠금까지 없다는 뜻은 아니며 상품 재고 동시성·공통 결과 반영 TX의 보호는 유지한다. 수동 처리 조건·정확한 필드/갱신·영속성 정합성은 미정이고 자동 lease는 도입하지 않는다.
 수동 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록해 옛 진행 갱신을 차단한다. 중단 RUNNING도 인계할 수 있어야 하며 일반 save가 최신 실행/횟수를 되돌리지 않도록 한다. 정확한 조건식·허용 상태·응답·JPA 정합성 처리는 R02 [구현 계획](r02-pg-order-payment/plan.md)과 [결과](r02-pg-order-payment/result.md)를 따른다.
@@ -148,7 +148,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
 - R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [구현 계획](r02-pg-order-payment/plan.md) · [실제 결과](r02-pg-order-payment/result.md)
-- R03: [요구사항](r03-payment-resilience/requirement.md) · [설계 질문](r03-payment-resilience/trade_off/total_trade_off.md) · [계획 틀](r03-payment-resilience/plan.md)
+- R03: [요구사항](r03-payment-resilience/requirement.md) · [설계 질문](r03-payment-resilience/trade_off/total_trade_off.md) · [상세 계획](r03-payment-resilience/plan.md)
 
 각 PR의 대상은 `volume-5/main`이다. 앞 PR을 검증·병합한 뒤 최신 기준 브랜치에서 다음 작업 브랜치를 생성한다.
 작업 브랜치끼리 직접 병합하지 않으며 세 작업 브랜치를 준비 시점에 미리 만들지 않는다.

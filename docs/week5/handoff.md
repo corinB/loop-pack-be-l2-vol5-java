@@ -30,8 +30,16 @@
 
 ## 다음 작업 범위
 
-R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 먼저 읽는다. 첫 조회 즉시·명확한 실행기 접수 거절 100ms 뒤 전달 1회 재시도·공유 조회 회로·차단 시 즉시 수동/확보 회차 유지·4xx/정상/실패/제외 분류를 확정했다. 후속 문답에서 최근 10건/최소 5건·실패율 50%·1초 초과 느림 비율 50%·OPEN 10초 후 요청 기반 탐색·HALF_OPEN 표본 2건/최대 10초 미판정 시 재차단을 확정했다. 이 수치와 집계/회차 표는 문서에 반영했고 기능은 아직 미구현이다. 다음은 자동 조회 전체 시간 예산이며 내부 반영 재시도·실행기/선점·라이브러리도 남아 있다. [상세 계획 틀](r03-payment-resilience/plan.md)은 아직 미작성이고 기능 구현·새 검증 결과는 없다.
-자동 조회·Spring Retry/@Retryable·Resilience4j 서킷브레이커·fallback은 아직 구현하지 않았다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
+R03 [요구사항](r03-payment-resilience/requirement.md)·[결정 목록](r03-payment-resilience/trade_off/total_trade_off.md)·[상세 계획](r03-payment-resilience/plan.md)을 먼저 읽는다. 주요 정책 문답을 마치고 계획 초안의 세 관점 초회 리뷰를 받았다. [리뷰 기록](r03-payment-resilience/review.md)의 회차 commit 뒤 권한/시간 재확인은 사용자가 승인해 계획에 반영했고 세 관점 재리뷰를 마쳤다. 미해결 중요 지적은 없다. 아직 기능 구현·새 검증 결과는 없다.
+
+- 자동 조회 Retry와 공유 조회 CircuitBreaker는 Resilience4j 애노테이션이다. 기존 Spring Retry 선택은 대체했다. [연결/운영 문서](r03-payment-resilience/trade_off/03-resilience-library-wiring.md)를 따른다.
+- 최초 confirm에서만 자동 시작한다. DB claim commit 후 전용 2스레드/큐2에 전달하며 접수 거절은 100ms 뒤 전달만 추가1회다. 대기 중도 RUNNING이다.
+- 최초＋추가3회·1/3/10초±20%·최초전달부터30초다. 회차는 조회 직전 commit한다. 이미 시작한 조회의 저장/반영은 마무리하고 중단 후 자동 재개하지 않는다.
+- 내부 반영은 확실히 rollback된 MySQL 데드락에만100ms 뒤 추가1회다. 다른 오류와 commit 불명확은 재시도하지 않고 저장 상태부터 확인한다.
+- 회로 수치·정상/실패/제외·HTTP 분류는 [집계 문서](r03-payment-resilience/trade_off/02-lookup-circuit-breaker.md)를 따른다. Retry-After는 미지원이다.
+- 운영 범위는 기존 조회＋로그＋기본 Prometheus 지표다. 주요 중단 사유를 기존 필드로 구분하고 별도 운영 API나 대시보드는 추가하지 않는다.
+- 계획 리뷰의 중요 보완은 사용자와 구체안을 정한 뒤 반영한다. 실제 구현도 기능 커밋 전 세 관점 리뷰·필요 최소 검사 정책을 유지한다.
+자동 조회·Resilience4j Retry/CircuitBreaker·fallback은 아직 구현하지 않았다. 재시작 자동 회수·lease도 없다. 현재는 운영 목록 GET 후 명시적인 수동 POST로 복구한다.
 
 확정한 선차감 정책·주문 CAS·관찰 선저장·파사드/TX 분리·복구 작업 CAS·고객/관리자 접근·수동 조회 최대 1회·동기 callback은 다시 미정으로 돌리지 않는다.
 같은 주문·키·금액·실효 조건은 기존 상태를 반환하며 발송 시작 후 create를 다시 보내지 않는다. 실패 근거 없이 timeout/빈 조회만으로 재고를 복구하지 않는다. 신규 PG는 포인트를 쓰지 않고 과거 POINT는 유지한다.
