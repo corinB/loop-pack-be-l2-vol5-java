@@ -2,7 +2,7 @@
 
 [결정 목록](total_trade_off.md) · [재확인 정책](01-reconciliation-retry-policy.md) · [회로 집계](02-lookup-circuit-breaker.md) · [작업 실행](06-reconciliation-execution.md)
 
-상태: **2026-10-23 조회 CircuitBreaker·구체적 fallback·기본 회로 지표 연결 구현 및 세 관점 재리뷰 완료·관련 검사 통과**. 자동 Retry·실행기·내부 반영 Retry는 아직 구현하지 않았다.
+상태: **2026-10-23 조회 CircuitBreaker·구체적 fallback·기본 회로 지표 연결 구현 및 세 관점 재리뷰 완료·관련 검사 통과**. 내부 반영용 @Retry(payment-application)도 구현하고 관련 검사를 마쳤다. 자동 PG 조회 Retry·실행기는 아직 구현하지 않았다.
 
 ## 이번에 바뀐 결정
 

@@ -2,7 +2,7 @@
 
 ## 상태·목표
 
-- 상태: **공유 PG 조회 회로·fallback 첫 기능 구현·세 관점 기능 재리뷰 및 관련 검사 완료. 자동/내부 Retry와 통합 실험은 후속**. R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 병합됐다. [계획](plan.md)·[리뷰 기록](review.md)을 따른다.
+- 상태: **공유 PG 조회 회로·fallback과 내부 반영 데드락 Retry 구현·세 관점 기능 리뷰 및 관련 검사 완료. 자동 조회/실행기와 통합 실험은 후속**. R02는 [PR #25](https://github.com/corinB/loop-pack-be-l2-vol5-java/pull/25)로 병합됐다. [계획](plan.md)·[리뷰 기록](review.md)을 따른다.
 - 2026-10-22 최신 `volume-5/main`의 `42c22c2`에서 `volume-5/r03-payment-resilience`를 생성했다. PR 대상은 `volume-5/main`이다.
 - 기존 거래 조회의 호출·대기 한도를 정하고 회로 차단·fallback·복구를 검증한다. 통합 장애 실험과 제출 자료를 정리한다.
 

@@ -2,7 +2,7 @@
 
 [전체 설계 질문](total_trade_off.md) · [요구사항](../requirement.md) · [R01 모델 논의](../../r01-pg-payment-foundation/trade_off/01-payment-attempt-ownership.md)
 
-상태: **재조회 정책·실행 방향·회로 집계 분류 확정·세부 설계 전·구현 전**. 2026-10-22 후속 결정을 함께 반영한다.
+상태: **조회 정책 확정·공유 회로와 내부 반영 데드락 Retry 구현·관련 검사 완료. 자동 PG 조회/실행기는 구현 전**. 2026-10-22 후속 결정을 함께 반영한다.
 
 ## 사용자 결정과 남은 질문
 
@@ -138,6 +138,26 @@ HTTP 오류 응답의 재조회 목록은 **408·429·500·502·503·504**로 �
 - 이 정책은 저장된 PG 결과의 **공통 업무 반영**에 적용한다. 준비 TX·PG 관찰 저장·복구 작업 진행 기록까지 자동으로 재시도하는 정책이 아니다.
 
 일시적 충돌을 한 번 흡수하면서 판별 범위와 추가 부하를 작게 제한하는 선택이다. 대신 회복 가능한 다른 DB 오류도 수동 처리될 수 있다. [MySQL 오류 처리](https://dev.mysql.com/doc/refman/8.4/en/innodb-error-handling.html)는 데드락의 전체 TX rollback과 잠금 timeout의 기본 SQL 단위 rollback을 구분하며, [오류 코드](https://dev.mysql.com/doc/mysql-errors/8.4/en/server-error-reference.html#error_er_lock_deadlock)도 확인했다. 모든 DB 예외에 일괄 재시도를 적용하지 않는다.
+
+### 2026-10-23 · 내부 반영 재시도의 실제 연결
+
+구현은 `ApplyOrderPaymentFacade` → 별도 `RetryOrderPaymentService` → `ApplyOrderPaymentService` 순서다. Retry 빈의 공개 메서드에 `@Retry(name = "payment-application")`를 붙였고, 그 안에서 업무 TX의 `REQUIRES_NEW` 진입점을 호출한다. 따라서 100ms 대기는 앞선 업무 TX가 끝난 뒤에 수행하며 다음 시도는 새 TX다. 바깥 TX가 활성화된 호출은 거절해 대기 중 잠금을 유지하지 않게 한다.
+
+재시도 대상으로 인정하려면 다음 두 근거가 **함께** 있어야 한다.
+
+1. 같은 SQL 예외에 MySQL 오류 번호 `1213`과 SQLSTATE `40001`이 있다. 중첩 원인·SQL 후속 예외에서도 찾지만 예외 이름이나 메시지만으로 판단하지 않는다.
+2. 해당 업무 TX의 `afterCompletion`에서 `STATUS_ROLLED_BACK`을 확인했다. 시도마다 별도 메모리 기록을 만들며 이전 시도의 확인 값을 재사용하지 않는다.
+
+두 근거를 모두 확인한 경우에만 전용 `RolledBackPaymentDeadlockException`을 던진다. 설정은 이 예외만 최초 포함 최대 2회·간격 100ms로 반복한다. 그 밖의 DB/업무 오류·관찰 저장·복구 진행 TX는 반복하지 않는다. 완료 확인이 없거나 `UNKNOWN`이면 코드가 있어도 추가 반영하지 않는 보수적인 경계다.
+
+| 업무 실패 뒤 확인한 내용 | 다음 처리 |
+|---|---|
+| rollback 확인 + 데드락 코드 일치 | 한도가 남으면 100ms 뒤 새 TX로 반영 |
+| rollback 확인 + 다른 오류, 또는 데드락 재시도 소진 | 최초 실행 정보로 실패 표시를 시도하고 새 TX에서 현재 상태 확인 |
+| rollback 확인 불가 | 새 TX에서 저장 상태부터 확인. 완료면 그대로 반환, 미완료면 최초 실행 정보로 표시한 뒤 재조회 |
+| rollback 확인 불가 + 현재 상태 조회도 실패 | 추가 반영·표시를 추측하지 않고 오류를 반환. 기존 미완료 기록으로 담당자가 확인 |
+
+실패 표시는 처음 확보한 상태·실행 ID·사용 회차를 계속 사용한다. 재시도 중 인계받은 실행이나 완료된 작업을 옛 실패가 덮지 않는다. 새 결제·PG 조회·자동 회차·회로 표본은 늘어나지 않는다. 기능 리뷰는 세 관점 모두 중요 지적 없음이며 관련 검사 결과는 [리뷰 기록](../review.md)에 남긴다.
 
 ## 확정한 수동 전환의 의미
 

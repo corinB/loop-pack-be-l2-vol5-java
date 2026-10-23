@@ -2,6 +2,7 @@ package com.loopers.application.ordering.service;
 
 import com.loopers.application.mall.service.ProductService;
 import com.loopers.application.ordering.result.ApplyOrderPaymentResult;
+import com.loopers.application.ordering.support.PaymentApplicationTransaction;
 import com.loopers.application.support.error.ApplicationErrorCode;
 import com.loopers.application.support.error.ApplicationException;
 import com.loopers.domain.mall.model.StockAdjustment;
@@ -34,6 +35,12 @@ public class ApplyOrderPaymentService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Optional<ApplyOrderPaymentResult> apply(String key) {
+        return apply(key, new PaymentApplicationTransaction());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<ApplyOrderPaymentResult> apply(String key, PaymentApplicationTransaction transaction) {
+        transaction.register();
         PaymentAttempt attempt = attempts.findByKeyForUpdate(key)
             .orElseThrow(() -> new ApplicationException(ApplicationErrorCode.PAYMENT_ATTEMPT_NOT_FOUND));
         Order order = order(attempt);
