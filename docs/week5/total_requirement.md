@@ -12,7 +12,7 @@
 | 출발 커밋 | `9eff4025228a6d81cd9e3bb4c3e675d247004e34` — `volume-4/main`의 4주차 최종 정리 |
 | 기준 브랜치 | `volume-5/main` |
 | 준비 산출물 | 로컬 기준 브랜치, 원문 보존, 전체·PR별 요구사항, 설계 질문, 구현 계획의 틀 |
-| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 로컬 구현·세 관점 기능 리뷰·전체 검사 509건·실제 PG 장애/재시작 실험 14건 완료([결과](r03-payment-resilience/result.md)). 운영/상태/기술 글과 로컬 PR 설명 초안을 정리했다. 원격 PR 생성·게시는 후속 요청 범위 |
+| 구현 상태 | R01 구현·검증·PR #24 병합 완료([결과](r01-pg-payment-foundation/result.md)). R02 로컬 구현·검증 완료([결과](r02-pg-order-payment/result.md)): 전체 검사 432건·실제 PG 주문/장애/재시작 실험 10개 통과. R02 PR #25 병합 완료(`42c22c2`). R03 로컬 구현·세 관점 기능 리뷰·전체 검사 509건·실제 PG 장애/재시작 실험 14건 완료([결과](r03-payment-resilience/result.md)). 운영/상태/기술 글과 PR 설명을 정리했고 PR #26도 병합됐다(`b70d83b`). 최종 대조에서 발견한 반환 캐시 검증 공백은2건 추가·관련24건/테스트 Checkstyle 통과로 보완했다([최종 점검](final-audit.md)) |
 | 작업 브랜치 | R01은 준비 커밋 `d443cdc`에서 생성해 구현·병합 완료. R02는 R01 병합 기준 4b81541에서 생성. R03은 최신 기준 42c22c2에서 `volume-5/r03-payment-resilience` 생성 완료 |
 
 기준 자료:
@@ -98,7 +98,7 @@ PG base URL·callback URL은 고객 입력이 아닌 로컬 설정으로 고정�
 실패/수동 전환 분류도 [재확인 정책](r03-payment-resilience/trade_off/01-reconciliation-retry-policy.md)에서 확정했다.
 R03에서 연결한 정상 실행은 [Resilience4j Retry + DB 진행 기록](r03-payment-resilience/trade_off/06-reconciliation-execution.md)으로 처리한다. 2026-10-22 후속 결정으로 자동 조회 Retry와 공유 조회 CircuitBreaker를 Resilience4j로 통일해 기존 Spring Retry @Retryable 선택을 대체했다. 기존 재조회 정책·30초 예산·DB 기록은 유지하며 [연결 문서](r03-payment-resilience/trade_off/03-resilience-library-wiring.md)를 따른다. 후속 결정으로 장애/재시작 뒤 자동 재개는 [운영 담당자 미완료 목록 조회·수동 대사](r02-pg-order-payment/trade_off/06-interrupted-payment-reconcile.md)로 변경했다. 자동 만료/갱신·회수는 보류한다.
 조회 작업 직전에 [사용 횟수를 DB에 기록·commit](r03-payment-resilience/trade_off/07-retry-attempt-accounting.md)한다. 기록 뒤 실제 조회 전에 종료돼도 소비한 회차를 되돌리지 않는다.
-복구 작업 실행 권한은 [멱등성 키 + 조건부 상태 갱신 + 실행 식별자](r01-pg-payment-foundation/trade_off/08-recovery-claim-coordination.md)로 보호한다. 명시적 비관적 잠금 조회를 필수로 두지 않고 조건부 갱신 성공/commit 후 PG 조회한다. DB UPDATE 내부 잠금까지 없다는 뜻은 아니며 상품 재고 동시성·공통 결과 반영 TX의 보호는 유지한다. 수동 처리 조건·정확한 필드/갱신·영속성 정합성은 미정이고 자동 lease는 도입하지 않는다.
+복구 작업 실행 권한은 [멱등성 키 + 조건부 상태 갱신 + 실행 식별자](r01-pg-payment-foundation/trade_off/08-recovery-claim-coordination.md)로 보호한다. 명시적 비관적 잠금 조회를 필수로 두지 않고 조건부 갱신 성공/commit 후 PG 조회한다. DB UPDATE 내부 잠금까지 없다는 뜻은 아니며 상품 재고 동시성·공통 결과 반영 TX의 보호는 유지한다. 수동 처리 조건·필드/갱신·영속성 정합성은 R02/R03 계획과 구현을 따른다. 자동 lease는 도입하지 않는다.
 수동 대사는 미완료 작업의 현재 실행 ID·상태를 조건으로 새 실행 ID를 기록해 옛 진행 갱신을 차단한다. 중단 RUNNING도 인계할 수 있어야 하며 일반 save가 최신 실행/횟수를 되돌리지 않도록 한다. 정확한 조건식·허용 상태·응답·JPA 정합성 처리는 R02 [구현 계획](r02-pg-order-payment/plan.md)과 [결과](r02-pg-order-payment/result.md)를 따른다.
 [HTTP 설정](r01-pg-payment-foundation/trade_off/03-http-client-settings.md)은 RestClient + Apache HttpClient 5·자동 retry/redirect 차단으로 확정했다. 연결 1초·연결 풀 대기 1초·응답 대기 2초를 초기값으로 사용하며 전체 호출의 절대 제한으로 해석하지 않는다.
 [adapter 결과·검증 분담](r01-pg-payment-foundation/trade_off/04-adapter-fixture.md)은 검증한 관찰/확인 불가 사유를 결과값으로 반환하는 A다. 실제 PG에서 정상·지연·유실·DB 보존을, 작은 테스트용 HTTP 서버에서 불완전 응답 등을 검증한다. 복구 실행기와 회로는 반환 결과를 분류해 연결한다.
@@ -144,7 +144,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 |---|---|---|---|
 | 1 | R01 · `volume-5/r01-pg-payment-foundation` | DB 저장형 독립 실행 테스트 PG·adapter·HTTP timeout·create 재시도 차단, 결제/차감 기록 모델·DB 제약·과거 POINT 호환 | 로컬 구현·검증 완료·PR #24 병합 완료 |
 | 2 | R02 · `volume-5/r02-pg-order-payment` | confirm 전환·멱등성·발송 제어·TX 분리·실패 복구·callback·reconcile·조회/소유권 경계 | 구현·통합/재시작·필수 전체 검사 완료, PR #25 병합 완료 |
-| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 로컬 구현·기능 리뷰·전체509건·실제PG실험14건·문서 완료. 원격 PR은 후속 요청 범위 |
+| 3 | R03 · `volume-5/r03-payment-resilience` | 조회 회로·fallback·제한된 재조회·통합 장애 실험·회귀·설계/기술 글 정리 | 구현·리뷰·전체509건·실제PG실험14건·PR #26 병합 완료. 반환 캐시2건도 후속 관련24건/테스트 Checkstyle로 검증 완료 |
 
 - R01: [요구사항](r01-pg-payment-foundation/requirement.md) · [설계 질문](r01-pg-payment-foundation/trade_off/total_trade_off.md) · [구현 계획](r01-pg-payment-foundation/plan.md) · [실제 결과](r01-pg-payment-foundation/result.md)
 - R02: [요구사항](r02-pg-order-payment/requirement.md) · [설계 질문](r02-pg-order-payment/trade_off/total_trade_off.md) · [구현 계획](r02-pg-order-payment/plan.md) · [실제 결과](r02-pg-order-payment/result.md)
@@ -155,7 +155,7 @@ confirm·고객 상세 GET의 소유권/타인 404와 주문 관리자 GET의 fi
 요구사항 → 설계 문답·결정 → 커밋·TDD 계획 → 구현·검증 → 실제 결과 순서로 진행한다.
 각 PR에 관련 테스트를 포함하고 R03에 검증을 모두 미루지 않는다. `result.md`는 실제 구현·검증 후 작성한다.
 
-R01/R02는 병합했고 R03은 상세 계획과 세 관점 리뷰 후 첫 기능을 구현했다. 공유 조회 회로·fallback의 관련 검사 76건과 Checkstyle/ArchUnit을 통과했다. 내부 반영 데드락 Retry도 세 관점 리뷰·관련 고유 검사 49건과 Checkstyle/ArchUnit을 마쳤다. 제한된 자동 조회/실행기도 세 관점 리뷰·관련 53건과 Checkstyle/ArchUnit을 마쳤다. 실제 PG 장애/재시작 실험·필수 전체 검사·결과/기술 글 정리는 아직 남아 있다.
+R01/R02/R03 모두 구현·검증·게시·병합했다. 현재 기준은 `volume-5/main`의 `b70d83b`다. PR03 당시 전체509건과 실제 PG 실험 근거는 PR별 결과를 따른다. 5주차 전체 대조에서 발견한 반환 commit/rollback 캐시 검증 공백은2건 추가로 보완했고 관련24건/테스트 Checkstyle이 통과했다. 기능 수정 없이 점검한 범위의 미해결 필수 보완을 닫았다. [최종 점검표](final-audit.md)에 구현·검증·제외 범위를 구분했다.
 기존 패키지·계층 의존·순수 도메인·QueryDSL 조회/JPA 쓰기·TDD·Checkstyle·ArchUnit과 검사 완화 금지는 유지한다.
 PG 경계의 단일 TX 분리는 과거 포인트 주문 확정의 단일 TX 규칙을 그대로 적용하는 대상이 아니다.
 
@@ -171,5 +171,5 @@ PG 경계의 단일 TX 분리는 과거 포인트 주문 확정의 단일 TX 규
 - 제출: 세 PR의 코드·테스트·직접 실행할 테스트 PG·보조 fixture·갱신 설계, 대표 효과 수와 미확인 한계, 실제 상황·개념·판단 이유를 담은 기술 글.
 
 관련 테스트 이름은 구현 시 정한다. 최종 전체 검사는 `./gradlew :apps:test-pg:check :apps:commerce-api:check`
-(Windows: `.\gradlew.bat :apps:commerce-api:check`)를 사용하며 slow/example 테스트·Checkstyle·ArchUnit을 포함한다.
+(Windows: `.\gradlew.bat :apps:test-pg:check :apps:commerce-api:check`)를 사용하며 slow/example 테스트·Checkstyle·ArchUnit을 포함한다.
 테스트 0건·skip·연결 실패나 과거 결과를 이번 구현의 통과로 기록하지 않는다. 준비 문서 작업에서는 기능 검사를 실행하지 않는다.
